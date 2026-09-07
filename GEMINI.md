@@ -7,7 +7,7 @@ Core skills:
 
 - `volcengine-cli` — operate cloud resources with the `ve` CLI.
 - `volcengine-troubleshooting` — diagnose Volcengine errors and resource issues.
-- `volcengine-knowledge-search` — search and retrieve official Volcengine documentation.
+- `volcengine-knowledge-search` — search and fetch official Volcengine documentation with `ve docs search/fetch`, without login.
 - `volcengine-find-skills` — list all core and optional skills for the agent to select and install.
 
 Optional catalogued skills:

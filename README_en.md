@@ -39,7 +39,7 @@ duplicate under `skills/`.
 | --- | --- | --- |
 | [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | Create, query, and manage cloud resources with the `ve` CLI |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | Diagnose Volcengine errors and resource issues |
-| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and retrieve full official Volcengine documentation |
+| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with `ve docs search/fetch`, without login |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | List every skill for the agent to select and install |
 | [`volcengine-sale`](./plugins/volcengine-service-support/skills/volcengine-sale/SKILL.md) | `volcengine-service-support` | Sell Volcengine products |
 | [`volcengine-prepare`](./plugins/volcengine-service-support/skills/volcengine-prepare/SKILL.md) | `volcengine-service-support` | Analyze a repository and recommend ECS, VKE, or veFaaS |

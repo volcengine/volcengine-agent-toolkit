@@ -74,8 +74,8 @@
         {
           "name": "volcengine-knowledge-search",
           "path": "skills/core/volcengine-knowledge-search",
-          "summary": "Search and retrieve full text from official Volcengine documentation.",
-          "summary_zh": "检索并获取火山引擎官方文档全文。",
+          "summary": "Search and fetch official Volcengine documentation with ve docs search/fetch, without login.",
+          "summary_zh": "使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。",
           "keywords": ["docs", "documentation", "文档", "官方文档", "概念", "计费", "最佳实践"]
         },
         {

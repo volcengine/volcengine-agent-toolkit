@@ -36,7 +36,7 @@
 | --- | --- | --- |
 | [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | 用 `ve` CLI 创建、查询和管理云资源 |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 火山引擎故障排查与诊断 |
-| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 检索火山引擎官方文档并获取全文 |
+| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 使用 `ve docs search/fetch` 检索火山引擎官方文档并获取全文，无需登录 |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | 列出全部 skill，供 Agent 选择并安装 |
 | [`volcengine-sale`](./plugins/volcengine-service-support/skills/volcengine-sale/SKILL.md) | `volcengine-service-support` | 火山引擎商品售卖 |
 | [`volcengine-prepare`](./plugins/volcengine-service-support/skills/volcengine-prepare/SKILL.md) | `volcengine-service-support` | 分析仓库并推荐 ECS / VKE / veFaaS 部署形态 |
