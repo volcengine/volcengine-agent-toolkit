@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{REPORT_TITLE}}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --panel: #f7f9fc;
+      --text: #1f2328;
+      --muted: #5b6573;
+      --border: #d8dee8;
+      --primary: #1664ff;
+      --success: #0f9d58;
+      --warning: #b26a00;
+      --danger: #d93025;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --panel: #161b22;
+        --text: #e6edf3;
+        --muted: #9da7b3;
+        --border: #30363d;
+        --primary: #6ca0ff;
+        --success: #4ac26b;
+        --warning: #ffb347;
+        --danger: #ff7b72;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 24px 56px;
+    }
+
+    .hero,
+    .section {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+    }
+
+    .hero {
+      padding: 28px;
+      background: linear-gradient(135deg, rgba(22, 100, 255, 0.12), rgba(22, 100, 255, 0.04));
+    }
+
+    .section {
+      margin-top: 22px;
+      padding: 22px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      line-height: 1.3;
+    }
+
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.3rem; }
+
+    p { margin: 8px 0; }
+
+    ul {
+      margin: 8px 0 0 20px;
+      padding: 0;
+    }
+
+    li + li { margin-top: 8px; }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .meta-item {
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+    }
+
+    .meta-label {
+      display: block;
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .meta-value {
+      font-size: 1rem;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 0.92rem;
+      background: var(--bg);
+    }
+
+    .badge-success { color: var(--success); border-color: rgba(15, 157, 88, 0.3); background: rgba(15, 157, 88, 0.05); }
+    .badge-warning { color: var(--warning); border-color: rgba(178, 106, 0, 0.3); background: rgba(178, 106, 0, 0.05); }
+    .badge-danger { color: var(--danger); border-color: rgba(217, 48, 37, 0.3); background: rgba(217, 48, 37, 0.05); }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    tr:last-child th,
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th {
+      background: rgba(22, 100, 255, 0.05);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .muted { color: var(--muted); }
+
+    .multiline {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .path {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.94rem;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <!--
+    使用说明：
+    1. 本文件是 Landing Zone Setup 汇总报告的固定格式模板，生成报告时请复制本模板并替换所有 {{PLACEHOLDER}}。
+    2. 报告应重点展示各个搭建项的结果，保持页面简洁易读。
+    3. 如果某类记录有多条，请复制带 data-row 标记的 <tr> 或 <li> 块，不要擅自删除整个章节。
+    4. 报告只写已核实的执行结果；不写推测、不写后台排障过程、不暴露敏感凭证。
+  -->
+  <div class="container">
+    <section class="hero">
+      <h1>{{REPORT_TITLE}}</h1>
+      <p class="muted">{{REPORT_SUBTITLE}}</p>
+
+      <div class="meta">
+        <div class="meta-item">
+          <span class="meta-label">执行时间</span>
+          <span class="meta-value">{{EXECUTION_TIME_RANGE}}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">工作区目录</span>
+          <span class="meta-value path" style="font-size: 0.85em; font-weight: normal;">{{WORKSPACE_PATH}}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>1. 阶段执行明细</h2>
+      <p class="muted" style="font-size: 0.95rem; margin-top: 0;">重点展示本次搭建各核心阶段的执行结果及资源落地情况。</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>状态</th>
+              <th>实际执行内容</th>
+              <th>关键产出</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-row="stage">
+              <td style="white-space: nowrap; font-weight: 500;">{{STAGE_NAME}}</td>
+              <td style="white-space: nowrap;">{{STAGE_STATUS}}</td>
+              <td class="multiline">{{STAGE_ACTIONS}}</td>
+              <td class="multiline">{{STAGE_OUTPUTS}}</td>
+              <td class="multiline muted" style="font-size: 0.95em;">{{STAGE_NOTES}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>2. 关键交付文件</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>文件路径</th>
+              <th>用途</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-row="artifact">
+              <td class="path">{{ARTIFACT_PATH}}</td>
+              <td class="multiline">{{ARTIFACT_PURPOSE}}</td>
+              <td style="white-space: nowrap;">{{ARTIFACT_STATUS}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>3. 待处理与后续建议</h2>
+      <h3>待人工处理项</h3>
+      <ul>
+        <li data-row="manual-item" class="multiline">{{MANUAL_ITEM_1_OR_NONE}}</li>
+      </ul>
+      <h3 style="margin-top: 16px;">建议下一步</h3>
+      <ul>
+        <li data-row="next-step-item" class="multiline">{{NEXT_STEP_ITEM_1}}</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

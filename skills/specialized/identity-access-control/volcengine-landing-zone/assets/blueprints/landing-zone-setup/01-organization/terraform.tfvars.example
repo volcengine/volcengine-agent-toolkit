@@ -1,0 +1,12 @@
+prefix     = "example"
+region     = "cn-beijing"
+root_ou_id = "ou-xxxxxxxx"
+
+# This example matches the refactored Landing Zone org layout:
+# - Top-level OUs: Platform, Applications, SandBox
+# - Applications sub OUs: Dev, Staging, Prod
+# - Platform accounts: LogArchive, Security, SharedService, Network
+#
+# If these standard OUs already exist, the recommended flow is to let the
+# skill discover them first and auto-fill the corresponding
+# existing_*_ou_id variables before apply.

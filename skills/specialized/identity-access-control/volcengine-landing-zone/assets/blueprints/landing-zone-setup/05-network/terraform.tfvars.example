@@ -1,0 +1,55 @@
+# 火山引擎主 Region
+# region = "cn-beijing"
+
+# 网络底座子网与 TR 连接点使用的可用区 A 和 B
+# 为空时默认使用 <region>-a 和 <region>-b
+# network_availability_zone_a = "cn-beijing-a"
+# network_availability_zone_b = "cn-beijing-b"
+
+# 企业名称前缀，用于资源命名
+# prefix = "mycompany"
+
+# 管理账号 ID
+# management_account_id = "2100000000"
+
+# 网络账号 ID
+# network_account_id = "2100000001"
+
+# 网络底座 VPC 与子网 CIDR
+# network_vpc_cidr = "10.0.0.0/16"
+# network_subnet_cidr_az_a = "10.0.1.0/24"
+# network_subnet_cidr_az_b = "10.0.2.0/24"
+
+# ==============================================================================
+# 公网出向能力（NAT Gateway & EIP & SNAT）
+# ==============================================================================
+
+# 是否在网络底座中创建公网出向能力
+# create_nat = true
+
+# NAT 网关名称
+# nat_gateway_name = "mycompany-nat"
+
+# NAT 网关类型（公网 internet，私网 intranet）
+# nat_network_type = "internet"
+
+# NAT 网关规格（Small, Medium, Large, 等）
+# nat_spec = "Small"
+
+# NAT 绑定 EIP 名称
+# eip_name = "mycompany-nat-eip"
+
+# EIP 线路类型
+# eip_isp = "BGP"
+
+# EIP 计费类型：1-包年包月，2-按流量计费，3-按带宽计费
+# eip_billing_type = 2
+
+# EIP 带宽（Mbps）
+# eip_bandwidth = 1
+
+# SNAT 规则名称
+# snat_entry_name = "mycompany-default-snat"
+
+# 通过 NAT 网关访问公网的源网段
+# snat_source_cidr = "172.16.0.0/12"

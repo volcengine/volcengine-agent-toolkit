@@ -4,12 +4,13 @@
 
 ## 仓库结构
 
-- `skills/`：只保留 `core/` 分类。
+- `skills/`：包含 `core/` 和 `specialized/`。
 - `skills/core/`：只允许 `volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`。
 - `plugins/volcengine-core/`：默认核心 plugin，包含 hooks 和上述四个 core skill 的生成副本。
 - `plugins/volcengine-<domain>/`：按产品域拆分的可选 plugin，也是其 skill 的唯一源码位置。
-- `scripts/sync_plugins.py`：从 finder catalog 复制 core skill，并生成 plugin manifest 与 marketplace。
-- `scripts/validate_codex_plugin_layout.py`：校验目录、清单、同步状态和默认安装约束。
+- `skills/specialized/<domain>/<skill>/`：可选 plugin 的生成副本；分类名为 plugin 名去掉 `volcengine-` 前缀。
+- `scripts/sync_plugins.py`：从 finder catalog 同步核心与专项 skill 副本、文档清单、plugin manifest 与 marketplace。
+- `scripts/validate_codex_plugin_layout.py`：校验目录、文档链接与清单、同步状态和默认安装约束。
 - `hooks/`：跨 skill 复用的 telemetry hook。
 
 核心 skill 只修改 `skills/core/`，不要直接修改 `plugins/volcengine-core/skills/`。可选 skill 则直接修改所属 `plugins/volcengine-<domain>/skills/`。
@@ -36,13 +37,13 @@
 ## 新增或移动 skill
 
 1. 核心 skill 放在 `skills/core/volcengine-<name>/`；可选 skill 放在 `plugins/volcengine-<domain>/skills/volcengine-<name>/`。
-2. 更新 `skills/core/volcengine-find-skills/references/catalog.json` 中的 plugin 和 skill 映射。
-3. 同步更新 `README.md`、`README_en.md`、`.cursor/rules/volcengine-skills.mdc`、`GEMINI.md` 的 skill 清单。
-4. 运行 `python3 scripts/sync_plugins.py` 复制 core skill 并生成 manifest。
-5. 运行 `python3 scripts/validate_codex_plugin_layout.py`，确保 core 目录、marketplace 策略和 core 副本一致。
+2. 更新 `skills/core/volcengine-find-skills/references/catalog.json` 中的 plugin、skill 映射和中英文能力摘要。
+3. 若安装或使用方式变化，更新相关文档正文；技能清单由 catalog 生成。
+4. 运行 `python3 scripts/sync_plugins.py`，同步 core 与 specialized 副本、`README.md`、`README_en.md`、`.cursor/rules/volcengine-skills.mdc`、`GEMINI.md` 的清单和 manifest。
+5. 运行 `python3 scripts/validate_codex_plugin_layout.py`，确保文档、marketplace 策略和所有生成副本一致。
 6. 运行 `python3 -m unittest discover -s tests -v`，验证同步器的路径与写入边界。
 
-不要手工维护 `plugins/volcengine-core/skills/`、plugin manifest 或 marketplace 条目；它们由 catalog 和同步脚本生成。可选 plugin 的 `skills/` 是源码，必须直接维护。
+不要手工维护 `plugins/volcengine-core/skills/`、`skills/specialized/`、文档生成区块、plugin manifest 或 marketplace 条目；它们由 catalog 和同步脚本生成。可选 plugin 的 `skills/` 是源码，必须直接维护。
 
 ## 当前技能
 

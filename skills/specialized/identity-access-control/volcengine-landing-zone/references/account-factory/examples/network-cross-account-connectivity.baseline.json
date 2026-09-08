@@ -1,0 +1,85 @@
+{
+  "name": "network-cross-account-connectivity",
+  "description": "Add the new workload account into the existing shared TR scope and attach its workload VPC to the shared transit router.",
+  "variables": {
+    "network_account_id": {
+      "description": "Output from 05-network: the network account ID that owns the shared TR.",
+      "required": true,
+      "type": "string"
+    },
+    "transit_router_id": {
+      "description": "Output from 05-network: the shared transit router ID.",
+      "required": true,
+      "type": "string"
+    },
+    "transit_router_resource_share_name": {
+      "description": "Output from 05-network: the reusable TR resource share name owned by the network account.",
+      "required": true,
+      "type": "string"
+    },
+    "transit_router_dmz_public_route_table_name": {
+      "description": "Output from 05-network: the shared TR route table name used for DMZ/public egress learning.",
+      "required": true,
+      "type": "string"
+    },
+    "transit_router_egress_route_table_name": {
+      "description": "Output from 05-network: the shared TR route table name used for workload-account default egress association.",
+      "required": true,
+      "type": "string"
+    },
+    "network_vpc_attachment_id": {
+      "description": "Output from 05-network: the shared network-foundation VPC attachment ID used as the egress next hop.",
+      "required": true,
+      "type": "string"
+    },
+    "workload_vpc_cidr": {
+      "description": "CIDR block for the new workload-account VPC.",
+      "required": true,
+      "type": "string"
+    },
+    "workload_subnet_cidr_az_a": {
+      "description": "CIDR block for workload subnet in availability zone A.",
+      "required": true,
+      "type": "string"
+    },
+    "workload_subnet_cidr_az_b": {
+      "description": "CIDR block for workload subnet in availability zone B.",
+      "required": true,
+      "type": "string"
+    },
+    "availability_zone_a": {
+      "description": "Availability zone A in the target region, for example cn-beijing-a.",
+      "required": true,
+      "type": "string"
+    },
+    "availability_zone_b": {
+      "description": "Availability zone B in the target region, for example cn-beijing-b.",
+      "required": true,
+      "type": "string"
+    }
+  },
+  "baselines": [
+    {
+      "name": "network-cross-account-connectivity",
+      "description": "Update the existing TR share for the current account and create the workload-side attachment.",
+      "package": "network-cross-account-connectivity",
+      "enabled": true,
+      "inputs": {
+        "region": "{{ region }}",
+        "account_id": "{{ account_id }}",
+        "network_account_id": "{{ network_account_id }}",
+        "transit_router_id": "{{ transit_router_id }}",
+        "transit_router_resource_share_name": "{{ transit_router_resource_share_name }}",
+        "transit_router_dmz_public_route_table_name": "{{ transit_router_dmz_public_route_table_name }}",
+        "transit_router_egress_route_table_name": "{{ transit_router_egress_route_table_name }}",
+        "network_vpc_attachment_id": "{{ network_vpc_attachment_id }}",
+        "workload_vpc_cidr": "{{ workload_vpc_cidr }}",
+        "workload_subnet_cidr_az_a": "{{ workload_subnet_cidr_az_a }}",
+        "workload_subnet_cidr_az_b": "{{ workload_subnet_cidr_az_b }}",
+        "availability_zone_a": "{{ availability_zone_a }}",
+        "availability_zone_b": "{{ availability_zone_b }}",
+        "attach_to_shared_network": true
+      }
+    }
+  ]
+}
