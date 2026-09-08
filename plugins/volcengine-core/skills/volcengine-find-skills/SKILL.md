@@ -53,7 +53,9 @@ English summaries help distinguish related skills. Choose by responsibility rath
 install multiple skills only when the request crosses distinct responsibilities.
 
 The catalog includes all four skills in `skills/core/` and every optional skill owned directly by a
-product-domain plugin. If none of the listed responsibilities covers the request, report that the
+product-domain plugin. `skills/specialized/<domain>/<skill>/` contains generated copies of those
+optional skills, grouped by the plugin name without `volcengine-`; each skill is listed only once
+in the catalog. If none of the listed responsibilities covers the request, report that the
 repository does not currently provide a matching skill.
 
 ## Recover from a capability gap
@@ -73,8 +75,8 @@ python3 scripts/find_skills.py install <skill> [<skill> ...] --agent <agent-name
 python3 scripts/find_skills.py install volcengine-iac --agent codex
 ```
 
-The script uses `npx skills add --skill` with `--full-depth` because optional skills live inside
-plugin directories. It accepts only exact skill names, installs those skills directly, and verifies
+The script uses `npx skills add --skill` with `--full-depth` to discover skills nested under product
+categories and plugin directories. It accepts only exact skill names, installs those skills directly, and verifies
 every selected name with `skills list`. Omit `--agent` only when host auto-detection is intended.
 Passing a plugin name is an error, even when every skill in that plugin is needed.
 

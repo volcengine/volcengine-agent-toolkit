@@ -1,6 +1,6 @@
 {
   "name": "volcengine-storage",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Operate Volcengine storage products and data with product-specific tools.",
   "author": {
     "name": "Volcengine Team",

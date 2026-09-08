@@ -52,4 +52,3 @@ CommonBuy 命令实际返回错误、无法通过 CLI 完成"开通 TOS 服务"�
 <https://console.volcengine.com/tos>
 
 首次进入会弹出服务开通协议，同意后即完成开通。
-

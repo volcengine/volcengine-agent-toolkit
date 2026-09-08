@@ -1,7 +1,7 @@
 {
   "name": "volcengine-core",
   "description": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Volcengine Team"
   },

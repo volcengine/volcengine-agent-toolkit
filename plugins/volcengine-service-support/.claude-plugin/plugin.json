@@ -1,7 +1,7 @@
 {
   "name": "volcengine-service-support",
   "description": "Route product purchases, prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Volcengine Team"
   },

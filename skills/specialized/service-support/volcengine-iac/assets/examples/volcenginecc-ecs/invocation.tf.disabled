@@ -1,0 +1,19 @@
+# Rename this file to invocation.tf only after the ECS instance is running and
+# Cloud Assistant has registered. See references/volcenginecc-ecs.md.
+
+resource "volcenginecc_ecs_invocation" "hello" {
+  invocation_name        = "${local.prefix}-invoke"
+  invocation_description = "volcenginecc ECS example invocation"
+  command_id             = volcenginecc_ecs_command.hello.command_id
+  instance_ids           = [volcenginecc_ecs_instance.main.instance_id]
+  repeat_mode            = "Once"
+  timeout                = 60
+  username               = "root"
+  working_dir            = "/tmp"
+  project_name           = local.project
+  tags                   = local.tags
+}
+
+output "invocation_id" {
+  value = volcenginecc_ecs_invocation.hello.invocation_id
+}

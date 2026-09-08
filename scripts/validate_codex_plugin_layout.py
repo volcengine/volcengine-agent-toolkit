@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote, urlsplit
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -168,10 +169,12 @@ def validate_catalog(
 
     skills_root = REPO_ROOT / "skills"
     unexpected_skill_entries = sorted(
-        path.name for path in skills_root.iterdir() if path.name != "core"
+        path.name
+        for path in skills_root.iterdir()
+        if path.name not in {"core", "specialized"}
     )
     if unexpected_skill_entries:
-        error(f"skills/ may contain only core/, got {unexpected_skill_entries}")
+        error(f"skills/ may contain only core/ and specialized/, got {unexpected_skill_entries}")
     authoritative_paths = {
         relative(skill_md.parent)
         for skill_md in (skills_root / "core").rglob("SKILL.md")
@@ -459,6 +462,50 @@ def validate_hardcoded_lists(skill_names: set[str], plugin_names: set[str]) -> N
             error(f"{relative(path)} contains uncatalogued names: {sorted(unknown)}")
 
 
+def validate_markdown_links(paths: list[Path]) -> None:
+    """Check local link targets outside code examples in repository Markdown."""
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        lines = []
+        fence = None
+        for line in text.splitlines():
+            marker = re.match(r"^\s*(`{3,}|~{3,})", line)
+            if marker:
+                token = marker.group(1)
+                if fence is None:
+                    fence = token
+                elif token[0] == fence[0] and len(token) >= len(fence):
+                    fence = None
+                continue
+            if fence is None:
+                lines.append(line)
+        # Inline code may itself demonstrate Markdown link syntax.
+        prose = re.sub(r"(`+).*?\1", "", "\n".join(lines), flags=re.DOTALL)
+        targets = re.findall(r"\]\(\s*(<[^>]+>|[^\s)]+)", prose)
+        targets.extend(re.findall(r"^\s*\[[^\]]+\]:\s*(<[^>]+>|\S+)", prose, re.MULTILINE))
+        for target in targets:
+            target = target.removeprefix("<").removesuffix(">")
+            parts = urlsplit(target)
+            if parts.scheme or target.startswith(("#", "/")):
+                continue
+            local = unquote(parts.path)
+            if local and not (path.parent / local).exists():
+                error(f"{relative(path)} links to missing local path: {target}")
+
+
+def repository_markdown_files() -> list[Path]:
+    listed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=REPO_ROOT, check=True, capture_output=True, text=True,
+    )
+    return sorted({
+        REPO_ROOT / name
+        for name in listed.stdout.split("\0")
+        if Path(name).suffix.lower() in {".md", ".mdc"}
+        and (REPO_ROOT / name).is_file()
+    })
+
+
 def run_json(command: list[str]) -> Any | None:
     completed = subprocess.run(
         command, cwd=REPO_ROOT, capture_output=True, text=True, check=False
@@ -610,7 +657,7 @@ def validate_generated_sync() -> None:
     )
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip()
-        error(f"generated plugin packages are stale: {detail}")
+        error(f"generated skill copies, documentation catalogs, or plugin packages are stale: {detail}")
 
 
 def main() -> None:
@@ -633,6 +680,7 @@ def main() -> None:
     validate_installation_docs(core_skills)
     validate_core_hooks()
     validate_hardcoded_lists(set(skill_map), set(plugin_map))
+    validate_markdown_links(repository_markdown_files())
     validate_finder(skill_map)
     validate_generated_sync()
 
@@ -641,7 +689,7 @@ def main() -> None:
         raise SystemExit(1)
     print(
         f"Validated {len(skill_map)} authoritative skills across {len(plugin_map)} installable plugins; "
-        "core-only discovery and install mappings are consistent."
+        "specialized copies, Markdown links/catalogs, and core-only default installs are consistent."
     )
 
 

@@ -8,32 +8,35 @@ alwaysApply: true
 This repository installs only the core plugin by default. Load core skills from
 `plugins/volcengine-core/skills/<skill-name>/SKILL.md`.
 
+<!-- BEGIN GENERATED: skill-catalog -->
 Core skills:
 
-- `volcengine-cli` — operate cloud resources with the `ve` CLI.
-- `volcengine-troubleshooting` — diagnose Volcengine errors and resource issues.
-- `volcengine-knowledge-search` — search and retrieve official Volcengine documentation.
-- `volcengine-find-skills` — list all core and optional skills for the agent to select and install.
+- `volcengine-cli` — Use the ve CLI to create, query, and manage Volcengine cloud resources.
+- `volcengine-troubleshooting` — Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures.
+- `volcengine-knowledge-search` — Search and fetch official Volcengine documentation with ve docs search/fetch, without login.
+- `volcengine-find-skills` — List all Volcengine skills so an agent can select and install missing capabilities.
 
 Optional catalogued skills:
 
-- `volcengine-sale` — service support plugin; route Volcengine sale intents and delegate to product skills.
-- `volcengine-prepare` — service support plugin; analyze a repository and recommend a deployment shape.
-- `volcengine-deploy` — service support plugin; deploy an application to Volcengine.
-- `volcengine-iac` — service support plugin; manage infrastructure with Terraform.
-- `volcengine-tosutil` — storage plugin; manage TOS buckets and objects.
-- `volcengine-db-supabase` — database plugin; manage Volcengine AI-native BaaS (AIDAP).
-- `volcengine-vefaas` — containers and middleware plugin; manage veFaaS applications.
-- `volcengine-compliance` — security plugin; assess and improve compliance posture.
-- `volcengine-landing-zone` — identity and access control plugin; establish landing zones and baselines.
-- `volcengine-api` — service support plugin; query Volcengine API specifications.
-- `volcengine-sdk-generator` — service support plugin; generate runnable SDK examples.
+- `volcengine-tosutil` — `volcengine-storage`; Manage TOS buckets and objects with the tosutil command-line tool.
+- `volcengine-db-supabase` — `volcengine-database`; Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions.
+- `volcengine-vefaas` — `volcengine-containers-middleware`; Deploy and manage serverless applications on Volcengine veFaaS.
+- `volcengine-compliance` — `volcengine-security`; Recommend compliance baselines, report posture, and author custom Rego compliance rules.
+- `volcengine-landing-zone` — `volcengine-identity-access-control`; Consult, set up, and manage Volcengine landing zones and account baselines.
+- `volcengine-sale` — `volcengine-service-support`; Route Volcengine product sale/purchase intents and delegate to the owning skill.
+- `volcengine-prepare` — `volcengine-service-support`; Analyze a repository and recommend ECS, VKE, or veFaaS deployment shapes.
+- `volcengine-deploy` — `volcengine-service-support`; Deploy a local directory or Git repository to Volcengine.
+- `volcengine-iac` — `volcengine-service-support`; Manage Volcengine infrastructure with Terraform and infrastructure as code.
+- `volcengine-api` — `volcengine-service-support`; Query Volcengine API specifications, parameters, errors, and response structures.
+- `volcengine-sdk-generator` — `volcengine-service-support`; Generate accurate, runnable Volcengine SDK examples in supported languages.
+<!-- END GENERATED: skill-catalog -->
 
 When an optional skill is needed, or an active Volcengine task exceeds the capabilities of the
 currently loaded or installed skills, load `volcengine-find-skills` and follow its discovery and
 installation workflow. Do not treat a catalogued optional skill as installed merely because its
-source exists inside another plugin in this repository. Install the exact selected skills, not
-their owning plugins.
+source exists inside another plugin or has a generated copy under
+`skills/specialized/<domain>/<skill-name>/` in this repository. Categories follow plugin names
+without the `volcengine-` prefix. Install the exact selected skills, not their owning plugins.
 
 Trigger on Volcengine / 火山引擎 / 火山 keywords, `ve` commands, or
 `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` / `VOLCENGINE_REGION` usage.

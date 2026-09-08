@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://volcengine.example/landing-zone/account-factory/baseline.schema.json",
+  "title": "Account Factory Baseline Execution Plan",
+  "description": "Schema for account factory baseline execution plans. Descriptions in this schema act as inline guidance that the agent should follow when generating or applying a baseline plan.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "baselines"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique plan name. This is the logical identity used in summaries and run records."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable purpose of the baseline plan."
+    },
+    "variables": {
+      "type": "object",
+      "description": "Global variable declarations referenced by baseline inputs. Keys are variable names.",
+      "default": {},
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Explain what the variable controls."
+          },
+          "required": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the variable must be collected before any enabled baseline can run."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "number",
+              "integer",
+              "boolean",
+              "array",
+              "object"
+            ],
+            "description": "Optional variable type hint for the agent or future validators."
+          },
+          "default": {
+            "description": "Optional default value used when the variable is omitted."
+          }
+        }
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered baseline declarations. The agent turns these entries into a serial execution plan and resolves dependencies before apply.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "package",
+          "enabled"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique baseline instance name within the plan and run record."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional summary shown to users before apply."
+          },
+          "package": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Package identifier. The agent resolves packages by name. Workspace packages under account-factory/baselines/ override built-in packages under blueprints/account-factory/baselines/ when both exist."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Only enabled baselines participate in variable collection and execution planning."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Optional preferred execution order. Lower numbers run earlier after dependency sorting."
+          },
+          "depends_on": {
+            "type": "array",
+            "description": "Optional baseline names that must complete successfully before this baseline runs.",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "default": []
+          },
+          "on_failure": {
+            "type": "string",
+            "enum": [
+              "stop"
+            ],
+            "default": "stop",
+            "description": "Failure policy for this baseline. Only stop is supported in the current workflow."
+          },
+          "inputs": {
+            "type": "object",
+            "description": "Direct values for the baseline package input variables. Each key is an input variable name and each value is assigned directly to that baseline package. Values may embed variable references using the exact string form {{ variable_name }}, resolved against the plan variables and run context before the baseline package is executed.",
+            "default": {},
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}

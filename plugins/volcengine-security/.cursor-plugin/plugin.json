@@ -2,7 +2,7 @@
   "name": "volcengine-security",
   "displayName": "Volcengine Security",
   "description": "Assess and improve security and compliance posture for Volcengine accounts and resources.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"

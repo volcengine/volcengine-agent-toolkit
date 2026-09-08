@@ -17,6 +17,7 @@
 
 ## Plugins
 
+<!-- BEGIN GENERATED: plugin-catalog -->
 | Plugin | 产品分类 | Skills | 默认安装 |
 | --- | --- | --- | --- |
 | `volcengine-core` | 核心 | `volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills` | 是 |
@@ -26,33 +27,38 @@
 | `volcengine-security` | 安全 | `volcengine-compliance` | 否 |
 | `volcengine-identity-access-control` | 身份与访问控制 | `volcengine-landing-zone` | 否 |
 | `volcengine-service-support` | 服务支持 | `volcengine-sale`、`volcengine-prepare`、`volcengine-deploy`、`volcengine-iac`、`volcengine-api`、`volcengine-sdk-generator` | 否 |
+<!-- END GENERATED: plugin-catalog -->
 
 核心插件的 marketplace 策略为 `INSTALLED_BY_DEFAULT`，其他插件均为 `AVAILABLE`。
-`skills/` 下只保留 `core/` 分类；发布工具会自动发现其中的核心 skill。其他 skill 由各自的可选 plugin 直接拥有，不在 `skills/` 下保留副本。
+`skills/core/` 存放核心 skill；`skills/specialized/<domain>/<skill>/` 按产品分类提供可选 skill 副本。
+分类名取自所属 plugin 去掉 `volcengine-` 前缀，例如 `volcengine-database` 对应
+`skills/specialized/database/`。可选 skill 在 plugin 中维护源码，副本由同步脚本生成。
 
 ## Skills
 
+<!-- BEGIN GENERATED: skill-catalog -->
 | Skill | Plugin | 场景 |
 | --- | --- | --- |
-| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | 用 `ve` CLI 创建、查询和管理云资源 |
-| [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 火山引擎故障排查与诊断 |
-| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 检索火山引擎官方文档并获取全文 |
-| [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | 列出全部 skill，供 Agent 选择并安装 |
-| [`volcengine-sale`](./plugins/volcengine-service-support/skills/volcengine-sale/SKILL.md) | `volcengine-service-support` | 火山引擎商品售卖 |
-| [`volcengine-prepare`](./plugins/volcengine-service-support/skills/volcengine-prepare/SKILL.md) | `volcengine-service-support` | 分析仓库并推荐 ECS / VKE / veFaaS 部署形态 |
-| [`volcengine-deploy`](./plugins/volcengine-service-support/skills/volcengine-deploy/SKILL.md) | `volcengine-service-support` | 将本地目录或 Git 仓库部署到火山引擎 |
-| [`volcengine-iac`](./plugins/volcengine-service-support/skills/volcengine-iac/SKILL.md) | `volcengine-service-support` | 使用 Terraform 编排火山引擎基础设施 |
-| [`volcengine-tosutil`](./plugins/volcengine-storage/skills/volcengine-tosutil/SKILL.md) | `volcengine-storage` | 管理 TOS 对象存储资源 |
-| [`volcengine-db-supabase`](./plugins/volcengine-database/skills/volcengine-db-supabase/SKILL.md) | `volcengine-database` | 管理 AI 原生 BaaS 平台 Supabase 版（AIDAP） |
-| [`volcengine-vefaas`](./plugins/volcengine-containers-middleware/skills/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | 部署和管理 veFaaS Serverless 应用 |
-| [`volcengine-compliance`](./plugins/volcengine-security/skills/volcengine-compliance/SKILL.md) | `volcengine-security` | 推荐合规基线、汇总态势并编写自定义规则 |
-| [`volcengine-landing-zone`](./plugins/volcengine-identity-access-control/skills/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | Landing Zone、账号工厂与治理基线 |
-| [`volcengine-api`](./plugins/volcengine-service-support/skills/volcengine-api/SKILL.md) | `volcengine-service-support` | 查询 API 参数、错误码和返回结构 |
-| [`volcengine-sdk-generator`](./plugins/volcengine-service-support/skills/volcengine-sdk-generator/SKILL.md) | `volcengine-service-support` | 生成可运行的多语言 SDK 示例 |
+| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | 使用 ve CLI 创建、查询和管理火山引擎云资源。 |
+| [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 诊断火山引擎错误、资源状态、配额、指标与 OpenAPI 故障。 |
+| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。 |
+| [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | 列出全部火山引擎技能，供 Agent 选择并安装当前缺失的能力。 |
+| [`volcengine-tosutil`](./skills/specialized/storage/volcengine-tosutil/SKILL.md) | `volcengine-storage` | 使用 tosutil 命令行工具管理 TOS 桶和对象。 |
+| [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | 管理火山引擎 AI 原生 BaaS Supabase 工作区、SQL、Auth、Realtime 与 Edge Functions。 |
+| [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | 在火山引擎 veFaaS 上部署和管理 Serverless 应用。 |
+| [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | 推荐合规基线、汇总合规态势并编写自定义 Rego 合规规则。 |
+| [`volcengine-landing-zone`](./skills/specialized/identity-access-control/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | 咨询、搭建和管理火山引擎 Landing Zone 与账号基线。 |
+| [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | 识别火山商品售卖意图并移交给具体产品 skill 完成开通与查询。 |
+| [`volcengine-prepare`](./skills/specialized/service-support/volcengine-prepare/SKILL.md) | `volcengine-service-support` | 分析代码仓库并推荐 ECS、VKE 或 veFaaS 部署形态。 |
+| [`volcengine-deploy`](./skills/specialized/service-support/volcengine-deploy/SKILL.md) | `volcengine-service-support` | 将本地目录或 Git 仓库部署到火山引擎。 |
+| [`volcengine-iac`](./skills/specialized/service-support/volcengine-iac/SKILL.md) | `volcengine-service-support` | 使用 Terraform 和基础设施即代码管理火山引擎资源。 |
+| [`volcengine-api`](./skills/specialized/service-support/volcengine-api/SKILL.md) | `volcengine-service-support` | 查询火山引擎 API 规格、参数、错误码和返回结构。 |
+| [`volcengine-sdk-generator`](./skills/specialized/service-support/volcengine-sdk-generator/SKILL.md) | `volcengine-service-support` | 生成准确、可运行的多语言火山引擎 SDK 示例。 |
+<!-- END GENERATED: skill-catalog -->
 
 ## 默认安装
 
-### Finder 设计
+### 按需发现与安装
 
 `volcengine-find-skills` 内置唯一 catalog，覆盖全部 core skill 和所有可选 plugin skill：
 
@@ -96,7 +102,7 @@ npx skills add volcengine/volcengine-skills \
   --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills
 ```
 
-后续可由 finder 调用 `npx skills add --skill` 精确安装单个或多个 skill。如需一次安装 catalog 中的全部 skill：
+后续可由 finder 调用 `npx skills add --skill` 精确安装单个或多个 skill。如需交互选择仓库内的 skill：
 
 ```bash
 npx skills add volcengine/volcengine-skills --full-depth
@@ -141,14 +147,21 @@ gemini skills list
 ```text
 volcengine-skills/
 ├── skills/
-│   └── core/                         # CLI 默认安装的核心 skill
+│   ├── core/                         # CLI 默认安装的核心 skill 源码
+│   └── specialized/
+│       └── <domain>/
+│           └── volcengine-<name>/    # 对应可选 plugin 的生成副本
 ├── plugins/
 │   ├── volcengine-core/              # 默认核心 plugin，复制 skills/core 并保留 hooks
 │   └── volcengine-<domain>/          # 可选 plugin，也是其 skill 的唯一源码
 └── .agents/plugins/marketplace.json
 ```
 
-`skills/core/` 是核心 skill 的规范源码；可选 skill 直接在所属 plugin 中维护。同步脚本只复制 core、生成 manifest 和 marketplace。修改或新增 skill 后运行：
+`skills/core/` 是核心 skill 的规范源码；可选 skill 直接在所属 plugin 中维护。
+同步脚本复制核心与专项 skill，并生成 manifest、marketplace，以及 README / Gemini / Cursor 中的技能清单。
+生成副本和 `BEGIN GENERATED` / `END GENERATED` 标记间的清单由脚本维护。
+CLI 默认发布包仍只包含核心 skill；需要专项能力时按名称安装对应 skill。
+修改或新增 skill 后运行：
 
 ```bash
 python3 scripts/sync_plugins.py

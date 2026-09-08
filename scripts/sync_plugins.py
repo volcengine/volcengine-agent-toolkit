@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synchronize core packaging and plugin manifests from the authoritative skill catalog."""
+"""Synchronize skill copies, documentation catalogs, and plugin manifests."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import json
 import re
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -137,6 +138,9 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
                 continue
             skill_name = skill.get("name")
             source_path = skill.get("path")
+            for field in ("summary", "summary_zh"):
+                if not isinstance(skill.get(field), str) or not skill[field].strip():
+                    errors.append(f"skill {skill_name} has invalid {field}")
             if not isinstance(skill_name, str) or not NAME_RE.fullmatch(skill_name):
                 errors.append(f"invalid skill name in {name}: {skill_name!r}")
                 continue
@@ -189,10 +193,14 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
             f"expected only {CORE_PLUGIN} to be default, got {default_plugins}"
         )
     unexpected_skill_entries = sorted(
-        path.name for path in skills_root.iterdir() if path.name != "core"
+        path.name
+        for path in skills_root.iterdir()
+        if path.name not in {"core", "specialized"}
     )
     if unexpected_skill_entries:
-        errors.append(f"skills/ may contain only core/, got {unexpected_skill_entries}")
+        errors.append(
+            f"skills/ may contain only core/ and specialized/, got {unexpected_skill_entries}"
+        )
     authoritative_paths = {
         skill_md.parent.relative_to(REPO_ROOT).as_posix()
         for skill_md in core_dir.rglob("SKILL.md")
@@ -495,6 +503,163 @@ def sync_core_support(check: bool, mismatches: list[str]) -> None:
             shutil.copy2(source, target)
 
 
+def specialized_skill_path(plugin_name: str, skill_name: str) -> Path:
+    if (
+        not NAME_RE.fullmatch(plugin_name)
+        or plugin_name == CORE_PLUGIN
+        or not NAME_RE.fullmatch(skill_name)
+    ):
+        raise ValueError(f"invalid specialized skill: {plugin_name}/{skill_name}")
+    return Path("skills", "specialized", plugin_name.removeprefix("volcengine-"), skill_name)
+
+
+def sync_specialized_skill_tree(
+    catalog: dict[str, Any], check: bool, mismatches: list[str]
+) -> None:
+    skills_root = REPO_ROOT / "skills"
+    destination = skills_root / "specialized"
+    ensure_safe_output(destination)
+    if skills_root.is_symlink() or any(
+        path.is_symlink() for path in destination.rglob("*")
+    ):
+        raise ValueError("specialized sync directories must not contain symlinks")
+
+    sources: dict[Path, Path] = {}
+    for plugin in catalog["plugins"]:
+        if plugin.get("default"):
+            continue
+        plugin_root = safe_plugin_root(plugin["name"])
+        for skill in plugin["skills"]:
+            relative = specialized_skill_path(plugin["name"], skill["name"])
+            source = REPO_ROOT / skill["path"]
+            expected = plugin_root / "skills" / skill["name"]
+            if (
+                source != expected
+                or source.parent.is_symlink()
+                or source.is_symlink()
+                or not (source / "SKILL.md").is_file()
+                or any(path.is_symlink() for path in source.rglob("*"))
+            ):
+                raise ValueError(f"invalid specialized source: {skill['path']}")
+            sources[relative.relative_to("skills/specialized")] = source
+
+    if check:
+        expected_files = {
+            (relative / name).as_posix(): digest
+            for relative, source in sources.items()
+            for name, digest in tree_hashes(source).items()
+        }
+        actual_files = tree_hashes(destination)
+        for name in sorted(expected_files.keys() | actual_files.keys()):
+            if expected_files.get(name) != actual_files.get(name):
+                mismatches.append(f"skills/specialized/{name} is not synced from its plugin")
+        expected_dirs = {
+            parent.as_posix()
+            for name in expected_files
+            for parent in Path(name).parents
+            if parent != Path(".")
+        } | {
+            (relative / path.relative_to(source)).as_posix()
+            for relative, source in sources.items()
+            for path in source.rglob("*")
+            if path.is_dir()
+        }
+        actual_dirs = {
+            path.relative_to(destination).as_posix()
+            for path in destination.rglob("*")
+            if path.is_dir()
+        }
+        if actual_dirs != expected_dirs:
+            mismatches.append("skills/specialized categories and skill directories differ from catalog")
+        return
+
+    with tempfile.TemporaryDirectory(prefix=".specialized-sync-", dir=skills_root) as staging:
+        temporary = Path(staging) / "specialized"
+        temporary.mkdir()
+        for relative, source in sources.items():
+            shutil.copytree(source, temporary / relative)
+        if destination.exists():
+            shutil.rmtree(destination)
+        temporary.rename(destination)
+
+
+def markdown_cell(value: str) -> str:
+    return " ".join(value.split()).replace("|", r"\|")
+
+
+def generated_document_sections(catalog: dict[str, Any]) -> dict[Path, dict[str, str]]:
+    documents = {}
+    for filename, chinese in (("README.md", True), ("README_en.md", False)):
+        plugins = [
+            "| Plugin | 产品分类 | Skills | 默认安装 |" if chinese
+            else "| Plugin | Product domain | Skills | Default |",
+            "| --- | --- | --- | --- |",
+        ]
+        skills = [
+            "| Skill | Plugin | 场景 |" if chinese else "| Skill | Plugin | Use case |",
+            "| --- | --- | --- |",
+        ]
+        for plugin in catalog["plugins"]:
+            names = ("、" if chinese else ", ").join(
+                f"`{skill['name']}`" for skill in plugin["skills"]
+            )
+            domain = markdown_cell(plugin["domain" if chinese else "domain_en"])
+            default = ("是" if chinese else "Yes") if plugin.get("default") else ("否" if chinese else "No")
+            plugins.append(f"| `{plugin['name']}` | {domain} | {names} | {default} |")
+            for skill in plugin["skills"]:
+                path = (
+                    Path(skill["path"]) if plugin.get("default")
+                    else specialized_skill_path(plugin["name"], skill["name"])
+                )
+                summary = markdown_cell(skill["summary_zh" if chinese else "summary"])
+                skills.append(
+                    f"| [`{skill['name']}`](./{path.as_posix()}/SKILL.md) | `{plugin['name']}` | {summary} |"
+                )
+        documents[REPO_ROOT / filename] = {
+            "plugin-catalog": "\n".join(plugins),
+            "skill-catalog": "\n".join(skills),
+        }
+
+    host_skills = []
+    for core, heading in ((True, "Core skills:"), (False, "Optional catalogued skills:")):
+        host_skills.extend([heading, ""])
+        for plugin in catalog["plugins"]:
+            if bool(plugin.get("default")) != core:
+                continue
+            for skill in plugin["skills"]:
+                owner = "" if core else f"`{plugin['name']}`; "
+                host_skills.append(f"- `{skill['name']}` — {owner}{markdown_cell(skill['summary'])}")
+        host_skills.append("")
+    for path in (REPO_ROOT / "GEMINI.md", REPO_ROOT / ".cursor/rules/volcengine-skills.mdc"):
+        documents[path] = {"skill-catalog": "\n".join(host_skills).strip()}
+    return documents
+
+
+def sync_document_sections(
+    documents: dict[Path, dict[str, str]], check: bool, mismatches: list[str]
+) -> None:
+    for path, sections in documents.items():
+        ensure_safe_output(path)
+        text = path.read_text(encoding="utf-8")
+        expected = text
+        for name, content in sections.items():
+            start = f"<!-- BEGIN GENERATED: {name} -->"
+            end = f"<!-- END GENERATED: {name} -->"
+            if expected.count(start) != 1 or expected.count(end) != 1:
+                raise ValueError(f"{path.relative_to(REPO_ROOT)} must contain one {name} marker pair")
+            before, remainder = expected.split(start)
+            if end not in remainder:
+                raise ValueError(f"reversed {name} markers in {path.relative_to(REPO_ROOT)}")
+            _, after = remainder.split(end)
+            expected = f"{before}{start}\n{content}\n{end}{after}"
+        if text == expected:
+            continue
+        if check:
+            mismatches.append(f"{path.relative_to(REPO_ROOT)} catalogs are not synced")
+        else:
+            path.write_text(expected, encoding="utf-8")
+
+
 def sync_json_files(
     outputs: dict[Path, dict[str, Any]], check: bool, mismatches: list[str]
 ) -> None:
@@ -525,17 +690,19 @@ def main() -> None:
         raise ValueError("package.json version must be a non-empty string")
     mismatches: list[str] = []
     sync_core_skill_tree(catalog, args.check, mismatches)
+    sync_specialized_skill_tree(catalog, args.check, mismatches)
     sync_core_support(args.check, mismatches)
     sync_json_files(generated_json(catalog, version), args.check, mismatches)
+    sync_document_sections(generated_document_sections(catalog), args.check, mismatches)
 
     if mismatches:
         for mismatch in mismatches:
             print(f"ERROR: {mismatch}", file=sys.stderr)
         raise SystemExit(1)
     if args.check:
-        print("Plugin packages are synchronized with the authoritative catalog.")
+        print("Plugin packages, specialized copies, and documentation catalogs are synchronized.")
     else:
-        print(f"Synchronized {len(catalog['plugins'])} plugin packages.")
+        print(f"Synchronized {len(catalog['plugins'])} plugin packages, specialized copies, and documentation catalogs.")
 
 
 if __name__ == "__main__":
