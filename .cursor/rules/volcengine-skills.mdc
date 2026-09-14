@@ -11,7 +11,7 @@ This repository installs only the core plugin by default. Load core skills from
 <!-- BEGIN GENERATED: skill-catalog -->
 Core skills:
 
-- `volcengine-cli` — Use the ve CLI to create, query, and manage Volcengine cloud resources.
+- `volcengine-cli` — Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli.
 - `volcengine-troubleshooting` — Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures.
 - `volcengine-knowledge-search` — Search and fetch official Volcengine documentation with ve docs search/fetch, without login.
 - `volcengine-find-skills` — List all Volcengine skills so an agent can select and install missing capabilities.

@@ -8,13 +8,16 @@ description: >-
   "set up a VPC", "list security groups", "allocate an EIP". Also trigger on Chinese prompts
   mentioning "火山引擎" or "火山" (e.g., "火山引擎上有哪些 ECS"、"查一下我火山的云服务器"、
   "火山引擎创建一个 VPC"、"火山的 Redis 实例列一下"). Also trigger when the user encounters
-  errors from `ve` commands and needs troubleshooting help.
+  errors from `ve` commands and needs troubleshooting help. Also use for TOS bucket/object operations,
+  tosutil (sometimes written tosutils), and Ark CLI / arkcli model discovery, inference, generation,
+  endpoints, fine-tuning, plans, or usage through `ve tosutil` and `ve arkcli`.
 license: MIT
 metadata:
   openclaw:
     requires:
       bins:
         - ve
+        - npx
     install:
       - kind: node
         package: "@volcengine/cli"
@@ -66,7 +69,81 @@ metadata:
 
 # Volcengine CLI Skill
 
-Create and manage Volcengine cloud resources by calling Volcengine OpenAPIs through the `ve` command.
+Use `ve` as the unified entry point for Volcengine OpenAPIs, TOS object operations, and Ark product workflows.
+
+## Product CLI routing
+
+**Version requirement:** Before any skill uses `ve` to delegate to another CLI, including
+`ve tosutil` or `ve arkcli`, run `ve version` and require **`ve >= 1.1.9`** (stable releases
+`1.1.9` or newer). If the version is older than `1.1.9`, or cannot be verified, install/upgrade
+as described in §0 and check again before delegation. The presence of a proxy command in
+`--help` alone does not satisfy this requirement.
+
+When `ve` is available, prefer **`ve tosutil`** and **`ve arkcli`**, even when a standalone
+`tosutil` or `arkcli` is also installed. The TOS command is spelled `tosutil`; `toscli` is a
+compatibility alias. The existing TOS skill is named `volcengine-tosutil` (not `volcengine-tosutils`).
+
+| Task | Entry point | Read before use |
+| --- | --- | --- |
+| General cloud resource OpenAPIs | `ve <service> <Action>` | Native API workflow in §§1–5 |
+| TOS buckets, objects and transfers | `ve tosutil <command>` | Use `volcengine-find-skills` to find `volcengine-tosutil`, install it if missing, and read its instructions |
+| Ark models, inference, generation, Endpoints, fine-tuning, plans and usage | `ve arkcli <command>` | Download and read the relevant [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills) as below |
+
+For TOS, follow the finder's `list` → select exact `volcengine-tosutil` → install if missing →
+verify installation flow. Load the installed skill and the references it selects before executing.
+Use its native tosutil command examples, replacing `tosutil ...` with `ve tosutil ...`.
+
+For Ark, select the task skill from the official repository above and install it with
+`arkcli-shared` and the dependencies its instructions require. These upstream `arkcli-*` names
+are not entries in the local Volcengine finder catalog; install from the Ark repository directly.
+For example, model discovery on Codex:
+
+```bash
+npx --yes skills add https://github.com/volcengine/ark-cli \
+  --skill arkcli-shared arkcli-auth arkcli-models --agent codex --yes --copy --full-depth
+npx --yes skills list --agent codex --json
+```
+
+Use the actual host's `--agent` and task skill names. Installation is project-scoped by default;
+add `--global` to both commands only for an intended user-level install. Verify the names and
+read the installed `arkcli-shared/SKILL.md`, the task skill, and its selected references before
+execution. If the host cannot load newly installed skills, start a new conversation carrying
+the original task and completed context, as the finder instructs. Keep product instructions in
+those skills; this skill only routes to them.
+
+`arkcli` and `tosutil` are transparent delegated CLIs: replace only the executable prefix in
+their examples, keeping all later arguments unchanged. They retain their own authentication,
+profile, parameters, output, and exit codes. Native API rules such as `--output`, `--query`,
+`--force`, `--detail`, PascalCase parameters and `--DryRun` do **not** carry over.
+
+- Put supported child flags after the child command. `ve --profile <name> arkcli ...` is invalid;
+  `ve arkcli ... --profile <name>` selects an **Ark** profile, not a `ve` profile.
+- Follow the product skill's authentication, flags, output handling and per-command environment
+  prefixes. Only change `tosutil ...` / `arkcli ...` into `ve tosutil ...` / `ve arkcli ...`;
+  keep any environment assignments before `ve` and all arguments after the child name unchanged.
+- A working `ve sts GetCallerIdentity` does not prove either child is authenticated. Follow the
+  selected product skill. Help, version, and local preview tasks do not require native API login.
+- `ve` may refresh its current Console Login session before delegation; that does not translate
+  all `ve` credentials or profile settings into child configuration. A refresh warning alone
+  does not establish that the child command failed.
+
+### Product CLI installation and upgrade
+
+`ve` resolves the child from `PATH`, then its managed directory, and installs a missing child
+on first use from the official CDN with checksum verification. A separate product installation
+is not a prerequisite. Check only the child needed for the task:
+
+```bash
+ve tosutil version
+ve tosutil help
+ve arkcli --version
+ve arkcli --help
+```
+
+Upgrade a managed child with `ve proxycli upgrade tosutil` or `ve proxycli upgrade arkcli`.
+These commands leave external installations on `PATH` to their original package manager;
+upgrading `ve` alone does not upgrade them. If a child command is missing from `ve --help`,
+upgrade `ve` first. Product flags and available capabilities follow the resolved child's help.
 
 ---
 
@@ -92,11 +169,14 @@ The same script ships as `scripts/install_ve.sh`. It reads the latest version fr
 
 **Option 3: GitHub Releases** — https://github.com/volcengine/volcengine-cli/releases
 
-**Capability check** (instead of comparing version numbers): `ve login --help` must list `--no-browser`, and `ve ecs DescribeInstances --help` must list `--output` under *System Flags*. If either is missing, upgrade with `npm i -g @volcengine/cli@latest` or rerun the CDN installer, then continue.
+**Native OpenAPI capability checks:** `ve login --help` must list `--no-browser`, and `ve ecs DescribeInstances --help` must list `--output` under *System Flags*. If either is missing, upgrade with `npm i -g @volcengine/cli@latest` or rerun the CDN installer, then continue. These checks do not replace the version requirement in [Product CLI routing](#product-cli-routing).
 
 ---
 
-## 1. Initialization (run at the start of every session)
+## 1. Native OpenAPI initialization (for API calls)
+
+This section applies to `ve <service> <Action>` and extension helpers. For delegated product
+commands, first follow [Product CLI routing](#product-cli-routing) and the selected product skill.
 
 ### CLI system flags
 
@@ -386,7 +466,7 @@ Rules of thumb:
 
 ### Error Handling
 
-Whenever a `ve` command or extension helper fails, or a response contains `ResponseMetadata.Error`, read [references/common-errors.md](references/common-errors.md) completely before diagnosing the error or responding to the user. Partial searches, matched lines, or excerpts do not satisfy this requirement.
+Whenever a native `ve <service> <Action>` command or extension helper fails, or a response contains `ResponseMetadata.Error`, read [references/common-errors.md](references/common-errors.md) completely before diagnosing the error or responding to the user. Partial searches, matched lines, or excerpts do not satisfy this requirement. For `ve tosutil` / `ve arkcli` failures, follow the selected product skill and native child error format.
 
 First classify the error as request-format, missing dependency, account state, service activation, real-name verification, purchase qualification, or permission related. For product-specific errors, also read the matching service note below. For permission errors (`AccessDenied`, `NoPermission`, `RoleNotExist`, `Forbidden`, or STS-related failures), activate the `volcengine-troubleshooting` skill and use its account-permission diagnosis capability to locate the root cause and guide the user through remediation.
 
@@ -417,7 +497,7 @@ done
 
 ---
 
-## 5. End-to-End Execution Flow (Summary)
+## 5. Native OpenAPI Execution Flow (Summary)
 
 ```text
 1. Initialize: verify credentials -> GetCallerIdentity -> confirm region
@@ -448,7 +528,7 @@ Consult or update the corresponding notes file when encountering service-specifi
 - veFaaS: [references/vefaas.md](references/vefaas.md)
 - RDS: [references/rds.md](references/rds.md)
 - Message Queue: [references/mq.md](references/mq.md)
-- Storage: [references/storage.md](references/storage.md)
+- Storage APIs: [references/storage.md](references/storage.md)
 - Observability: [references/observability.md](references/observability.md)
 - DNS/Edge: [references/dns-edge.md](references/dns-edge.md)
 - IAM: [references/iam.md](references/iam.md)

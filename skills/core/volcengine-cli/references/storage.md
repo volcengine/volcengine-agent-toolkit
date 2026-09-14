@@ -1,21 +1,12 @@
 # Storage Service Notes
 
-## TOS Is Not Available in This ve Build
+## TOS Product CLI
 
-The current `ve` command list does not include `tos`. Running `ve tos --help` returns `unknown command`.
-
-Do not troubleshoot TOS bucket operations as CLI parameter mistakes in this environment; there is no matching `ve tos` command to validate.
-
-Use `tosutil` for TOS bucket/object operations when it is installed. Verified local `tosutil v4.1.4` help exposes:
-
-```bash
-tosutil mb tos://bucket-name -acl=private -sc=STANDARD
-tosutil cp ./dist/app.tar.gz tos://bucket-name/artifacts/app.tar.gz
-tosutil presign tos://bucket-name/artifacts/app.tar.gz -vp=15min
-tosutil stat tos://bucket-name/artifacts/app.tar.gz
-```
-
-If a deployment path cannot require `tosutil`, keep it optional and provide SSH/scp or user-provided artifact URL fallback.
+Use `ve tosutil` for TOS bucket and object operations. Follow
+[Product CLI routing](../SKILL.md#product-cli-routing) to find and load `volcengine-tosutil`
+through `volcengine-find-skills`, then follow that skill with the `ve` command prefix.
+This is a delegated product CLI, independent of whether native OpenAPI metadata exposes
+a `tos` service. `ve` can install the child on demand; standalone `tosutil` is not required.
 
 ## File-System Creation Is Billable
 
