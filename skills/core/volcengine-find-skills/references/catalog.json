@@ -153,10 +153,13 @@
       "domain": "安全",
       "domain_en": "Security",
       "default": false,
-      "description": "Assess and improve security and compliance posture for Volcengine accounts and resources.",
-      "short_description": "Assess Volcengine security and compliance posture",
-      "keywords": ["安全", "security", "compliance", "合规", "配置审计", "rego"],
-      "default_prompts": ["Review this Volcengine account's compliance posture."],
+      "description": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources.",
+      "short_description": "Assess compliance and manage CloudTrail audit data",
+      "keywords": ["安全", "security", "compliance", "合规", "配置审计", "rego", "cloudtrail", "cloud_trail", "操作审计", "审计日志", "backfill", "补投"],
+      "default_prompts": [
+        "Review this Volcengine account's compliance posture.",
+        "Investigate these Volcengine audit events and safely manage the relevant CloudTrail."
+      ],
       "skills": [
         {
           "name": "volcengine-compliance",
@@ -164,6 +167,13 @@
           "summary": "Recommend compliance baselines, report posture, and author custom Rego compliance rules.",
           "summary_zh": "推荐合规基线、汇总合规态势并编写自定义 Rego 合规规则。",
           "keywords": ["compliance", "合规", "配置审计", "conformance pack", "rego", "等保", "security"]
+        },
+        {
+          "name": "volcengine-cloud-trail",
+          "path": "plugins/volcengine-security/skills/volcengine-cloud-trail",
+          "summary": "Query CloudTrail audit logs and manage trails and backfill delivery tasks.",
+          "summary_zh": "查询操作审计日志，并管理跟踪和历史补投任务。",
+          "keywords": ["cloudtrail", "cloud_trail", "操作审计", "审计日志", "trail", "跟踪", "backfill", "补投", "security"]
         }
       ]
     },

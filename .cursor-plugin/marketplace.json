@@ -31,7 +31,7 @@
     {
       "name": "volcengine-security",
       "source": "./plugins/volcengine-security",
-      "description": "Assess and improve security and compliance posture for Volcengine accounts and resources."
+      "description": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources."
     },
     {
       "name": "volcengine-identity-access-control",

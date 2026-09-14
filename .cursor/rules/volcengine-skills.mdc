@@ -22,6 +22,7 @@ Optional catalogued skills:
 - `volcengine-db-supabase` — `volcengine-database`; Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions.
 - `volcengine-vefaas` — `volcengine-containers-middleware`; Deploy and manage serverless applications on Volcengine veFaaS.
 - `volcengine-compliance` — `volcengine-security`; Recommend compliance baselines, report posture, and author custom Rego compliance rules.
+- `volcengine-cloud-trail` — `volcengine-security`; Query CloudTrail audit logs and manage trails and backfill delivery tasks.
 - `volcengine-landing-zone` — `volcengine-identity-access-control`; Consult, set up, and manage Volcengine landing zones and account baselines.
 - `volcengine-sale` — `volcengine-service-support`; Route Volcengine product sale/purchase intents and delegate to the owning skill.
 - `volcengine-prepare` — `volcengine-service-support`; Analyze a repository and recommend ECS, VKE, or veFaaS deployment shapes.

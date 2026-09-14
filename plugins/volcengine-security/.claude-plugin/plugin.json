@@ -1,6 +1,6 @@
 {
   "name": "volcengine-security",
-  "description": "Assess and improve security and compliance posture for Volcengine accounts and resources.",
+  "description": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources.",
   "version": "1.2.1",
   "author": {
     "name": "Volcengine Team"
@@ -17,7 +17,14 @@
     "合规",
     "配置审计",
     "rego",
-    "volcengine-compliance"
+    "cloudtrail",
+    "cloud_trail",
+    "操作审计",
+    "审计日志",
+    "backfill",
+    "补投",
+    "volcengine-compliance",
+    "volcengine-cloud-trail"
   ],
   "skills": [
     "./skills/"

@@ -25,7 +25,7 @@ skills are grouped into Volcengine product-domain plugins and discovered through
 | `volcengine-storage` | Storage | `volcengine-tosutil` | No |
 | `volcengine-database` | Database | `volcengine-db-supabase` | No |
 | `volcengine-containers-middleware` | Containers and Middleware | `volcengine-vefaas` | No |
-| `volcengine-security` | Security | `volcengine-compliance` | No |
+| `volcengine-security` | Security | `volcengine-compliance`, `volcengine-cloud-trail` | No |
 | `volcengine-identity-access-control` | Identity and Access Control | `volcengine-landing-zone` | No |
 | `volcengine-service-support` | Service Support | `volcengine-sale`, `volcengine-prepare`, `volcengine-deploy`, `volcengine-iac`, `volcengine-api`, `volcengine-sdk-generator` | No |
 <!-- END GENERATED: plugin-catalog -->
@@ -49,6 +49,7 @@ are maintained in their plugins; the sync script generates the copies.
 | [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions. |
 | [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | Deploy and manage serverless applications on Volcengine veFaaS. |
 | [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | Recommend compliance baselines, report posture, and author custom Rego compliance rules. |
+| [`volcengine-cloud-trail`](./skills/specialized/security/volcengine-cloud-trail/SKILL.md) | `volcengine-security` | Query CloudTrail audit logs and manage trails and backfill delivery tasks. |
 | [`volcengine-landing-zone`](./skills/specialized/identity-access-control/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | Consult, set up, and manage Volcengine landing zones and account baselines. |
 | [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | Route Volcengine product sale/purchase intents and delegate to the owning skill. |
 | [`volcengine-prepare`](./skills/specialized/service-support/volcengine-prepare/SKILL.md) | `volcengine-service-support` | Analyze a repository and recommend ECS, VKE, or veFaaS deployment shapes. |

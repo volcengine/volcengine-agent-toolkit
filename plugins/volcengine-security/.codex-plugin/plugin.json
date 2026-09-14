@@ -1,7 +1,7 @@
 {
   "name": "volcengine-security",
   "version": "1.2.1",
-  "description": "Assess and improve security and compliance posture for Volcengine accounts and resources.",
+  "description": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources.",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com",
@@ -19,13 +19,20 @@
     "合规",
     "配置审计",
     "rego",
-    "volcengine-compliance"
+    "cloudtrail",
+    "cloud_trail",
+    "操作审计",
+    "审计日志",
+    "backfill",
+    "补投",
+    "volcengine-compliance",
+    "volcengine-cloud-trail"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Volcengine Security",
-    "shortDescription": "Assess Volcengine security and compliance posture",
-    "longDescription": "Assess and improve security and compliance posture for Volcengine accounts and resources.",
+    "shortDescription": "Assess compliance and manage CloudTrail audit data",
+    "longDescription": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources.",
     "developerName": "Volcengine Team",
     "category": "Cloud",
     "capabilities": [
@@ -34,7 +41,8 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Review this Volcengine account's compliance posture."
+      "Review this Volcengine account's compliance posture.",
+      "Investigate these Volcengine audit events and safely manage the relevant CloudTrail."
     ],
     "websiteURL": "https://github.com/volcengine/volcengine-skills",
     "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
