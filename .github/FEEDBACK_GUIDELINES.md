@@ -1,21 +1,21 @@
 # 使用反馈与场景共创 / Feedback guidelines
 
-我们想听到你通过 Agent 使用火山引擎的真实体验：让你兴奋的尝试、没能走通的步骤、期待的新能力，以及已经用起来的好场景。你的经历能帮助用户与开发者一起探索 Agent 管理云的未来。负面反馈同样重要，一句话也可以，不需要完整技术报告。
+我们希望了解你通过 Agent 使用火山引擎时的实际收获、遇到的困难和后续期待。欢迎分享使用问题、能力需求、待支持场景及成功实践，帮助用户与开发者共同改进 Agent 管理云服务的体验。简短描述即可，不需要完整技术报告。
 
-Share what excited you, what was frustrating, what you hope an Agent could do, or a cloud workflow that already works well. Negative feedback is welcome too. A sentence is enough.
+We would like to understand your outcomes, challenges, and expectations when using Volcengine through an Agent. Share usage issues, capability requests, scenarios to support, and successful practices to help users and developers improve the experience together. A brief description is enough; a complete technical report is not required.
 
 ## 写什么 / What to share
 
-[Feedback 表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)除标题外，只需填写“想反馈什么”，并勾选一次公开发布确认。类型与补充信息均可不填。可以分享：
+[Feedback 表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)除标题外，只需填写“反馈内容”。类型与补充信息均为选填。可以分享：
 
-- **skill 问题**：想完成什么、实际发生了什么、希望有什么改进。
-- **新能力**：希望 Agent 能做什么、为什么需要它。
-- **待解决场景**：你的任务、限制或成功标准，不需要先设计方案。
-- **成功案例**：做成了什么、带来了什么价值、适合什么场景。
+- **使用问题**：相关 skill、任务目标、观察结果及期望改进。
+- **能力需求**：希望 Agent 提供的能力及其使用价值。
+- **待支持场景**：任务、约束或成功标准，无需预先设计解决方案。
+- **成功实践**：完成的任务、实际价值及适用场景。
 
-Besides the title, only “What would you like to share?” and one publication confirmation are required. Category and details are optional. Tell us about a skill problem, a new capability, a scenario to support, or a success story.
+Besides the title, only “Feedback” is required. Category and details are optional. You can describe a skill usage issue, a requested capability and its value, a scenario and its constraints, or a successful practice and its outcomes.
 
-写当前已知的信息即可；不必补齐版本、搜索相似 issue、重跑云命令或收集日志。愿意提供的相关细节可以放在补充信息中。
+提供当前已知的信息即可；不必补齐版本、搜索相似 issue、重新运行云命令或收集日志。相关细节可按需填写在补充信息中。
 
 Share what you already know. Version checks, duplicate searches, reruns, and logs are not prerequisites.
 
@@ -29,27 +29,27 @@ GitHub issue、评论和附件是公开内容，请检查正文、截图和附�
 
 Remove credentials, identifying details, addresses, and confidential data. Use placeholders such as `vpc-<id>` or `<account-id>`. Share only authorized, minimal, sanitized excerpts, not raw logs or full Agent conversations.
 
-**请勿在普通 feedback issue 中公开敏感漏洞细节。** 先查看仓库 Security 页面是否提供安全政策或 “Report a vulnerability” 私密入口；若没有，通过火山引擎官方网站或控制台查找已公布的安全报告/支持渠道，确认可私密接收后再提交。不要在渠道尚未确认时发布复现或利用细节。
+**请勿在常规反馈 issue 中公开敏感漏洞细节。** 先查看仓库 Security 页面是否提供安全政策或 “Report a vulnerability” 私密入口；若没有，通过火山引擎官方网站或控制台查找已公布的安全报告或支持渠道，确认可私密接收后再提交。不要在渠道尚未确认时发布复现或利用细节。
 
 **Do not publish sensitive vulnerability details here.** Check the repository's Security page for a policy or private reporting option. Otherwise, find an established security or support channel on Volcengine's official website or console and confirm that it accepts private reports before sharing details.
 
 ## 社区约定 / Community expectations
 
-请遵守 [GitHub Community Guidelines](https://docs.github.com/en/site-policy/github-terms/github-community-guidelines) 及其引用的适用规则，聚焦实际场景、产品行为和改进期待。可以表达失望，也可以尖锐地批评产品、设计或代码；不会因为负面评价本身关闭 issue。
+请遵守 [GitHub Community Guidelines](https://docs.github.com/en/site-policy/github-terms/github-community-guidelines) 及其引用的适用规则。欢迎反馈使用中遇到的问题，请围绕实际场景客观描述，可提供已知的观察结果、相关证据、影响或改进建议。
 
-人身攻击、骚扰、歧视或仇恨言论、威胁、泄露他人隐私等违规内容不被接受；包含此类内容的 issue 会被维护者直接关闭，相关评论按平台能力处理。本仓库未因此新增自动审核或自动关闭流程。
+请避免人身攻击、骚扰、歧视或仇恨言论、威胁、泄露他人隐私等违规内容。包含此类内容的 issue 会被维护者直接关闭，相关评论按 GitHub 平台规则处理。
 
-Follow the GitHub Community Guidelines. Direct criticism of the product, design, or code is welcome; negative feedback alone is not grounds for closure. Maintainers will directly close issues containing personal attacks, harassment, discrimination, hate speech, threats, privacy violations, or other community-rule violations. This policy does not add automated moderation.
+Follow the GitHub Community Guidelines and the applicable rules they reference. Describe issues encountered during use objectively, based on the actual scenario. Include any known observations, supporting evidence, impact, or suggestions for improvement. Maintainers will directly close issues containing personal attacks, harassment, discrimination, hate speech, threats, privacy violations, or other community-rule violations. Related comments are handled under GitHub's platform rules.
 
 ## 通过 Agent 反馈 / Share through your Agent
 
-一句“我想反馈……”就可以开始。Agent 根据已有上下文整理简短的脱敏草稿，一次展示发布目标、标题和正文，让你选择发送、修改或留作草稿。只有你确认具体内容和发布动作后才提交；结果明确为“已发布（链接）”“未提交（草稿）”或“提交未确认（如超时，不盲目重试）”。
+可直接向 Agent 说明反馈内容，例如“我想反馈……”。Agent 根据已有上下文整理简短的脱敏草稿，一次展示发布目标、标题和正文，供你选择发送、修改或保留草稿。只有你确认具体内容和发布动作后才提交；结果明确为“已发布（链接）”“未提交（草稿）”或“提交未确认（如超时，不盲目重试）”。
 
 Start with “I'd like to share some feedback…”. Your Agent drafts a short, sanitized summary from existing context, then shows the destination, title, and body together. Choose to send, edit, or keep the draft. It publishes only after you confirm the content and action, then reports “Published” with a link, “Not submitted” with a draft, or “Submission unconfirmed” after a timeout, without blindly retrying.
 
-反馈完全自愿，永远不阻塞主任务。Agent 可以在合适的结果说明中轻量提醒一次，不反复追问、不自行上传会话或日志。你可以跳过、稍后再写或直接拒绝；缺少工具、无法联网、未登录 GitHub 或提交失败时，也继续主任务。
+反馈完全自愿，始终不阻塞主任务。Agent 可以在合适的结果说明中简短提醒一次，不反复追问、不自行上传会话或日志。你可以跳过、稍后反馈或拒绝；缺少工具、无法联网、未登录 GitHub 或提交失败时，也继续主任务。
 
-Feedback is voluntary and must never block your main task. Agents may offer one brief invitation at a suitable handoff, without repeated prompts or automatic uploads. Skip it, return later, or decline. Missing tools, connectivity, login, or a failed submission must not hold up your work.
+Feedback is voluntary and must never block your main task. Agents may offer one brief invitation in an appropriate summary, without repeated prompts or automatic uploads. You can skip it, respond later, or decline. Missing tools, connectivity, login, or a failed submission must not hold up your work.
 
 反馈用于公开讨论与改进，不是云服务工单，不承诺响应时限或能力排期。正在发生的故障请继续按已有排障流程或官方支持渠道处理。
 

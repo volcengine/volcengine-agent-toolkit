@@ -94,8 +94,8 @@
         {
           "name": "volcengine-feedback",
           "path": "skills/core/volcengine-feedback",
-          "summary": "Draft and submit voluntary, redacted GitHub feedback about skill problems, desired capabilities, real-world scenarios, and success stories without blocking the main task.",
-          "summary_zh": "自愿整理并提交脱敏的 GitHub 反馈，分享 skill 问题、能力愿望、真实场景和成功用法，始终不阻塞主任务。",
+          "summary": "Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task.",
+          "summary_zh": "整理并提交脱敏的 GitHub 使用反馈，涵盖问题、能力需求、实际场景和成功实践，始终不阻塞主任务。",
           "keywords": ["feedback", "反馈", "issue", "bug report", "问题反馈", "feature request", "能力愿望", "能力缺口", "scenario", "真实场景", "success story", "场景分享", "体验", "community", "社区"]
         }
       ]

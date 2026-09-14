@@ -10,7 +10,7 @@ Core skills:
 - `volcengine-troubleshooting` — Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures.
 - `volcengine-knowledge-search` — Search and fetch official Volcengine documentation with ve docs search/fetch, without login.
 - `volcengine-find-skills` — List all Volcengine skills so an agent can select and install missing capabilities.
-- `volcengine-feedback` — Draft and submit voluntary, redacted GitHub feedback about skill problems, desired capabilities, real-world scenarios, and success stories without blocking the main task.
+- `volcengine-feedback` — Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task.
 
 Optional catalogued skills:
 

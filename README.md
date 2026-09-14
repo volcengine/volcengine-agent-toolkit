@@ -48,7 +48,7 @@
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 诊断火山引擎错误、资源状态、配额、指标与 OpenAPI 故障。 |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。 |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | 列出全部火山引擎技能，供 Agent 选择并安装当前缺失的能力。 |
-| [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) | `volcengine-core` | 自愿整理并提交脱敏的 GitHub 反馈，分享 skill 问题、能力愿望、真实场景和成功用法，始终不阻塞主任务。 |
+| [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) | `volcengine-core` | 整理并提交脱敏的 GitHub 使用反馈，涵盖问题、能力需求、实际场景和成功实践，始终不阻塞主任务。 |
 | [`volcengine-tosutil`](./skills/specialized/storage/volcengine-tosutil/SKILL.md) | `volcengine-storage` | 使用 tosutil 命令行工具管理 TOS 桶和对象。 |
 | [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | 管理火山引擎 AI 原生 BaaS Supabase 工作区、SQL、Auth、Realtime 与 Edge Functions。 |
 | [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | 在火山引擎 veFaaS 上部署和管理 Serverless 应用。 |
@@ -152,13 +152,13 @@ gemini skills list
 
 ## 反馈与场景分享
 
-通过 Agent 管理云服务，可能有惊喜，也会遇到挫折和“如果还能做到这个就好了”的时刻。欢迎分享当前 skill 的问题、希望新增的能力、尚未解决的真实场景，以及已经跑通的有价值用法。一次具体的目标、实际结果和期待，就能帮助开发者与你一起改进 Agent 使用云服务的未来；不必先定位根因，也不必写完整报告。
+我们希望了解你通过 Agent 使用火山引擎时的实际收获、遇到的困难和后续期待。欢迎分享当前 skill 的使用问题、能力需求、待支持场景及成功实践，帮助用户与开发者共同改进 Agent 管理云服务的体验。描述任务目标、实际结果或期望改进即可，不必先定位根因或准备完整报告。
 
-说一句“用 volcengine-feedback 帮我反馈：……”即可。默认核心 skill [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) 会从已有上下文整理简短草稿，你看过后选择发送、修改或先留着。无需先准备日志、版本或完整报告；发布成功后返回 issue 链接，继续原任务。
+可直接说明“用 volcengine-feedback 帮我反馈：……”。默认核心 skill [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) 会根据已有上下文整理简短的脱敏草稿，供你审阅后选择发送、修改或保留草稿。无需先准备日志、版本或完整报告；发布成功后返回 issue 链接，继续原任务。
 
-也可以直接填写 [Feedback issue 表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)：只需描述想反馈的内容，分类和补充信息均选填。旧版本或未加载该 skill 的环境同样可用。反馈始终自愿，不会阻塞主任务；Agent 的主动邀请最多一次，不等回复、不为反馈安装或重启对话。
+也可以直接填写 [Feedback issue 表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)：填写标题与反馈内容即可，分类和补充信息均为选填。旧版本或未加载该 skill 的环境同样可用。反馈始终自愿，不会阻塞主任务；Agent 在同一对话中的主动邀请最多一次，不等待回复，也不为反馈安装工具或重启对话。
 
-GitHub issue 是公开内容。发布前请检查脱敏草稿，移除凭证、账号信息、真实资源 ID、内部地址和客户数据，遵守 [反馈与社区规则](./.github/FEEDBACK_GUIDELINES.md) 及其中的 GitHub 社区规范。欢迎具体、坦诚的批评；人身攻击、骚扰等违规内容会直接关闭 issue。需要私密排障或紧急恢复时，请走火山引擎官方支持渠道。
+GitHub issue 是公开内容。发布前请检查正文与附件，移除凭证、账号信息、真实资源 ID、内部地址和客户数据，不公开敏感漏洞细节，并遵守 [反馈与社区规则](./.github/FEEDBACK_GUIDELINES.md) 及其中的 GitHub 社区规范。欢迎客观描述使用中遇到的问题、影响和改进建议；包含人身攻击、骚扰、歧视等违规内容的 issue 会被维护者直接关闭。需要私密排障或紧急恢复时，请使用火山引擎官方支持渠道。
 
 ## 目录结构
 
