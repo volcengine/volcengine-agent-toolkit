@@ -22,8 +22,8 @@
         {
           "name": "volcengine-cli",
           "path": "skills/core/volcengine-cli",
-          "summary": "Use the ve CLI to create, query, and manage Volcengine cloud resources.",
-          "summary_zh": "使用 ve CLI 创建、查询和管理火山引擎云资源。",
+          "summary": "Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli.",
+          "summary_zh": "使用 ve 管理火山引擎资源；引导获取 TOS、Ark 技能，并通过 ve tosutil、ve arkcli 执行。",
           "keywords": [
             "ve",
             "cli",
@@ -39,6 +39,11 @@
             "rds",
             "redis",
             "tos",
+            "tosutil",
+            "tosutils",
+            "arkcli",
+            "ark-cli",
+            "方舟",
             "cr",
             "container registry",
             "镜像仓库",

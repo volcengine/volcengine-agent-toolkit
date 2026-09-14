@@ -15,6 +15,11 @@
 
 **[快速安装 →](#默认安装)**
 
+`volcengine-cli` 优先通过 `ve tosutil` 和 `ve arkcli` 使用产品 CLI，要求 **`ve >= 1.1.9`**
+（稳定版 `1.1.9` 起）；使用前执行 `ve version`，版本不满足时先升级。TOS 操作由 finder
+查找并安装 `volcengine-tosutil`；Ark 操作引导下载[官方 skills](https://github.com/volcengine/ark-cli/tree/main/skills)。
+具体操作遵循对应 skill，只在产品命令前增加 `ve`。
+
 ## Plugins
 
 <!-- BEGIN GENERATED: plugin-catalog -->
@@ -39,7 +44,7 @@
 <!-- BEGIN GENERATED: skill-catalog -->
 | Skill | Plugin | 场景 |
 | --- | --- | --- |
-| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | 使用 ve CLI 创建、查询和管理火山引擎云资源。 |
+| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | 使用 ve 管理火山引擎资源；引导获取 TOS、Ark 技能，并通过 ve tosutil、ve arkcli 执行。 |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 诊断火山引擎错误、资源状态、配额、指标与 OpenAPI 故障。 |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。 |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | 列出全部火山引擎技能，供 Agent 选择并安装当前缺失的能力。 |

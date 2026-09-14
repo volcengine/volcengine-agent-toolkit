@@ -16,6 +16,11 @@ skills are grouped into Volcengine product-domain plugins and discovered through
 
 **[Quick Install →](#default-installation)**
 
+`volcengine-cli` prefers `ve tosutil` and `ve arkcli` for product CLI tasks, requiring **`ve >= 1.1.9`**
+(stable `1.1.9` or newer). Check `ve version` and upgrade if necessary before delegation. Use the finder to
+locate and install `volcengine-tosutil`, or download the [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills).
+Follow the corresponding skill, adding only the `ve` prefix to its product CLI commands.
+
 ## Plugins
 
 <!-- BEGIN GENERATED: plugin-catalog -->
@@ -41,7 +46,7 @@ are maintained in their plugins; the sync script generates the copies.
 <!-- BEGIN GENERATED: skill-catalog -->
 | Skill | Plugin | Use case |
 | --- | --- | --- |
-| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | Use the ve CLI to create, query, and manage Volcengine cloud resources. |
+| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli. |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures. |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with ve docs search/fetch, without login. |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | List all Volcengine skills so an agent can select and install missing capabilities. |
