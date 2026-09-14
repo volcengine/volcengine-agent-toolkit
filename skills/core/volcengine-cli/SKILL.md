@@ -470,6 +470,12 @@ Whenever a native `ve <service> <Action>` command or extension helper fails, or 
 
 First classify the error as request-format, missing dependency, account state, service activation, real-name verification, purchase qualification, or permission related. For product-specific errors, also read the matching service note below. For permission errors (`AccessDenied`, `NoPermission`, `RoleNotExist`, `Forbidden`, or STS-related failures), activate the `volcengine-troubleshooting` skill and use its account-permission diagnosis capability to locate the root cause and guide the user through remediation.
 
+For CLI anomalies or an incompletely solved task, follow the **non-blocking feedback** guidance in
+`volcengine-troubleshooting`: continue the main task and reserve any optional invitation for a natural
+summary. User-requested feedback belongs to `volcengine-feedback`; when unavailable, use the
+[feedback form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)
+in the current conversation rather than installing a skill or restarting the task for feedback.
+
 ### Async Resource Creation Requires Polling
 
 Some resources (VKE clusters, RDS instances, ECS instances, etc.) take several minutes to create. After creation, poll the Describe endpoint until the resource reaches the desired status before proceeding.

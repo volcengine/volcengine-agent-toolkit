@@ -26,7 +26,7 @@ Follow the corresponding skill, adding only the `ve` prefix to its product CLI c
 <!-- BEGIN GENERATED: plugin-catalog -->
 | Plugin | Product domain | Skills | Default |
 | --- | --- | --- | --- |
-| `volcengine-core` | Core | `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills` | Yes |
+| `volcengine-core` | Core | `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills`, `volcengine-feedback` | Yes |
 | `volcengine-storage` | Storage | `volcengine-tosutil` | No |
 | `volcengine-database` | Database | `volcengine-db-supabase` | No |
 | `volcengine-containers-middleware` | Containers and Middleware | `volcengine-vefaas` | No |
@@ -50,6 +50,7 @@ are maintained in their plugins; the sync script generates the copies.
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures. |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with ve docs search/fetch, without login. |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | List all Volcengine skills so an agent can select and install missing capabilities. |
+| [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) | `volcengine-core` | Draft and submit voluntary, redacted GitHub feedback about skill problems, desired capabilities, real-world scenarios, and success stories without blocking the main task. |
 | [`volcengine-tosutil`](./skills/specialized/storage/volcengine-tosutil/SKILL.md) | `volcengine-storage` | Manage TOS buckets and objects with the tosutil command-line tool. |
 | [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions. |
 | [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | Deploy and manage serverless applications on Volcengine veFaaS. |
@@ -115,7 +116,7 @@ This command installs only the current core skills:
 ```bash
 npx skills add volcengine/volcengine-skills \
   --global --yes --copy --full-depth \
-  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills
+  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback
 ```
 
 The finder can later invoke `npx skills add --skill` for exact skills. To select repository skills interactively:
@@ -140,6 +141,7 @@ gemini skills install https://github.com/volcengine/volcengine-skills --path ski
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-troubleshooting
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-knowledge-search
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-find-skills
+gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-feedback
 gemini skills list
 ```
 
@@ -158,6 +160,33 @@ directory.
 ```
 
 Enter the complete command in a Cursor 2.5 or newer Agent chat. `/add-plugin` may not appear in autocomplete.
+
+## Feedback and real-world stories
+
+Managing cloud services through an agent can bring excitement, frustration, and ideas for what
+should become possible next. Share problems with existing skills, capabilities you wish existed,
+scenarios you still cannot complete, and useful workflows that already work. Your goal, what
+actually happened, and what you hoped for help users and developers shape the future of using
+cloud services through agents. You do not need a root cause or a complete technical report.
+
+Say "Use volcengine-feedback to share this: …". The default core skill
+[`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) turns existing context into a
+short preview. Choose to send, edit, or keep the draft; there is no need to prepare logs, versions,
+or a full report. After a successful submission, receive the issue link and continue the original task.
+
+You can also use the [Feedback issue form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml):
+only the feedback itself is required; category and extra details are optional. Older installations
+and environments that have not loaded the skill can use the form directly.
+Feedback is always voluntary and never blocks the
+main task. An agent may invite feedback at most once per conversation, without waiting for a reply,
+installing anything, or restarting the conversation for feedback.
+
+GitHub issues are public. Review the redacted draft before publishing and remove credentials,
+account information, real resource IDs, internal addresses, and customer data. Follow the
+[feedback and community guidelines](./.github/FEEDBACK_GUIDELINES.md), including the linked GitHub
+community rules. Specific, candid criticism is welcome; personal attacks, harassment, and other
+violations result in immediate issue closure. Use official Volcengine support for private
+troubleshooting or urgent recovery.
 
 ## Directory Structure
 

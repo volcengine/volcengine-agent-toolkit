@@ -1,6 +1,6 @@
 {
   "name": "volcengine-core",
-  "description": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills.",
+  "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
   "version": "1.2.2",
   "author": {
     "name": "Volcengine Team"
@@ -17,10 +17,14 @@
     "cli",
     "documentation",
     "troubleshooting",
+    "feedback",
+    "反馈",
+    "场景分享",
     "volcengine-cli",
     "volcengine-troubleshooting",
     "volcengine-knowledge-search",
-    "volcengine-find-skills"
+    "volcengine-find-skills",
+    "volcengine-feedback"
   ],
   "skills": [
     "./skills/"

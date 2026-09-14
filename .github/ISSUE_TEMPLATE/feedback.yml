@@ -1,0 +1,46 @@
+name: "Feedback · 使用反馈与场景共创"
+description: "分享 skill 问题、新能力、待解决场景或成功实践。Share a problem, idea, scenario, or success story."
+title: "[Feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        哪一步让你兴奋、哪里受挫、接下来有什么期待？一句话也可以，和我们一起改进 Agent 使用云的体验。
+        What delighted you, got in your way, or could be better? A sentence is enough.
+
+        **这是公开 issue。请脱敏，不要公开敏感漏洞细节。** 欢迎直接批评产品；攻击、骚扰、歧视等违规 issue 会被维护者直接关闭。
+        **This issue is public. Remove sensitive data and vulnerability details.** Product criticism is welcome; abusive issues will be closed. [反馈约定 / Guidelines](https://github.com/volcengine/volcengine-skills/blob/main/.github/FEEDBACK_GUIDELINES.md)
+
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: "反馈类型（选填）/ Feedback type (optional)"
+      multiple: true
+      options:
+        - "当前 skill 的问题 / Problem with an existing skill"
+        - "希望新增的能力 / New capability"
+        - "希望解决的场景 / Scenario to support"
+        - "成功实践或好用的场景 / Success story or useful scenario"
+
+  - type: textarea
+    id: feedback
+    attributes:
+      label: "想反馈什么 / What would you like to share?"
+      description: "可以聊聊你的场景、实际发生了什么、希望做到什么，或这次成功带来的价值；知道多少写多少。Share your scenario, what happened, what you hoped for, or what worked well."
+      placeholder: "例如：Agent 帮我部署好了测试应用，很省心！希望下次还能一起验证访问是否正常。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: "补充信息（选填）/ More details (optional)"
+      description: "相关 skill、已知版本、脱敏后的最小错误片段或截图均可。不必重跑命令，不要上传完整会话或原始日志。Add known context or minimal sanitized evidence; no extra commands, full conversations, or raw logs."
+
+  - type: checkboxes
+    id: publication-check
+    attributes:
+      label: "公开发布确认 / Before publishing"
+      options:
+        - label: "我已检查正文与附件可公开、已脱敏且不含敏感漏洞细节，并同意遵守 [GitHub Community Guidelines](https://docs.github.com/en/site-policy/github-terms/github-community-guidelines) 与[反馈约定](https://github.com/volcengine/volcengine-skills/blob/main/.github/FEEDBACK_GUIDELINES.md)。I checked that this is safe to share publicly and agree to the guidelines."
+          required: true
