@@ -54,12 +54,3 @@ Feedback is voluntary and must never block your main task. Agents may offer one 
 反馈用于公开讨论与改进，不是云服务工单，不承诺响应时限或能力排期。正在发生的故障请继续按已有排障流程或官方支持渠道处理。
 
 Feedback is for public discussion and improvement, without promised response times or delivery dates. Continue using troubleshooting or official support for active incidents.
-
-## 设计参考 / Design references
-
-- [Claude Code `/feedback`](https://code.claude.com/docs/en/commands)：提供统一反馈入口；[Agent 草稿流程](https://code.claude.com/docs/en/tools-reference#sendfeedback-tool-behavior)支持用户查看、编辑、发送、丢弃或稍后处理，发送前草稿保留在本机，成功后提供发送状态或回执。
-- [Codex CLI `/feedback`](https://developers.openai.com/codex/cli/slash-commands/#send-feedback-with-feedback)：通过一个命令进入反馈流程，按提示提供诊断信息或日志。
-
-这里借鉴的是简短入口、用户决定发送和明确结果。我们的目标是公开 GitHub issue，默认只整理已有上下文中的最小脱敏摘要，不自动收集或照搬其他 CLI 的全会话、日志上报机制；本 skill 也没有新增 `ve`、Claude Code 或 Codex 的原生命令。
-
-We borrow the short entry point, user-controlled submission, and clear result. This workflow publishes a minimal, sanitized summary to a public GitHub issue; it does not automatically collect conversations or logs, and adds no native command to `ve`, Claude Code, or Codex.
