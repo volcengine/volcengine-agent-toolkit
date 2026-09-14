@@ -1,6 +1,6 @@
 {
   "name": "volcengine-skills",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "type": "module",
   "scripts": {
     "sync-plugins": "python3 scripts/sync_plugins.py",

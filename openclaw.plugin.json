@@ -2,7 +2,7 @@
   "id": "volcengine-skills",
   "name": "Volcengine Skills",
   "description": "Core Volcengine skills for discovery, official documentation, ve CLI operations, and troubleshooting.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "activation": {
     "onStartup": true
   },
