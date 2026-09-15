@@ -23,8 +23,10 @@ Follow the corresponding skill, adding only the `ve` prefix to its product CLI c
 
 Every Agent-launched `ve` process must receive `VE_CALLER_TYPE=ai_agent`,
 `VE_CALLER_NAME=<agent-id>`, and `VE_SKILL_NAME=<current-volcengine-skill>` to identify the Agent
-host and the skill owning the operation. The Agent supplies these values from its execution
-context; no manual user configuration is needed. See [caller metadata](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory).
+host and the skill owning the operation. Only `VE_CALLER_TYPE=ai_agent` is fixed. The Agent resolves
+the other two values from the actual runtime environment and active skill name for each invocation;
+they must not default to `codex` or `volcengine-cli`. No manual user configuration is needed.
+See [caller metadata](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory).
 
 ## Plugins
 

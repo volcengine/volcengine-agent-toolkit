@@ -138,29 +138,39 @@ class VeLoginRemoteTest(unittest.TestCase):
         return result
 
     def test_caller_metadata_reaches_detached_login_and_later_verification(self) -> None:
-        caller_log = self.root / "caller_metadata"
-        metadata = {
-            "VE_CALLER_TYPE": "ai_agent",
-            "VE_CALLER_NAME": "claude-code",
-            "VE_SKILL_NAME": "volcengine-troubleshooting",
-        }
-        self.env.update(metadata)
-        self.env["FAKE_VE_CALLER_LOG"] = str(caller_log)
+        cases = [
+            ("codex", "volcengine-cli"),
+            ("claude-code", "volcengine-troubleshooting"),
+            ("opencode", "volcengine-knowledge-search"),
+        ]
+        for index, (agent, skill) in enumerate(cases):
+            with self.subTest(agent=agent, skill=skill):
+                caller_log = self.root / f"caller_metadata_{index}"
+                metadata = {
+                    "VE_CALLER_TYPE": "ai_agent",
+                    "VE_CALLER_NAME": agent,
+                    "VE_SKILL_NAME": skill,
+                }
+                self.env.update(metadata)
+                self.env["FAKE_VE_CALLER_LOG"] = str(caller_log)
+                self.approve.unlink(missing_ok=True)
+                try:
+                    started = self.run_helper("start", "cn-beijing")
+                    self.assertEqual(started.returncode, 0, started.stderr)
+                    self.approve.touch()
+                    verified = self.wait_for_exit(0, "verify")
+                    self.assertEqual(verified.returncode, 0, verified.stderr)
 
-        started = self.run_helper("start", "cn-beijing")
-        self.assertEqual(started.returncode, 0, started.stderr)
-        self.approve.touch()
-        verified = self.wait_for_exit(0, "verify")
-        self.assertEqual(verified.returncode, 0, verified.stderr)
-
-        calls = [line.split("|") for line in caller_log.read_text().splitlines()]
-        self.assertTrue(
-            {"login --help", "login --no-browser", "sts GetCallerIdentity"}
-            <= {call[0] for call in calls}
-        )
-        for command, *values in calls:
-            with self.subTest(command=command):
-                self.assertEqual(values, list(metadata.values()))
+                    calls = [line.split("|") for line in caller_log.read_text().splitlines()]
+                    self.assertTrue(
+                        {"login --help", "login --no-browser", "sts GetCallerIdentity"}
+                        <= {call[0] for call in calls}
+                    )
+                    for command, *values in calls:
+                        with self.subTest(command=command):
+                            self.assertEqual(values, list(metadata.values()))
+                finally:
+                    self.run_helper("abort")
 
     def test_start_prints_device_block_without_mode(self) -> None:
         result = self.run_helper("start", "cn-beijing")

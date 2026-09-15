@@ -22,7 +22,7 @@
 
 Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<agent-id>` 和
 `VE_SKILL_NAME=<current-volcengine-skill>`，用于标识 Agent 类型及当前执行操作的 skill。
-这些值由 Agent 根据执行上下文设置，无需用户手动配置；详见 [调用方标识规则](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory)。
+仅 `VE_CALLER_TYPE` 固定为 `ai_agent`；另外两项由 Agent 在每次调用时根据实际运行环境及当前 skill 的名称确定，不能固定为 `codex` 或 `volcengine-cli`。无需用户手动配置；详见 [调用方标识规则](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory)。
 
 ## Plugins
 

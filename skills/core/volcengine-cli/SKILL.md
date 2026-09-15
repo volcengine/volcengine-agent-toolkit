@@ -32,10 +32,10 @@ metadata:
         description: Set by the Agent for every ve process; must be ai_agent
       - name: VE_CALLER_NAME
         required: true
-        description: Set by the Agent to its actual host identifier, such as codex or claude-code
+        description: Resolved by the Agent from the actual current host environment for each invocation; no fixed default
       - name: VE_SKILL_NAME
         required: true
-        description: Set by the Agent to the current Volcengine skill that owns the operation
+        description: Resolved by the Agent from the active Volcengine skill's frontmatter name for each invocation; no fixed default
       - name: VOLCENGINE_ACCESS_KEY
         required: false
         description: AccessKey for AK/SK auth path (alternative to `ve login`)
@@ -92,14 +92,16 @@ help/version checks, authentication, API calls, retries, polling, and `ve tosuti
 | Variable | Required value |
 | --- | --- |
 | `VE_CALLER_TYPE` | Always `ai_agent`. |
-| `VE_CALLER_NAME` | The actual Agent host identifier, for example `codex` or `claude-code`. Use the host identity from the current execution context, not a model name, account, user name, or session ID. |
-| `VE_SKILL_NAME` | The canonical `volcengine-*` skill whose workflow owns this command. Use `volcengine-cli` for this skill's own operations; use the actual owning skill, such as `volcengine-troubleshooting` or `volcengine-tosutil`, for its operations. |
+| `VE_CALLER_NAME` | Resolve the actual Agent host identifier from the current runtime environment. This identifies the Agent application, not a model, account, user, or session. |
+| `VE_SKILL_NAME` | Resolve the `name` in the active Volcengine skill's frontmatter for the workflow executing this command. Use that actual `volcengine-*` name. |
 
 Set these values yourself; they are runtime attribution, not credentials or a user setup step.
-Resolve the current host and skill before execution. Replace placeholders with actual identifiers.
-Recompute `VE_SKILL_NAME` when the workflow changes; shared helpers inherit the calling skill's
-identity rather than substituting the skill directory that contains the helper. For upstream Ark
-skills invoked through this skill, the owning Volcengine skill remains `volcengine-cli`.
+Only `VE_CALLER_TYPE=ai_agent` is fixed. Resolve both the current host and active skill before each
+execution; neither has a hardcoded default. For example, `codex` is valid only when the current
+Agent is Codex, and `volcengine-cli` only when that skill owns the current operation. Resolve the
+values again when the Agent environment or active skill changes. Shared helpers and upstream
+product CLIs inherit the actual calling Volcengine skill's identity; their executable names or
+installation directories do not determine it.
 
 Supply all three through the tool's process environment or command-local assignments **on every
 execution**. A new tool call may start a fresh shell, so an earlier `export` is not sufficient.
@@ -109,18 +111,14 @@ flags, API parameters, or fields to add to a request body.
 For pipelines and `$(...)`, set the variables on the `ve` process itself or export them in that
 same shell before running the pipeline or expanding the command substitution.
 
-For example, a Codex operation owned by `volcengine-cli`:
+Command shape — the Agent must replace both placeholders with values resolved from the actual
+runtime environment and active skill before execution:
 
-```bash
-VE_CALLER_TYPE=ai_agent VE_CALLER_NAME=codex VE_SKILL_NAME=volcengine-cli \
+```text
+VE_CALLER_TYPE=ai_agent \
+VE_CALLER_NAME="<agent-id>" \
+VE_SKILL_NAME="<current-volcengine-skill>" \
   ve ecs DescribeInstances --output json
-```
-
-For a Claude Code workflow owned by `volcengine-tosutil`:
-
-```bash
-VE_CALLER_TYPE=ai_agent VE_CALLER_NAME=claude-code VE_SKILL_NAME=volcengine-tosutil \
-  ve tosutil help
 ```
 
 Apply the same environment to any script that launches `ve`, including `install_ve.sh`,
