@@ -7,23 +7,49 @@ metadata:
     requires:
       bins:
         - ve
+      env:
+        - VE_CALLER_TYPE
+        - VE_CALLER_NAME
+        - VE_SKILL_NAME
     install:
       - kind: node
         package: "@volcengine/cli"
         bins: [ve]
+    envVars:
+      - name: VE_CALLER_TYPE
+        required: true
+        description: Set by the Agent for every ve invocation; must be ai_agent
+      - name: VE_CALLER_NAME
+        required: true
+        description: Resolved by the Agent from the actual current host environment for each invocation; no fixed default
+      - name: VE_SKILL_NAME
+        required: true
+        description: Resolved from the active skill's frontmatter name; documentation operations owned by this skill use volcengine-knowledge-search
 ---
 
 # volcengine-knowledge-search 火山引擎文档检索
 
 通过 `ve docs search` 检索官方文档，通过 `ve docs fetch` 获取正文。请求、响应解析、正文清洗和分页由 CLI 处理；本 skill 负责场景判断、query 改写、二次检索和来源引用。
 
+## CLI 调用约定
+
+执行 `ve` 前，遵循 `volcengine-cli` 的 [调用方标识规则](../volcengine-cli/SKILL.md#agent-caller-metadata-mandatory)。每次调用都必须在进程环境中携带：
+
+- `VE_CALLER_TYPE=ai_agent`。
+- `VE_CALLER_NAME`：由 Agent 根据当前实际宿主环境确定，不使用固定默认值。
+- `VE_SKILL_NAME`：取当前执行操作的 skill 的 frontmatter `name`。本 skill 执行文档检索或正文读取时，该值为 `volcengine-knowledge-search`；引用 CLI 的调用规则不改变操作所属 skill。
+
+该要求覆盖 `--help` 检查、首次检索、改写后的检索、正文读取、分页续读及重试。每次工具调用可能启动新的 shell，必须重新传入三项变量，不依赖上一次的 `export`。下面示例中的 `<agent-id>` 与 `<current-volcengine-skill>` 均由 Agent 根据当前环境和 skill 元数据替换，不得原样传入。这些变量仅用于调用来源标识，不改变公开文档命令无需登录的约定。
+
 ## 准备
 
 首次使用时确认本机具备两个子命令：
 
 ```bash
-ve docs search --help
-ve docs fetch --help
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs search --help
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs fetch --help
 ```
 
 若 `ve` 未安装或缺少子命令，加载 `volcengine-cli` skill，按其「Install or upgrade the ve CLI」章节安装最新版，再检查能力。文档命令访问公开服务，**无需登录、AK/SK、profile 或地域配置**；安装后直接使用，无需执行资源管理的身份初始化流程。
@@ -38,7 +64,8 @@ ve docs fetch --help
 ## search：检索文档
 
 ```bash
-ve docs search "对象存储 TOS 如何计费" --limit 3 --output text
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs search "对象存储 TOS 如何计费" --limit 3 --output text
 ```
 
 搜索文本是**位置参数**，用引号包住完整问题。用 `--output text` 获取可直接阅读的 Markdown：每条包含标题、纯净 URL、`ServiceCodes` 和正文摘要。CLI 默认输出 JSON；需要程序化处理时显式用 `--output json`，结果在 `documents` 数组中，字段为 `title`、`url`、`service_codes`、`snippet`。
@@ -54,14 +81,17 @@ ve docs search "对象存储 TOS 如何计费" --limit 3 --output text
 语义检索需要贴近文档表述。将口语、简称或营销名补成**产品全称 + 能力描述 + 具体问题**，例如把「Coding Plan 多少钱」改写为「火山方舟 Coding Plan AI 编程订阅套餐如何计费」。首搜跑偏时，换全称、近义描述或功能描述再搜。
 
 ```bash
-ve docs search "火山方舟 Coding Plan AI 编程订阅套餐如何计费" --limit 3 --output text
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs search "火山方舟 Coding Plan AI 编程订阅套餐如何计费" --limit 3 --output text
 ```
 
 先宽搜，确认相关结果的 `ServiceCodes` 为 `tos` 后，按产品精搜：
 
 ```bash
-ve docs search "跨区域复制如何配置" --limit 5 --snippet-length 300 --output text
-ve docs search "对象存储 TOS 跨区域复制如何配置" --limit 3 --service-code tos --output text
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs search "跨区域复制如何配置" --limit 5 --snippet-length 300 --output text
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs search "对象存储 TOS 跨区域复制如何配置" --limit 3 --service-code tos --output text
 ```
 
 多个产品编码使用 `--service-code <code-a> --service-code <code-b>`，每个编码单独传递。
@@ -71,7 +101,8 @@ ve docs search "对象存储 TOS 跨区域复制如何配置" --limit 3 --servic
 支持 `https://www.volcengine.com/docs/...` 和 `https://docs.volcengine.com/docs/...`。CLI 会去掉 URL 的 query 和 fragment，text 输出依次为标题、纯净 URL、当前页正文及续读提示。
 
 ```bash
-ve docs fetch "https://www.volcengine.com/docs/6349/162514?lang=zh" --output text
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs fetch "https://www.volcengine.com/docs/6349/162514?lang=zh" --output text
 ```
 
 | 参数 | 用途 |
@@ -82,8 +113,10 @@ ve docs fetch "https://www.volcengine.com/docs/6349/162514?lang=zh" --output tex
 长文末尾会提示下一页的 `--start-index`。用**同一个 URL 和返回的索引**继续读，避免漏读或重复。以下示例先取 300 字，若续读提示为 `--start-index 300`，再读取下一页：
 
 ```bash
-ve docs fetch "https://www.volcengine.com/docs/6349/162514" --max-length 300 --output text
-ve docs fetch "https://www.volcengine.com/docs/6349/162514" --start-index 300 --max-length 300 --output text
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs fetch "https://www.volcengine.com/docs/6349/162514" --max-length 300 --output text
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve docs fetch "https://www.volcengine.com/docs/6349/162514" --start-index 300 --max-length 300 --output text
 ```
 
 程序化分页使用 `--output json`，读取 `content`、`start_index`、`next_start_index`、`remaining_characters`、`has_more` 和 `has_content`。`has_more=true` 时用 `next_start_index` 续读；结束时该字段为 `null`。
