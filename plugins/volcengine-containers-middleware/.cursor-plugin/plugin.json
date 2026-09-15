@@ -2,7 +2,7 @@
   "name": "volcengine-containers-middleware",
   "displayName": "Volcengine Containers and Middleware",
   "description": "Deploy and manage Volcengine serverless, container, and middleware application runtimes.",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"

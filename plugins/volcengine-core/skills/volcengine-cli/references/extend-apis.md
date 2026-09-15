@@ -7,6 +7,11 @@ Use this reference when an OpenAPI is missing from the `ve` command surface (unk
 
 Apply the same read/write/destructive confirmation rules from `SKILL.md` to both.
 
+Apply [the mandatory Agent caller metadata](../SKILL.md#agent-caller-metadata-mandatory) to every
+`ve --force` invocation and to the Python helper process. The helper's internal `ve` credential
+probe and the audit script's CLI discovery calls must inherit all three variables. Keep these
+values in the process environment; do not add them to API query parameters or request bodies.
+
 ## 1. `ve --force`
 
 `--force` skips the local service/action metadata check and sends the request as-is. It needs the facts the metadata would normally supply:

@@ -1,0 +1,49 @@
+name: "Feedback · 使用反馈与场景共创"
+description: "分享使用问题、能力需求、待支持场景或成功实践。Share a usage issue, capability request, scenario, or successful practice."
+title: "[Feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎分享通过 Agent 使用火山引擎时的收获、困难与期待，帮助我们共同改进云服务使用体验。简短描述即可。
+        Share your outcomes, challenges, and expectations when using Volcengine through an Agent. A brief description helps us improve the experience together.
+
+        欢迎反馈使用中遇到的问题，可提供已知的观察结果、影响或改进建议。请避免人身攻击、骚扰、歧视等违规内容；包含此类内容的 issue 会被维护者直接关闭。
+        Describe issues encountered during use, with any known observations, impact, or suggestions for improvement. Maintainers will directly close issues containing personal attacks, harassment, discrimination, or other community-rule violations.
+
+        **这是公开 issue。请脱敏，不要公开敏感漏洞细节。** [反馈约定 / Guidelines](https://github.com/volcengine/volcengine-skills/blob/main/.github/FEEDBACK_GUIDELINES.md)
+        **This issue is public. Remove sensitive information and keep sensitive vulnerability details private.**
+
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: "反馈类型（选填）/ Feedback type (optional)"
+      multiple: true
+      options:
+        - "当前 skill 的使用问题 / Issue with an existing skill"
+        - "能力需求 / Capability request"
+        - "待支持场景 / Scenario to support"
+        - "成功实践 / Successful practice"
+
+  - type: textarea
+    id: feedback
+    attributes:
+      label: "反馈内容 / Feedback"
+      description: "可描述实际场景、观察结果、期望能力或实践价值，提供当前已知的信息即可。Describe your scenario, observations, desired capability, or the value of a successful practice. Share what you currently know."
+      placeholder: "例如：Agent 已完成测试应用部署，但尚未验证服务是否可访问。希望部署流程能够包含可用性检查并说明检查结果。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: "补充信息（选填）/ More details (optional)"
+      description: "可提供相关 skill、已知版本、脱敏后的最小错误片段或截图。不必重新运行命令，请勿上传完整会话或原始日志。Add known context or minimal sanitized evidence. No additional commands are needed; do not upload full conversations or raw logs."
+
+  - type: markdown
+    attributes:
+      value: |
+        ### 公开发布提示 / Before publishing
+
+        发布前请检查正文与附件，移除敏感信息，不公开敏感漏洞细节，并遵守 [GitHub Community Guidelines](https://docs.github.com/en/site-policy/github-terms/github-community-guidelines) 与[反馈约定](https://github.com/volcengine/volcengine-skills/blob/main/.github/FEEDBACK_GUIDELINES.md)。
+        Before publishing, review the body and attachments, remove sensitive information, keep sensitive vulnerability details private, and follow the [GitHub Community Guidelines](https://docs.github.com/en/site-policy/github-terms/github-community-guidelines) and our [feedback guidelines](https://github.com/volcengine/volcengine-skills/blob/main/.github/FEEDBACK_GUIDELINES.md).

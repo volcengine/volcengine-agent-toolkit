@@ -18,14 +18,19 @@
 `volcengine-cli` 优先通过 `ve tosutil` 和 `ve arkcli` 使用产品 CLI，要求 **`ve >= 1.1.9`**
 （稳定版 `1.1.9` 起）；使用前执行 `ve version`，版本不满足时先升级。TOS 操作由 finder
 查找并安装 `volcengine-tosutil`；Ark 操作引导下载[官方 skills](https://github.com/volcengine/ark-cli/tree/main/skills)。
-具体操作遵循对应 skill，只在产品命令前增加 `ve`。
+具体操作遵循对应 skill；通过 `ve` 转发产品命令，并按下述规则传递调用方标识。
+
+Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<agent-id>` 和
+`VE_SKILL_NAME=<current-volcengine-skill>`，用于标识 Agent 类型及当前执行操作的 skill。
+仅 `VE_CALLER_TYPE` 固定为 `ai_agent`；另外两项由 Agent 在每次调用时根据实际运行环境及当前 skill 的名称确定，不能固定为 `codex` 或 `volcengine-cli`。无需用户手动配置；详见 [调用方标识规则](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory)。
+通过 `ve arkcli ...` 调用时，由 `ve` 转换调用方标识，Agent 无需重复添加 `ARKCLI_*` 调用标识，也不直接复制独立 Ark CLI 示例中的通知设置前缀。
 
 ## Plugins
 
 <!-- BEGIN GENERATED: plugin-catalog -->
 | Plugin | 产品分类 | Skills | 默认安装 |
 | --- | --- | --- | --- |
-| `volcengine-core` | 核心 | `volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills` | 是 |
+| `volcengine-core` | 核心 | `volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`、`volcengine-feedback` | 是 |
 | `volcengine-storage` | 存储 | `volcengine-tosutil` | 否 |
 | `volcengine-database` | 数据库 | `volcengine-db-supabase` | 否 |
 | `volcengine-containers-middleware` | 容器与中间件 | `volcengine-vefaas` | 否 |
@@ -48,6 +53,7 @@
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 诊断火山引擎错误、资源状态、配额、指标与 OpenAPI 故障。 |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。 |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | 列出全部火山引擎技能，供 Agent 选择并安装当前缺失的能力。 |
+| [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) | `volcengine-core` | 整理并提交脱敏的 GitHub 使用反馈，涵盖问题、能力需求、实际场景和成功实践，始终不阻塞主任务。 |
 | [`volcengine-tosutil`](./skills/specialized/storage/volcengine-tosutil/SKILL.md) | `volcengine-storage` | 使用 tosutil 命令行工具管理 TOS 桶和对象。 |
 | [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | 管理火山引擎 AI 原生 BaaS Supabase 工作区、SQL、Auth、Realtime 与 Edge Functions。 |
 | [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | 在火山引擎 veFaaS 上部署和管理 Serverless 应用。 |
@@ -105,7 +111,7 @@ python3 plugins/volcengine-core/skills/volcengine-find-skills/scripts/find_skill
 ```bash
 npx skills add volcengine/volcengine-skills \
   --global --yes --copy --full-depth \
-  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills
+  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback
 ```
 
 后续可由 finder 调用 `npx skills add --skill` 精确安装单个或多个 skill。如需交互选择仓库内的 skill：
@@ -130,6 +136,7 @@ gemini skills install https://github.com/volcengine/volcengine-skills --path ski
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-troubleshooting
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-knowledge-search
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-find-skills
+gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-feedback
 gemini skills list
 ```
 
@@ -147,6 +154,16 @@ gemini skills list
 ```
 
 在 Cursor 2.5 或更高版本的 Agent 对话中输入完整命令；`/add-plugin` 可能不会出现在自动补全中。
+
+## 反馈与场景分享
+
+我们希望了解你通过 Agent 使用火山引擎时的实际收获、遇到的困难和后续期待。欢迎分享当前 skill 的使用问题、能力需求、待支持场景及成功实践，帮助用户与开发者共同改进 Agent 管理云服务的体验。描述任务目标、实际结果或期望改进即可，不必先定位根因或准备完整报告。
+
+可直接说明“用 volcengine-feedback 帮我反馈：……”。默认核心 skill [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) 会根据已有上下文整理简短的脱敏草稿，供你审阅后选择发送、修改或保留草稿。无需先准备日志、版本或完整报告；发布成功后返回 issue 链接，继续原任务。
+
+也可以直接填写 [Feedback issue 表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)：填写标题与反馈内容即可，分类和补充信息均为选填。旧版本或未加载该 skill 的环境同样可用。反馈始终自愿，不会阻塞主任务；Agent 在同一对话中的主动邀请最多一次，不等待回复，也不为反馈安装工具或重启对话。
+
+GitHub issue 是公开内容。发布前请检查正文与附件，移除凭证、账号信息、真实资源 ID、内部地址和客户数据，不公开敏感漏洞细节，并遵守 [反馈与社区规则](./.github/FEEDBACK_GUIDELINES.md) 及其中的 GitHub 社区规范。欢迎客观描述使用中遇到的问题、影响和改进建议；包含人身攻击、骚扰、歧视等违规内容的 issue 会被维护者直接关闭。需要私密排障或紧急恢复时，请使用火山引擎官方支持渠道。
 
 ## 目录结构
 

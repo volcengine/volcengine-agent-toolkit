@@ -1,7 +1,7 @@
 {
   "name": "volcengine-core",
-  "version": "1.2.2",
-  "description": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills.",
+  "version": "1.2.3",
+  "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com",
@@ -19,16 +19,20 @@
     "cli",
     "documentation",
     "troubleshooting",
+    "feedback",
+    "反馈",
+    "场景分享",
     "volcengine-cli",
     "volcengine-troubleshooting",
     "volcengine-knowledge-search",
-    "volcengine-find-skills"
+    "volcengine-find-skills",
+    "volcengine-feedback"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Volcengine Core",
-    "shortDescription": "Discover, operate, document, and troubleshoot Volcengine",
-    "longDescription": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills.",
+    "shortDescription": "Discover, operate, troubleshoot, and improve Volcengine skills",
+    "longDescription": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
     "developerName": "Volcengine Team",
     "category": "Coding",
     "capabilities": [
@@ -39,7 +43,8 @@
     "defaultPrompt": [
       "Find the Volcengine skill for my task.",
       "Look up how to use this Volcengine product.",
-      "Diagnose this Volcengine error."
+      "Diagnose this Volcengine error.",
+      "Draft feedback about my experience using Volcengine skills."
     ],
     "websiteURL": "https://github.com/volcengine/volcengine-skills",
     "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",

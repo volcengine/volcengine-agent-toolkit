@@ -1,6 +1,6 @@
 {
   "name": "volcengine-security",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources.",
   "author": {
     "name": "Volcengine Team",

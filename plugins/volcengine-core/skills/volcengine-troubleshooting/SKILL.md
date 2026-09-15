@@ -58,6 +58,16 @@ metadata:
 
 仍无法分类时，完成 `scripts/common_check.sh` 后，按报错中的服务名查 `ve SERVICE --help` 和 `ve SERVICE ACTION --help`。
 
+## 非阻塞反馈
+
+已有证据显示 skill 指引有误、CLI 行为异常、缺少所需能力，或用户目标仍未完全解决时，先继续已授权的排障、恢复和主任务。在自然总结点，可以简短邀请用户分享这次真实场景；清楚区分已确认的问题与尚未验证的原因。反馈不替代故障处理，也不是继续任务或结束排障的前置条件。
+
+- 同一对话的主动邀请最多一次，跨 skill 路由也共用此限制；用户拒绝或忽略后不再提醒。用可忽略的陈述句附上入口，不停下来等待答复。
+- 邀请只使用已有上下文，不为此安装工具或 skill、登录、搜索 issue、额外采集日志，或重试云操作来复现错误。主任务仍可继续时直接继续。
+- 用户主动提出反馈时，使用已可用的 `volcengine-feedback` 整理实际目标、观察结果和期望。若该 skill 未安装或无法在当前对话加载，直接提供 [反馈表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)，也可在当前对话整理脱敏草稿；不要要求为反馈安装、登录或重启主对话。公开发布前的内容确认和脱敏由反馈流程处理。
+
+例如：“如需反馈本次发现的能力缺口，可通过 [反馈表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml) 说明使用场景和改进建议；反馈是可选的，不影响当前任务继续。”
+
 ## 核心原则
 
 - **只读优先**：默认只执行 Describe/List/Get/Query/Lookup/Check 类命令。Create/Update/Delete/Attach/Detach/Put/Set/Start/Stop/Run/Invoke/Pay/Renew/Refresh/Preload 等写操作必须先解释影响并等待用户确认。

@@ -10,8 +10,8 @@
     {
       "name": "volcengine-core",
       "source": "./plugins/volcengine-core",
-      "description": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills.",
-      "version": "1.2.2",
+      "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
+      "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
       },
@@ -27,10 +27,14 @@
         "cli",
         "documentation",
         "troubleshooting",
+        "feedback",
+        "反馈",
+        "场景分享",
         "volcengine-cli",
         "volcengine-troubleshooting",
         "volcengine-knowledge-search",
-        "volcengine-find-skills"
+        "volcengine-find-skills",
+        "volcengine-feedback"
       ],
       "category": "core"
     },
@@ -38,7 +42,7 @@
       "name": "volcengine-storage",
       "source": "./plugins/volcengine-storage",
       "description": "Operate Volcengine storage products and data with product-specific tools.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
       },
@@ -61,7 +65,7 @@
       "name": "volcengine-database",
       "source": "./plugins/volcengine-database",
       "description": "Build and operate database-backed applications on Volcengine managed database platforms.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
       },
@@ -85,7 +89,7 @@
       "name": "volcengine-containers-middleware",
       "source": "./plugins/volcengine-containers-middleware",
       "description": "Deploy and manage Volcengine serverless, container, and middleware application runtimes.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
       },
@@ -109,7 +113,7 @@
       "name": "volcengine-security",
       "source": "./plugins/volcengine-security",
       "description": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
       },
@@ -140,7 +144,7 @@
       "name": "volcengine-identity-access-control",
       "source": "./plugins/volcengine-identity-access-control",
       "description": "Design and establish Volcengine landing zones, organizations, identity, account factories, and governance baselines.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
       },
@@ -165,7 +169,7 @@
       "name": "volcengine-service-support",
       "source": "./plugins/volcengine-service-support",
       "description": "Route product purchases, prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
       },

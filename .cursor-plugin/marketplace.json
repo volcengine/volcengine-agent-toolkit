@@ -11,7 +11,7 @@
     {
       "name": "volcengine-core",
       "source": "./plugins/volcengine-core",
-      "description": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills."
+      "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills."
     },
     {
       "name": "volcengine-storage",

@@ -52,11 +52,19 @@ Always read the complete `list` output before selecting a skill. Use `--json` wh
 English summaries help distinguish related skills. Choose by responsibility rather than name alone;
 install multiple skills only when the request crosses distinct responsibilities.
 
-The catalog includes all four skills in `skills/core/` and every optional skill owned directly by a
+The catalog includes all skills in `skills/core/` and every optional skill owned directly by a
 product-domain plugin. `skills/specialized/<domain>/<skill>/` contains generated copies of those
 optional skills, grouped by the plugin name without `volcengine-`; each skill is listed only once
 in the catalog. If none of the listed responsibilities covers the request, report that the
 repository does not currently provide a matching skill.
+
+For an uncovered capability, continue the supported work and optionally include the
+[feedback form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)
+at a natural summary so the user can describe the scenario they need. Invite at most once per
+conversation across skills, without waiting for a reply. Feedback itself is optional, not a
+capability gap that requires installation: use `volcengine-feedback` when already available and
+requested by the user, otherwise offer the form or a redacted draft in the current conversation.
+Do not install, log in, collect extra diagnostics, or restart the main conversation for feedback.
 
 ## Recover from a capability gap
 

@@ -1,8 +1,8 @@
 {
   "name": "volcengine-core",
   "displayName": "Volcengine Core",
-  "description": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills.",
-  "version": "1.2.2",
+  "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
+  "version": "1.2.3",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"
@@ -19,10 +19,14 @@
     "cli",
     "documentation",
     "troubleshooting",
+    "feedback",
+    "反馈",
+    "场景分享",
     "volcengine-cli",
     "volcengine-troubleshooting",
     "volcengine-knowledge-search",
-    "volcengine-find-skills"
+    "volcengine-find-skills",
+    "volcengine-feedback"
   ],
   "skills": "./skills/",
   "logo": "assets/logo.svg",

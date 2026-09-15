@@ -19,14 +19,24 @@ skills are grouped into Volcengine product-domain plugins and discovered through
 `volcengine-cli` prefers `ve tosutil` and `ve arkcli` for product CLI tasks, requiring **`ve >= 1.1.9`**
 (stable `1.1.9` or newer). Check `ve version` and upgrade if necessary before delegation. Use the finder to
 locate and install `volcengine-tosutil`, or download the [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills).
-Follow the corresponding skill, adding only the `ve` prefix to its product CLI commands.
+Follow the corresponding skill for product commands; invoke them through `ve` and apply the
+caller metadata rules below.
+
+Every Agent-launched `ve` process must receive `VE_CALLER_TYPE=ai_agent`,
+`VE_CALLER_NAME=<agent-id>`, and `VE_SKILL_NAME=<current-volcengine-skill>` to identify the Agent
+host and the skill owning the operation. Only `VE_CALLER_TYPE=ai_agent` is fixed. The Agent resolves
+the other two values from the actual runtime environment and active skill name for each invocation;
+they must not default to `codex` or `volcengine-cli`. No manual user configuration is needed.
+See [caller metadata](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory).
+For `ve arkcli ...`, `ve` translates the caller metadata. The Agent does not duplicate it with
+`ARKCLI_*` caller variables or copy the notifier prefix from standalone Ark CLI examples.
 
 ## Plugins
 
 <!-- BEGIN GENERATED: plugin-catalog -->
 | Plugin | Product domain | Skills | Default |
 | --- | --- | --- | --- |
-| `volcengine-core` | Core | `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills` | Yes |
+| `volcengine-core` | Core | `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills`, `volcengine-feedback` | Yes |
 | `volcengine-storage` | Storage | `volcengine-tosutil` | No |
 | `volcengine-database` | Database | `volcengine-db-supabase` | No |
 | `volcengine-containers-middleware` | Containers and Middleware | `volcengine-vefaas` | No |
@@ -50,6 +60,7 @@ are maintained in their plugins; the sync script generates the copies.
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures. |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with ve docs search/fetch, without login. |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | List all Volcengine skills so an agent can select and install missing capabilities. |
+| [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) | `volcengine-core` | Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task. |
 | [`volcengine-tosutil`](./skills/specialized/storage/volcengine-tosutil/SKILL.md) | `volcengine-storage` | Manage TOS buckets and objects with the tosutil command-line tool. |
 | [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions. |
 | [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | Deploy and manage serverless applications on Volcengine veFaaS. |
@@ -115,7 +126,7 @@ This command installs only the current core skills:
 ```bash
 npx skills add volcengine/volcengine-skills \
   --global --yes --copy --full-depth \
-  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills
+  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback
 ```
 
 The finder can later invoke `npx skills add --skill` for exact skills. To select repository skills interactively:
@@ -140,6 +151,7 @@ gemini skills install https://github.com/volcengine/volcengine-skills --path ski
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-troubleshooting
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-knowledge-search
 gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-find-skills
+gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-feedback
 gemini skills list
 ```
 
@@ -158,6 +170,34 @@ directory.
 ```
 
 Enter the complete command in a Cursor 2.5 or newer Agent chat. `/add-plugin` may not appear in autocomplete.
+
+## Feedback and real-world stories
+
+We would like to understand your outcomes, challenges, and expectations when using Volcengine
+through an Agent. Share skill usage issues, capability requests, scenarios to support, and successful
+practices to help users and developers improve the experience together. Describe your goal, actual
+results, or desired improvements; a root cause and a complete technical report are not required.
+
+Ask your Agent: "Use volcengine-feedback to share this: …". The default core skill
+[`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) turns existing context into a
+short, sanitized draft. Review it and choose to send, edit, or keep it; there is no need to prepare logs, versions,
+or a full report. After a successful submission, receive the issue link and continue the original task.
+
+You can also use the [Feedback issue form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml):
+besides the title, only the feedback itself is required; category and extra details are optional. Older installations
+and environments that have not loaded the skill can use the form directly.
+Feedback is always voluntary and never blocks the main task.
+An Agent may invite feedback at most once per conversation, without waiting for a reply,
+installing anything, or restarting the conversation for feedback.
+
+GitHub issues are public. Review the body and attachments before publishing and remove credentials,
+account information, real resource IDs, internal addresses, and customer data. Keep sensitive
+vulnerability details private. Follow the
+[feedback and community guidelines](./.github/FEEDBACK_GUIDELINES.md), including the linked GitHub
+community rules. Describe usage issues, their impact, and suggested improvements objectively.
+Maintainers will directly close issues containing personal attacks, harassment, discrimination,
+or other community-rule violations. Use official Volcengine support for private
+troubleshooting or urgent recovery.
 
 ## Directory Structure
 

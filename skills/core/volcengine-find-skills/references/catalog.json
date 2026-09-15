@@ -10,13 +10,14 @@
       "domain_en": "Core",
       "category": "Coding",
       "default": true,
-      "description": "Core Volcengine discovery, documentation search, CLI operations, and troubleshooting skills.",
-      "short_description": "Discover, operate, document, and troubleshoot Volcengine",
-      "keywords": ["core", "基础", "discovery", "cli", "documentation", "troubleshooting"],
+      "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
+      "short_description": "Discover, operate, troubleshoot, and improve Volcengine skills",
+      "keywords": ["core", "基础", "discovery", "cli", "documentation", "troubleshooting", "feedback", "反馈", "场景分享"],
       "default_prompts": [
         "Find the Volcengine skill for my task.",
         "Look up how to use this Volcengine product.",
-        "Diagnose this Volcengine error."
+        "Diagnose this Volcengine error.",
+        "Draft feedback about my experience using Volcengine skills."
       ],
       "skills": [
         {
@@ -89,6 +90,13 @@
           "summary": "List all Volcengine skills so an agent can select and install missing capabilities.",
           "summary_zh": "列出全部火山引擎技能，供 Agent 选择并安装当前缺失的能力。",
           "keywords": ["find", "discover", "install", "查找", "发现", "安装", "plugin", "skill"]
+        },
+        {
+          "name": "volcengine-feedback",
+          "path": "skills/core/volcengine-feedback",
+          "summary": "Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task.",
+          "summary_zh": "整理并提交脱敏的 GitHub 使用反馈，涵盖问题、能力需求、实际场景和成功实践，始终不阻塞主任务。",
+          "keywords": ["feedback", "反馈", "issue", "bug report", "问题反馈", "feature request", "能力愿望", "能力缺口", "scenario", "真实场景", "success story", "场景分享", "体验", "community", "社区"]
         }
       ]
     },

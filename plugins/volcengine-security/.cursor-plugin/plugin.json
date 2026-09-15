@@ -2,7 +2,7 @@
   "name": "volcengine-security",
   "displayName": "Volcengine Security",
   "description": "Assess security and compliance posture, query audit logs, and manage CloudTrail for Volcengine accounts and resources.",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"

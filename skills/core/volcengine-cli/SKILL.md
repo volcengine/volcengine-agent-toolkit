@@ -18,11 +18,24 @@ metadata:
       bins:
         - ve
         - npx
+      env:
+        - VE_CALLER_TYPE
+        - VE_CALLER_NAME
+        - VE_SKILL_NAME
     install:
       - kind: node
         package: "@volcengine/cli"
         bins: [ve]
     envVars:
+      - name: VE_CALLER_TYPE
+        required: true
+        description: Set by the Agent for every ve process; must be ai_agent
+      - name: VE_CALLER_NAME
+        required: true
+        description: Resolved by the Agent from the actual current host environment for each invocation; no fixed default
+      - name: VE_SKILL_NAME
+        required: true
+        description: Resolved by the Agent from the active Volcengine skill's frontmatter name for each invocation; no fixed default
       - name: VOLCENGINE_ACCESS_KEY
         required: false
         description: AccessKey for AK/SK auth path (alternative to `ve login`)
@@ -71,6 +84,73 @@ metadata:
 
 Use `ve` as the unified entry point for Volcengine OpenAPIs, TOS object operations, and Ark product workflows.
 
+## Agent caller metadata (mandatory)
+
+Every `ve` process launched by an Agent must receive these environment variables, including
+help/version checks, authentication, API calls, retries, polling, and `ve tosutil` / `ve arkcli`:
+
+| Variable | Required value |
+| --- | --- |
+| `VE_CALLER_TYPE` | Always `ai_agent`. |
+| `VE_CALLER_NAME` | Resolve the actual Agent host identifier from the current runtime environment. This identifies the Agent application, not a model, account, user, or session. |
+| `VE_SKILL_NAME` | Resolve the `name` in the active Volcengine skill's frontmatter for the workflow executing this command. Use that actual `volcengine-*` name. |
+
+Set these values yourself; they are runtime attribution, not credentials or a user setup step.
+Only `VE_CALLER_TYPE=ai_agent` is fixed. Resolve both the current host and active skill before each
+execution; neither has a hardcoded default. For example, `codex` is valid only when the current
+Agent is Codex, and `volcengine-cli` only when that skill owns the current operation. Resolve the
+values again when the Agent environment or active skill changes. Shared helpers and upstream
+product CLIs inherit the actual calling Volcengine skill's identity; their executable names or
+installation directories do not determine it.
+
+Supply all three through the tool's process environment or command-local assignments **on every
+execution**. A new tool call may start a fresh shell, so an earlier `export` is not sufficient.
+For a multi-command shell block, export all three at the beginning of that block and update the
+skill name before switching workflows. Put assignments before the executable; these are not CLI
+flags, API parameters, or fields to add to a request body.
+For pipelines and `$(...)`, set the variables on the `ve` process itself or export them in that
+same shell before running the pipeline or expanding the command substitution.
+
+Command shape — the Agent must replace both placeholders with values resolved from the actual
+runtime environment and active skill before execution:
+
+```text
+VE_CALLER_TYPE=ai_agent \
+VE_CALLER_NAME="<agent-id>" \
+VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve ecs DescribeInstances --output json
+```
+
+Apply the same environment to any script that launches `ve`, including `install_ve.sh`,
+`ve_login_remote.sh`, `audit_extend_apis.py`, and `call_extend_api.py`. Their child processes inherit
+it, including detached login processes; later helper invocations need it again. When running a
+downloaded installer through a pipe, attach the environment to the shell running the installer,
+not only to the download command. Preserve required authentication/configuration settings and
+child CLI arguments; follow the Ark delegation rule below for caller metadata.
+
+Command examples elsewhere in this skill and its references show the command syntax; this
+environment requirement applies to every execution of those examples as well.
+
+### Ark delegation: one set of caller variables
+
+For `ve arkcli ...`, supply the three `VE_*` caller variables above. `ve` converts them into
+the Ark CLI environment, so the Agent must not also add `ARKCLI_CALLER_TYPE`,
+`ARKCLI_CALLER_NAME`, or `ARKCLI_SKILL_NAME`. Do not copy `ARKCLI_NO_UPDATE_NOTIFIER=1` from
+standalone Ark examples into the command prefix either; let `ve` manage the delegated process.
+This applies to Ark authentication, model operations, help, and version commands.
+
+```text
+VE_CALLER_TYPE=ai_agent \
+VE_CALLER_NAME="<agent-id>" \
+VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve arkcli auth status
+```
+
+Resolve the placeholders from the actual Agent environment and active Volcengine skill. When
+reusing a process environment from a standalone Ark invocation, omit the four wrapper-managed
+variables named above from this invocation. Preserve other product settings and credentials.
+Standalone `arkcli ...` calls continue to follow the upstream Ark skill's environment rules.
+
 ## Product CLI routing
 
 **Version requirement:** Before any skill uses `ve` to delegate to another CLI, including
@@ -118,9 +198,11 @@ profile, parameters, output, and exit codes. Native API rules such as `--output`
 
 - Put supported child flags after the child command. `ve --profile <name> arkcli ...` is invalid;
   `ve arkcli ... --profile <name>` selects an **Ark** profile, not a `ve` profile.
-- Follow the product skill's authentication, flags, output handling and per-command environment
-  prefixes. Only change `tosutil ...` / `arkcli ...` into `ve tosutil ...` / `ve arkcli ...`;
-  keep any environment assignments before `ve` and all arguments after the child name unchanged.
+- Follow the product skill's authentication, flags, and output handling. Change `tosutil ...` /
+  `arkcli ...` into `ve tosutil ...` / `ve arkcli ...` while keeping all child arguments unchanged.
+  For `ve arkcli`, use only the `VE_*` caller metadata as described in
+  [Ark delegation](#ark-delegation-one-set-of-caller-variables); do not copy the standalone Ark
+  caller/notifier prefix. Keep any required product environment assignments before `ve`.
 - A working `ve sts GetCallerIdentity` does not prove either child is authenticated. Follow the
   selected product skill. Help, version, and local preview tasks do not require native API login.
 - `ve` may refresh its current Console Login session before delegation; that does not translate
@@ -399,7 +481,8 @@ It also has a free mode (`--service/--version/--query-keys`) for unregistered AP
 ### Basic Format
 
 ```text
-ve <ServiceCode> <ActionName> --ParamName "value" [system flags]
+VE_CALLER_TYPE=ai_agent VE_CALLER_NAME=<agent-id> VE_SKILL_NAME=<current-volcengine-skill> \
+  ve <ServiceCode> <ActionName> --ParamName "value" [system flags]
 ```
 
 System flags (`--profile`, `--region`, `--endpoint`, `--output`, `--query`, …) go after the Action, in any order relative to the parameters.
@@ -470,6 +553,12 @@ Whenever a native `ve <service> <Action>` command or extension helper fails, or 
 
 First classify the error as request-format, missing dependency, account state, service activation, real-name verification, purchase qualification, or permission related. For product-specific errors, also read the matching service note below. For permission errors (`AccessDenied`, `NoPermission`, `RoleNotExist`, `Forbidden`, or STS-related failures), activate the `volcengine-troubleshooting` skill and use its account-permission diagnosis capability to locate the root cause and guide the user through remediation.
 
+For CLI anomalies or an incompletely solved task, follow the **non-blocking feedback** guidance in
+`volcengine-troubleshooting`: continue the main task and reserve any optional invitation for a natural
+summary. User-requested feedback belongs to `volcengine-feedback`; when unavailable, use the
+[feedback form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)
+in the current conversation rather than installing a skill or restarting the task for feedback.
+
 ### Async Resource Creation Requires Polling
 
 Some resources (VKE clusters, RDS instances, ECS instances, etc.) take several minutes to create. After creation, poll the Describe endpoint until the resource reaches the desired status before proceeding.
@@ -500,7 +589,7 @@ done
 ## 5. Native OpenAPI Execution Flow (Summary)
 
 ```text
-1. Initialize: verify credentials -> GetCallerIdentity -> confirm region
+1. Set caller metadata for this execution -> verify credentials -> GetCallerIdentity -> confirm region
 2. Understand the task: is the user querying or making changes?
 3. Locate the API: ve --help first -> find_api.py as fallback -> --force if the metadata lacks it
 4. Retrieve parameters: --help, then --help --detail for write/destructive actions

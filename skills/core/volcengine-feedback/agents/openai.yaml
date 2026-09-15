@@ -1,0 +1,4 @@
+interface:
+  display_name: "Volcengine Feedback"
+  short_description: "Share real Agent cloud scenarios and skill feedback"
+  default_prompt: "Use $volcengine-feedback to draft feedback about my Volcengine Agent experience for review before publishing."

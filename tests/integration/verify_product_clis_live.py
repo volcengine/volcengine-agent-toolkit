@@ -34,19 +34,24 @@ class LiveChecks:
         command: list[str],
         template: str,
         check: Callable[[str], dict[str, Any]],
-        owning_skill: str | None = None,
     ) -> bool:
         started = time.monotonic()
         row: dict[str, Any] = {"case": case_id, "command": template}
         env = os.environ.copy()
         env["VOLCENGINE_CLI_DISABLE_UPDATE_CHECK"] = "1"
-        if owning_skill:
-            env.update(
-                ARKCLI_NO_UPDATE_NOTIFIER="1",
-                ARKCLI_CALLER_TYPE="ai_agent",
-                ARKCLI_CALLER_NAME="codex",
-                ARKCLI_SKILL_NAME=owning_skill,
-            )
+        env.update(
+            VE_CALLER_TYPE="ai_agent",
+            VE_CALLER_NAME=self.args.agent_id,
+            VE_SKILL_NAME=self.args.skill_name,
+        )
+        if command and command[0] == "arkcli":
+            for name in (
+                "ARKCLI_NO_UPDATE_NOTIFIER",
+                "ARKCLI_CALLER_TYPE",
+                "ARKCLI_CALLER_NAME",
+                "ARKCLI_SKILL_NAME",
+            ):
+                env.pop(name, None)
         try:
             completed = subprocess.run(
                 [self.args.ve, *command],
@@ -145,13 +150,11 @@ class LiveChecks:
             ["arkcli", "auth", "whoami", "--format", "json", *ark_flags],
             "ve arkcli auth whoami --format json [--profile <profile>]",
             self.ark_auth,
-            "arkcli-auth",
         ) and self.step(
             "ARK-SEARCH",
             ["arkcli", "models", "search", self.args.keyword, "--size", "3", "--refresh-cache", "--format", "json", *ark_flags],
             "ve arkcli models search <keyword> --size 3 --refresh-cache --format json [--profile <profile>]",
             self.model_search,
-            "arkcli-models",
         ):
             model = self.model_name + ("-" + self.model_version if self.model_version else "")
             self.step(
@@ -159,7 +162,6 @@ class LiveChecks:
                 ["arkcli", "models", "get", model, "--format", "json", *ark_flags],
                 "ve arkcli models get <live-model-id> --format json [--profile <profile>]",
                 self.model_get,
-                "arkcli-models",
             )
         return len(self.results) == 6 and all(row["status"] == "PASS" for row in self.results)
 
@@ -167,6 +169,8 @@ class LiveChecks:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ve", default="ve", help="newly built ve executable")
+    parser.add_argument("--agent-id", required=True, help="actual Agent host identifier for this execution")
+    parser.add_argument("--skill-name", required=True, help="active Volcengine skill name for this execution")
     parser.add_argument("--tos-config", type=Path, required=True, help="existing authenticated tosutil config")
     parser.add_argument("--tos-bucket", required=True, help="existing bucket, without tos://")
     parser.add_argument("--tos-region", required=True, help="expected bucket region; does not change profiles")
@@ -175,6 +179,11 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=60, help="per-command deadline in seconds")
     parser.add_argument("--report", type=Path, required=True, help="sanitized JSON report path")
     args = parser.parse_args()
+    args.agent_id = args.agent_id.strip()
+    if not args.agent_id:
+        parser.error("--agent-id must identify the actual Agent host")
+    if not re.fullmatch(r"volcengine-[a-z0-9]+(?:-[a-z0-9]+)*", args.skill_name):
+        parser.error("--skill-name must be the active volcengine-* skill name")
     args.tos_config = args.tos_config.expanduser().resolve()
     if not args.tos_config.is_file():
         parser.error("--tos-config must be an existing file")
