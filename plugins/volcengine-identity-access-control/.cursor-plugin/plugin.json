@@ -2,7 +2,7 @@
   "name": "volcengine-identity-access-control",
   "displayName": "Volcengine Identity and Access Control",
   "description": "Design and establish Volcengine landing zones, organizations, identity, account factories, and governance baselines.",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"
