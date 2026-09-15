@@ -125,10 +125,31 @@ Apply the same environment to any script that launches `ve`, including `install_
 `ve_login_remote.sh`, `audit_extend_apis.py`, and `call_extend_api.py`. Their child processes inherit
 it, including detached login processes; later helper invocations need it again. When running a
 downloaded installer through a pipe, attach the environment to the shell running the installer,
-not only to the download command. Preserve existing environment assignments and child CLI arguments.
+not only to the download command. Preserve required authentication/configuration settings and
+child CLI arguments; follow the Ark delegation rule below for caller metadata.
 
 Command examples elsewhere in this skill and its references show the command syntax; this
 environment requirement applies to every execution of those examples as well.
+
+### Ark delegation: one set of caller variables
+
+For `ve arkcli ...`, supply the three `VE_*` caller variables above. `ve` converts them into
+the Ark CLI environment, so the Agent must not also add `ARKCLI_CALLER_TYPE`,
+`ARKCLI_CALLER_NAME`, or `ARKCLI_SKILL_NAME`. Do not copy `ARKCLI_NO_UPDATE_NOTIFIER=1` from
+standalone Ark examples into the command prefix either; let `ve` manage the delegated process.
+This applies to Ark authentication, model operations, help, and version commands.
+
+```text
+VE_CALLER_TYPE=ai_agent \
+VE_CALLER_NAME="<agent-id>" \
+VE_SKILL_NAME="<current-volcengine-skill>" \
+  ve arkcli auth status
+```
+
+Resolve the placeholders from the actual Agent environment and active Volcengine skill. When
+reusing a process environment from a standalone Ark invocation, omit the four wrapper-managed
+variables named above from this invocation. Preserve other product settings and credentials.
+Standalone `arkcli ...` calls continue to follow the upstream Ark skill's environment rules.
 
 ## Product CLI routing
 
@@ -177,9 +198,11 @@ profile, parameters, output, and exit codes. Native API rules such as `--output`
 
 - Put supported child flags after the child command. `ve --profile <name> arkcli ...` is invalid;
   `ve arkcli ... --profile <name>` selects an **Ark** profile, not a `ve` profile.
-- Follow the product skill's authentication, flags, output handling and per-command environment
-  prefixes. Only change `tosutil ...` / `arkcli ...` into `ve tosutil ...` / `ve arkcli ...`;
-  keep any environment assignments before `ve` and all arguments after the child name unchanged.
+- Follow the product skill's authentication, flags, and output handling. Change `tosutil ...` /
+  `arkcli ...` into `ve tosutil ...` / `ve arkcli ...` while keeping all child arguments unchanged.
+  For `ve arkcli`, use only the `VE_*` caller metadata as described in
+  [Ark delegation](#ark-delegation-one-set-of-caller-variables); do not copy the standalone Ark
+  caller/notifier prefix. Keep any required product environment assignments before `ve`.
 - A working `ve sts GetCallerIdentity` does not prove either child is authenticated. Follow the
   selected product skill. Help, version, and local preview tasks do not require native API login.
 - `ve` may refresh its current Console Login session before delegation; that does not translate
