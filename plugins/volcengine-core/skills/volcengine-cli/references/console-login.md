@@ -2,6 +2,12 @@
 
 This is the full procedure behind the Console Login summary in `SKILL.md` §1. Read it completely before the first `start` of a conversation; the summary in `SKILL.md` is not a substitute.
 
+Apply [the mandatory Agent caller metadata](../SKILL.md#agent-caller-metadata-mandatory) to each
+helper invocation, including `start` and the later `verify`. Prefix the helper process with
+`VE_CALLER_TYPE=ai_agent VE_CALLER_NAME=<agent-id> VE_SKILL_NAME=<current-volcengine-skill>`;
+its help checks, detached login, and verification calls inherit those values. Preserve the
+calling workflow's skill name when this shared helper is used by another Volcengine skill.
+
 **IMPORTANT: NEVER call `ve login` directly. ALWAYS use the helper script `scripts/ve_login_remote.sh`.** It keeps the login subprocess alive across tool calls, extracts the URL and code, answers ve's interactive prompts, verifies the result, and cleans up. Calling `ve login` directly orphans the subprocess and loses the device code the URL depends on.
 
 `ve login` is an OAuth 2.0 device-code flow: ve prints a verification URL and a short user code, then polls the server itself until the user approves in a browser on **any** device. **Nothing comes back from the user** — you run `verify` after they say they are done. The code expires after `EXPIRES_IN` seconds (300 today). The script prints a `KEY=value` block, so read the keys — never parse prose.

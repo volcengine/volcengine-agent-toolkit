@@ -21,6 +21,11 @@ skills are grouped into Volcengine product-domain plugins and discovered through
 locate and install `volcengine-tosutil`, or download the [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills).
 Follow the corresponding skill, adding only the `ve` prefix to its product CLI commands.
 
+Every Agent-launched `ve` process must receive `VE_CALLER_TYPE=ai_agent`,
+`VE_CALLER_NAME=<agent-id>`, and `VE_SKILL_NAME=<current-volcengine-skill>` to identify the Agent
+host and the skill owning the operation. The Agent supplies these values from its execution
+context; no manual user configuration is needed. See [caller metadata](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory).
+
 ## Plugins
 
 <!-- BEGIN GENERATED: plugin-catalog -->

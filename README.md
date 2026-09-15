@@ -20,6 +20,10 @@
 查找并安装 `volcengine-tosutil`；Ark 操作引导下载[官方 skills](https://github.com/volcengine/ark-cli/tree/main/skills)。
 具体操作遵循对应 skill，只在产品命令前增加 `ve`。
 
+Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<agent-id>` 和
+`VE_SKILL_NAME=<current-volcengine-skill>`，用于标识 Agent 类型及当前执行操作的 skill。
+这些值由 Agent 根据执行上下文设置，无需用户手动配置；详见 [调用方标识规则](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory)。
+
 ## Plugins
 
 <!-- BEGIN GENERATED: plugin-catalog -->
