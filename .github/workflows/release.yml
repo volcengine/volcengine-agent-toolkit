@@ -135,3 +135,24 @@ jobs:
             "s3://${bucket}/${prefix}/latest/manifest.json" \
             --content-type application/json \
             --cache-control 'no-cache, max-age=0'
+
+      - name: Refresh CDN release pointers
+        env:
+          VOLCENGINE_ACCESS_KEY: ${{ secrets.VOLCENGINE_ACCESS_KEY }}
+          VOLCENGINE_SECRET_KEY: ${{ secrets.VOLCENGINE_SECRET_KEY }}
+          VOLCENGINE_REGION: ${{ vars.VOLCENGINE_REGION }}
+          VOLCENGINE_CLI_SKIP_SKILLS: '1'
+          TOS_PUBLIC_BASE_URL: ${{ vars.TOS_PUBLIC_BASE_URL }}
+          TOS_PREFIX: ${{ vars.TOS_PREFIX }}
+        run: |
+          : "${VOLCENGINE_ACCESS_KEY:?missing secret VOLCENGINE_ACCESS_KEY}"
+          : "${VOLCENGINE_SECRET_KEY:?missing secret VOLCENGINE_SECRET_KEY}"
+          : "${VOLCENGINE_REGION:?missing variable VOLCENGINE_REGION}"
+
+          public_base="${TOS_PUBLIC_BASE_URL:-https://cloudcache.volccdn.com}"
+          prefix="${TOS_PREFIX:-ve/skills}"
+          refresh_url="${public_base%/}/${prefix#/}/latest/manifest.json"
+          npm install -g "@volcengine/cli@1.1.5"
+          ve cdn SubmitRefreshTask \
+            --Type file \
+            --UrlList.1 "$refresh_url"
