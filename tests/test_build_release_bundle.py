@@ -136,6 +136,21 @@ class BuildReleaseBundleTests(unittest.TestCase):
         )
         self.assertNotIn("tosutil", workflow)
 
+    def test_release_workflow_refreshes_latest_cdn_manifest(self):
+        workflow = RELEASE_WORKFLOW.read_text()
+
+        self.assertIn("- name: Refresh CDN release pointers", workflow)
+        self.assertIn("secrets.VOLCENGINE_ACCESS_KEY", workflow)
+        self.assertIn("secrets.VOLCENGINE_SECRET_KEY", workflow)
+        self.assertIn("vars.VOLCENGINE_REGION", workflow)
+        self.assertIn('npm install -g "@volcengine/cli@1.1.5"', workflow)
+        self.assertIn("ve cdn SubmitRefreshTask", workflow)
+        self.assertIn(
+            'refresh_url="${public_base%/}/${prefix#/}/latest/manifest.json"',
+            workflow,
+        )
+        self.assertIn('--UrlList.1 "$refresh_url"', workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
