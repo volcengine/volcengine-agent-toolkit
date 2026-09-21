@@ -4,6 +4,18 @@ variable "region" {
   default     = "cn-beijing"
 }
 
+variable "landing_zone_context_path" {
+  description = "Absolute path to the filtered landing-zone-context.json produced from Phase 01 outputs"
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.landing_zone_context_path == null || trimspace(var.landing_zone_context_path) != ""
+    error_message = "landing_zone_context_path must be non-empty when provided."
+  }
+}
+
 variable "network_availability_zone_a" {
   description = "网络底座子网与 TR 连接点使用的可用区 A；为空时默认使用 <region>-a"
   type        = string
@@ -19,16 +31,35 @@ variable "network_availability_zone_b" {
 variable "prefix" {
   description = "企业名称前缀"
   type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9-]+$", var.prefix)) && length(var.prefix) >= 2 && length(var.prefix) <= 12
+    error_message = "prefix must be 2-12 characters long and contain only letters, numbers, or hyphens."
+  }
 }
 
 variable "management_account_id" {
-  description = "管理账号 ID；用于在组织级 CLI 写操作前校验当前 ve 登录态是否处于正确的组织管理员上下文"
+  description = "Deprecated compatibility input for the management account ID. Prefer landing_zone_context_path."
   type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.management_account_id == null || trimspace(var.management_account_id) != ""
+    error_message = "management_account_id must be non-empty when provided."
+  }
 }
 
 variable "network_account_id" {
-  description = "网络账号 ID（来自阶段 1 输出）"
+  description = "Deprecated compatibility input for the network account ID. Prefer landing_zone_context_path."
   type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.network_account_id == null || trimspace(var.network_account_id) != ""
+    error_message = "network_account_id must be non-empty when provided."
+  }
 }
 
 variable "network_vpc_cidr" {

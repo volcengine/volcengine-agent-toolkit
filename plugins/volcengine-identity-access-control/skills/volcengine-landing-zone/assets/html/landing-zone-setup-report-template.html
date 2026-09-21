@@ -166,7 +166,7 @@
     }
 
     .muted { color: var(--muted); }
-
+    
     .multiline {
       white-space: pre-wrap;
       word-break: break-word;
@@ -201,11 +201,44 @@
           <span class="meta-label">工作区目录</span>
           <span class="meta-value path" style="font-size: 0.85em; font-weight: normal;">{{WORKSPACE_PATH}}</span>
         </div>
+        <div class="meta-item">
+          <span class="meta-label">架构方案</span>
+          <span class="meta-value">{{ARCHITECTURE_PROFILE_AND_MODE}}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">配置状态</span>
+          <span class="meta-value">{{ARCHITECTURE_LOCK_STATUS}}</span>
+        </div>
       </div>
     </section>
 
     <section class="section">
-      <h2>1. 阶段执行明细</h2>
+      <h2>1. 架构与能力范围</h2>
+      <p class="muted" style="font-size: 0.95rem; margin-top: 0;">本节从已确认架构与阶段上下文生成，不根据默认账号名称反向推断。</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>治理能力</th>
+              <th>状态</th>
+              <th>目标范围或承载账号</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-row="capability">
+              <td style="white-space: nowrap; font-weight: 500;">{{CAPABILITY_NAME}}</td>
+              <td style="white-space: nowrap;">{{CAPABILITY_STATUS}}</td>
+              <td class="multiline">{{CAPABILITY_TARGET}}</td>
+              <td class="multiline muted">{{CAPABILITY_NOTES}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>2. 阶段执行明细</h2>
       <p class="muted" style="font-size: 0.95rem; margin-top: 0;">重点展示本次搭建各核心阶段的执行结果及资源落地情况。</p>
       <div class="table-wrap">
         <table>
@@ -232,7 +265,7 @@
     </section>
 
     <section class="section">
-      <h2>2. 关键交付文件</h2>
+      <h2>3. 关键交付文件</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -254,7 +287,7 @@
     </section>
 
     <section class="section">
-      <h2>3. 待处理与后续建议</h2>
+      <h2>4. 待处理与后续建议</h2>
       <h3>待人工处理项</h3>
       <ul>
         <li data-row="manual-item" class="multiline">{{MANUAL_ITEM_1_OR_NONE}}</li>

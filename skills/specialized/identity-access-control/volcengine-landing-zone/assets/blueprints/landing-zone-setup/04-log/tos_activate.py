@@ -4,6 +4,7 @@ import datetime
 import hashlib
 import hmac
 import json
+import os
 import sys
 import time
 from urllib.error import HTTPError, URLError
@@ -296,9 +297,24 @@ def parse_args():
         description="Ensure the current account has TOS activated via Volcengine OpenAPI."
     )
     parser.add_argument("--region", required=True, help="Volcengine region for the TOS control plane.")
-    parser.add_argument("--access-key", required=True, help="Access key used for signing.")
-    parser.add_argument("--secret-key", required=True, help="Secret key used for signing.")
-    parser.add_argument("--session-token", help="Optional STS session token.")
+    # Credentials are read from environment variables so they never appear in the
+    # process argument list (visible via `ps`). Optional flags remain for manual
+    # invocation but should not be used to pass secrets in shared environments.
+    parser.add_argument(
+        "--access-key",
+        default=os.environ.get("VOLCENGINE_ACCESS_KEY"),
+        help="Access key for signing. Defaults to $VOLCENGINE_ACCESS_KEY.",
+    )
+    parser.add_argument(
+        "--secret-key",
+        default=os.environ.get("VOLCENGINE_SECRET_KEY"),
+        help="Secret key for signing. Defaults to $VOLCENGINE_SECRET_KEY.",
+    )
+    parser.add_argument(
+        "--session-token",
+        default=os.environ.get("VOLCENGINE_SESSION_TOKEN"),
+        help="Optional STS session token. Defaults to $VOLCENGINE_SESSION_TOKEN.",
+    )
     parser.add_argument(
         "--timeout-seconds",
         type=int,
@@ -317,7 +333,18 @@ def parse_args():
         default=DEFAULT_POLL_INTERVAL_SECONDS,
         help="Seconds to wait between verification polls.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    missing = [
+        name
+        for name, value in (
+            ("access key ($VOLCENGINE_ACCESS_KEY)", args.access_key),
+            ("secret key ($VOLCENGINE_SECRET_KEY)", args.secret_key),
+        )
+        if not value
+    ]
+    if missing:
+        parser.error("missing required credentials: " + ", ".join(missing))
+    return args
 
 
 def main():

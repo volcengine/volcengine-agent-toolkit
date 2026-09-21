@@ -21,15 +21,18 @@ This phase binds finance relationships between the primary account and the core 
 
 ## Minimum Input
 
-- `prefix` must stay aligned with `01-organization`. By default, `AccountAlias = <prefix>-<key>`
-- `financial_relation_accounts` should be assembled automatically from the core account IDs produced by the previous phase instead of asking the user to fill them again
+- The standard path passes the absolute `${WORKSPACE_ROOT}/landing-zone-context.json`; use `phase_inputs.finance.targets`, where each selected physical account carries its explicit `account_id` and `account_alias`
+- If `phase_inputs.finance.enabled` is false, mark this phase skipped. If it is true but the target set is empty, stop before write instead of silently succeeding
+- Do not infer finance targets from the five default role names and do not rebuild aliases from a renamed custom account. The architecture's `finance_enabled` selector controls the default target set
+- `financial_relation_targets` and `financial_relation_accounts` are legacy inputs. If either is supplied with a context, it must match the context exactly
+- `prefix` and `region` must match the context; `prefix` remains relevant to the deprecated `financial_relation_accounts` alias fallback only
 - Ask for `financial_relation_type` only when it is missing, to determine whether the model is finance hosting or finance association
 - Ask for `financial_relation_auth_list_str` only when the chosen relationship type truly requires extra authorization items
-- Do not ask early in this phase for identity, logging, or networking variables
 
 ## Execution Conventions
 
 - If the target finance relationship already exists, prefer reuse
+- Before G2, validate the confirmed architecture digest and show the actual target accounts and relation type. Finance removal is a migration and is not implied by deleting a Terraform trigger
 - Even when `CreateFinancialRelation` returns a duplicate or already-exists style result, do not treat it as success directly. Continue with read-after-write validation through `ListFinancialRelation`
 - `Financial_Hosting` maps to `Relation = 1`
 - `Financial_Association` maps to `Relation = 4`

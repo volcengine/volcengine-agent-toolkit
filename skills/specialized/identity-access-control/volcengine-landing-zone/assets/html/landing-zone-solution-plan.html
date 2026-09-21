@@ -368,12 +368,15 @@
 
     <section class="section">
       <h2 id="section-2">2. 核心治理域设计</h2>
-
-      <h3 id="section-2-1" style="margin-top: 0.5rem; font-size: 1.1rem; color: #1f2328; margin-bottom: 0.5rem;">2.1 组织与账号架构方案</h3>
+      
+      <h3 id="section-2-1" style="margin-top: 0.5rem; font-size: 1.1rem; color: #1f2328; margin-bottom: 0.5rem;">2.1 推荐默认组织与账号架构</h3>
       <p>
-        目标账号架构围绕企业组织分层展开，重点体现管理账号、根组织、顶层 OU、Applications 子 OU 以及各核心账号的落位关系。
-        其中治理账号集中落在 `Platform` OU，业务账号按环境落在 `Applications` OU 的子层级中。
+        下图是未提出调整诉求时采用的 <code>recommended-v1</code> 推荐默认架构，围绕企业组织分层体现管理账号、根组织、顶层 OU、Applications 子 OU 以及各核心账号的落位关系。
+        其中治理账号集中落在 <code>Platform</code> OU，业务账号按环境落在 <code>Applications</code> OU 的子层级中。
       </p>
+      <div class="note">
+        客户可以调整 OU 名称与层级、账号数量与名称、账号落位、财务与身份覆盖范围，以及日志归档、网络等语义角色由哪个账号承载。提出调整后，Agent 会把差异展开成完整目标树，在 workspace 中生成定制版确认文件并再次展示；只有定制版得到确认后才进入实施。未提出调整时直接采用本页默认方案，不再逐项询问账号架构。无论默认还是定制，确认后都会冻结一份完整架构快照，后续升级不会静默改变已确认设计。
+      </div>
       <div class="diagram-card">
         <svg width="100%" viewBox="0 0 1000 780" xmlns="http://www.w3.org/2000/svg" aria-label="Landing Zone 企业组织账号架构图">
           <defs>
@@ -532,16 +535,16 @@
         企业财务方案是针对多账号提供的云上跨账号商务与履约（资金、发票、账单）一体化管理体系。
         通过关联管理，以企业视角统筹云上资源使用，实现统一出账、统一结算与集中资金管理。
       </p>
-
+      
       <div class="diagram-card" style="margin-bottom: 1.5rem;">
         <svg width="100%" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" aria-label="企业财务管理模式图">
           <!-- 财务托管模式 -->
           <rect x="40" y="20" width="340" height="280" rx="8" fill="#fafafa" stroke="#d8dee8" stroke-width="1.2" />
           <text x="210" y="50" text-anchor="middle" fill="#1f2328" font-size="15" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">财务托管模式（推荐）</text>
-
+          
           <rect x="130" y="80" width="160" height="40" rx="6" fill="#eef3fb" stroke="#165dff" stroke-width="1.2" />
           <text x="210" y="105" text-anchor="middle" fill="#165dff" font-size="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">财务主账号</text>
-
+          
           <text x="300" y="92" fill="#5b6573" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">统一账单、发票</text>
           <text x="300" y="108" fill="#5b6573" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">统一结算、优惠</text>
 
@@ -552,20 +555,20 @@
 
           <rect x="70" y="160" width="280" height="110" rx="8" fill="#ffffff" stroke="#165dff" stroke-width="1.2" stroke-dasharray="4,4" />
           <text x="80" y="180" fill="#165dff" font-size="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">统一出账</text>
-
+          
           <rect x="90" y="200" width="100" height="40" rx="6" fill="#bffdfd" stroke="#11a2a2" stroke-width="1.2" />
           <text x="140" y="225" text-anchor="middle" fill="#034949" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">成员账号 1</text>
-
+          
           <rect x="230" y="200" width="100" height="40" rx="6" fill="#bffdfd" stroke="#11a2a2" stroke-width="1.2" />
           <text x="280" y="225" text-anchor="middle" fill="#034949" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">成员账号 2</text>
 
           <!-- 财务管理模式 -->
           <rect x="420" y="20" width="340" height="280" rx="8" fill="#fafafa" stroke="#d8dee8" stroke-width="1.2" />
           <text x="590" y="50" text-anchor="middle" fill="#1f2328" font-size="15" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">财务管理模式</text>
-
+          
           <rect x="510" y="80" width="160" height="40" rx="6" fill="#eef3fb" stroke="#165dff" stroke-width="1.2" />
           <text x="590" y="105" text-anchor="middle" fill="#165dff" font-size="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">财务主账号</text>
-
+          
           <text x="680" y="92" fill="#5b6573" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">优惠共享</text>
           <text x="680" y="108" fill="#5b6573" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">信控划拨</text>
 
@@ -573,12 +576,12 @@
           <path d="M 520 150 L 660 150" stroke="#5b6573" stroke-width="1.5" fill="none" stroke-dasharray="4,4" />
           <path d="M 520 150 L 520 170" stroke="#5b6573" stroke-width="1.5" fill="none" stroke-dasharray="4,4" marker-end="url(#arrow)" />
           <path d="M 660 150 L 660 170" stroke="#5b6573" stroke-width="1.5" fill="none" stroke-dasharray="4,4" marker-end="url(#arrow)" />
-
+          
           <rect x="460" y="160" width="120" height="110" rx="8" fill="#ffffff" stroke="#d8dee8" stroke-width="1.2" stroke-dasharray="4,4" />
           <text x="470" y="180" fill="#5b6573" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">独立结算</text>
           <rect x="470" y="200" width="100" height="40" rx="6" fill="#bffdfd" stroke="#11a2a2" stroke-width="1.2" />
           <text x="520" y="225" text-anchor="middle" fill="#034949" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">成员账号 1</text>
-
+          
           <rect x="600" y="160" width="120" height="110" rx="8" fill="#ffffff" stroke="#d8dee8" stroke-width="1.2" stroke-dasharray="4,4" />
           <text x="610" y="180" fill="#5b6573" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">独立结算</text>
           <rect x="610" y="200" width="100" height="40" rx="6" fill="#bffdfd" stroke="#11a2a2" stroke-width="1.2" />
@@ -867,7 +870,7 @@
 
           <rect x="370" y="70" width="120" height="56" rx="6" fill="#ffffff" stroke="#0b7bc1" stroke-width="1.2"/>
           <text x="430" y="90" text-anchor="middle" font-size="13" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#033e63">NAT 网关</text>
-
+          
           <rect x="380" y="98" width="100" height="22" rx="4" fill="#f0f7ff" stroke="#165dff" stroke-width="1"/>
           <text x="430" y="113" text-anchor="middle" font-size="11" font-weight="500" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#165dff">公网 EIP</text>
 
@@ -957,13 +960,13 @@
             <!-- Result Area under Create Account -->
             <rect x="270" y="210" width="220" height="80" rx="8" fill="#ffffff" stroke="#11a2a2" stroke-width="1.2" stroke-dasharray="4,4" />
             <text x="380" y="232" text-anchor="middle" fill="#034949" font-size="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">账号落位结果</text>
-
+            
             <rect x="285" y="245" width="50" height="26" rx="6" fill="#bffdfd" stroke="#11a2a2" stroke-width="1" />
             <text x="310" y="262" text-anchor="middle" fill="#034949" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">OU</text>
-
+            
             <rect x="345" y="245" width="70" height="26" rx="6" fill="#bffdfd" stroke="#11a2a2" stroke-width="1" />
             <text x="380" y="262" text-anchor="middle" fill="#034949" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">财务关系</text>
-
+            
             <rect x="425" y="245" width="50" height="26" rx="6" fill="#bffdfd" stroke="#11a2a2" stroke-width="1" />
             <text x="450" y="262" text-anchor="middle" fill="#034949" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="600">标签</text>
 
@@ -1015,13 +1018,14 @@
 
     <section class="section">
       <h2 id="section-3">3. 实施范围、计划与确认机制</h2>
-
+      
       <h3 style="margin-top: 0.5rem; font-size: 1.1rem; color: #1f2328; margin-bottom: 0.5rem;">3.1 实施边界</h3>
       <ul>
         <li>本次方案聚焦 Landing Zone 治理底座，不包含具体业务系统、应用中间件或业务流量迁移内容。</li>
         <li>本次方案不默认覆盖所有账号工厂、客户自定义基线或个性化扩展模块，后续如需扩展可在既有底座上继续建设。</li>
         <li>本次方案不以“重建现网”为目标，已存在且符合标准的组织结构或资源将优先复用。</li>
         <li>具体资源数量和结果以实际执行时的现网状态与权限条件为准。</li>
+        <li>首次部署前可直接调整完整设计；已经部署后的账号/OU 删除、移动、稳定标识变化，以及日志或网络承载账号改绑，属于独立迁移事项，不会作为普通调整自动执行。</li>
       </ul>
 
       <h3 style="margin-top: 2rem; font-size: 1.1rem; color: #1f2328; margin-bottom: 0.5rem;">3.2 落地原则</h3>
@@ -1043,14 +1047,15 @@
       <div class="note success">
         本方案用于说明“准备落地成什么样的 Landing Zone”，结果报告用于说明“最终实际落地了什么”。
       </div>
-
+      
       <h3 style="margin-top: 2rem; font-size: 1.1rem; color: #1f2328; margin-bottom: 0.5rem;">3.4 启动前确认事项</h3>
       <ul>
         <li>已理解本次将建设的是标准化 Landing Zone 治理底座，而不是完整业务系统交付。</li>
-        <li>已接受本方案中的目标架构、建设边界与各项治理域设计。</li>
+        <li>如不需要调整账号架构，已接受本页推荐默认架构、建设边界与各项治理域设计。</li>
+        <li>如需要调整，可直接描述希望修改的 OU、账号、治理能力范围或角色承载关系；无需编写 Terraform，也无需提供内部逻辑 key。</li>
       </ul>
       <div class="note">
-        如无疑问，请向 Agent 明确表示“确认开始”或同义确认，以启动正式实施搭建流程。
+        如接受默认方案，请向 Agent 明确表示“确认按默认方案开始”或同义确认；如需调整，请先说明调整诉求。Agent 会展示定制后的完整方案，待再次确认后再启动实施。
       </div>
     </section>
   </div>

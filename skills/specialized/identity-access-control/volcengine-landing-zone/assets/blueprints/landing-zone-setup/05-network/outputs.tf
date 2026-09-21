@@ -38,9 +38,19 @@ output "transit_router_dmz_public_route_table_name" {
   value       = local.tr_route_table_dmz_public_name
 }
 
+output "transit_router_dmz_public_route_table_id" {
+  description = "中心 TR 中承载 DMZ / 公网出口方向的共享路由表 ID"
+  value       = volcenginecc_transitrouter_transit_router_route_table.dmz_public.transit_router_route_table_id
+}
+
 output "transit_router_egress_route_table_name" {
   description = "中心 TR 中承载成员账号默认出向能力的共享路由表名称"
   value       = local.tr_route_table_egress_name
+}
+
+output "transit_router_egress_route_table_id" {
+  description = "中心 TR 中承载成员账号默认出向能力的共享路由表 ID"
+  value       = volcenginecc_transitrouter_transit_router_route_table.egress.transit_router_route_table_id
 }
 
 output "nat_gateway_id" {
