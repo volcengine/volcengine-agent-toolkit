@@ -23,18 +23,13 @@ variable "transit_router_resource_share_name" {
   type        = string
 }
 
-variable "transit_router_dmz_public_route_table_name" {
-  description = "Shared TR route table name created by 05-network for DMZ/public egress learning."
+variable "transit_router_dmz_public_route_table_id" {
+  description = "Output from 05-network: shared TR route table ID used for DMZ/public egress learning."
   type        = string
 }
 
-variable "transit_router_egress_route_table_name" {
-  description = "Shared TR route table name created by 05-network for workload-account default egress association."
-  type        = string
-}
-
-variable "network_vpc_attachment_id" {
-  description = "Output from 05-network: the shared network-foundation VPC attachment ID that serves as the egress next hop."
+variable "transit_router_egress_route_table_id" {
+  description = "Output from 05-network: shared TR route table ID used for workload-account default egress association."
   type        = string
 }
 

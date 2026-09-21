@@ -204,9 +204,9 @@
         {
           "name": "volcengine-landing-zone",
           "path": "plugins/volcengine-identity-access-control/skills/volcengine-landing-zone",
-          "summary": "Consult, set up, and manage Volcengine landing zones and account baselines.",
-          "summary_zh": "咨询、搭建和管理火山引擎 Landing Zone 与账号基线。",
-          "keywords": ["landing zone", "组织", "organization", "identity", "账号工厂", "account factory", "baseline"]
+          "summary": "Consult, set up, and manage Volcengine landing zones and account baselines, and deploy solutions or blueprints.",
+          "summary_zh": "咨询、搭建和管理火山引擎 Landing Zone 与账号基线，并支持部署方案或蓝图。",
+          "keywords": ["landing zone", "组织", "organization", "identity", "账号工厂", "account factory", "baseline", "solution deployment", "部署方案", "蓝图部署"]
         }
       ]
     },

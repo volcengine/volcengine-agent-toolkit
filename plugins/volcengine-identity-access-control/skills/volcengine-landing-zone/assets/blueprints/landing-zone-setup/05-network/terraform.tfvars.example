@@ -1,6 +1,9 @@
 # 火山引擎主 Region
 # region = "cn-beijing"
 
+# 标准 Skill 路径使用 Phase 01 生成的薄契约。必须传绝对路径。
+# landing_zone_context_path = "/absolute/path/to/volcengine-landing-zone-workspace/landing-zone-context.json"
+
 # 网络底座子网与 TR 连接点使用的可用区 A 和 B
 # 为空时默认使用 <region>-a 和 <region>-b
 # network_availability_zone_a = "cn-beijing-a"
@@ -9,6 +12,8 @@
 # 企业名称前缀，用于资源命名
 # prefix = "mycompany"
 
+# 旧 workspace 兼容输入。使用 landing_zone_context_path 时通常不再填写；
+# 若同时填写，必须与 context 完全一致。
 # 管理账号 ID
 # management_account_id = "2100000000"
 

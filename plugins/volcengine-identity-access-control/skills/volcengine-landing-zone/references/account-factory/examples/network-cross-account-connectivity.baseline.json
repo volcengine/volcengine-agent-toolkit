@@ -17,18 +17,13 @@
       "required": true,
       "type": "string"
     },
-    "transit_router_dmz_public_route_table_name": {
-      "description": "Output from 05-network: the shared TR route table name used for DMZ/public egress learning.",
+    "transit_router_dmz_public_route_table_id": {
+      "description": "Output from 05-network: the shared TR route table ID used for DMZ/public egress learning.",
       "required": true,
       "type": "string"
     },
-    "transit_router_egress_route_table_name": {
-      "description": "Output from 05-network: the shared TR route table name used for workload-account default egress association.",
-      "required": true,
-      "type": "string"
-    },
-    "network_vpc_attachment_id": {
-      "description": "Output from 05-network: the shared network-foundation VPC attachment ID used as the egress next hop.",
+    "transit_router_egress_route_table_id": {
+      "description": "Output from 05-network: the shared TR route table ID used for workload-account default egress association.",
       "required": true,
       "type": "string"
     },
@@ -70,9 +65,8 @@
         "network_account_id": "{{ network_account_id }}",
         "transit_router_id": "{{ transit_router_id }}",
         "transit_router_resource_share_name": "{{ transit_router_resource_share_name }}",
-        "transit_router_dmz_public_route_table_name": "{{ transit_router_dmz_public_route_table_name }}",
-        "transit_router_egress_route_table_name": "{{ transit_router_egress_route_table_name }}",
-        "network_vpc_attachment_id": "{{ network_vpc_attachment_id }}",
+        "transit_router_dmz_public_route_table_id": "{{ transit_router_dmz_public_route_table_id }}",
+        "transit_router_egress_route_table_id": "{{ transit_router_egress_route_table_id }}",
         "workload_vpc_cidr": "{{ workload_vpc_cidr }}",
         "workload_subnet_cidr_az_a": "{{ workload_subnet_cidr_az_a }}",
         "workload_subnet_cidr_az_b": "{{ workload_subnet_cidr_az_b }}",

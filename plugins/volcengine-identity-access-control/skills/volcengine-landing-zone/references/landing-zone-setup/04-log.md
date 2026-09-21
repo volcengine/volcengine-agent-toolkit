@@ -23,15 +23,17 @@ purpose: Provide a unified organization-level audit and log-ingestion entry for 
 
 ## Minimum Input
 
-- `log_archive_account_id` should default to the log archive account ID produced by the organization and core-account phases
+- The standard path passes the absolute `${WORKSPACE_ROOT}/landing-zone-context.json` and resolves the target from `phase_inputs.log.account_id`, independent of the physical account key/name
+- If `phase_inputs.log.enabled` is false, mark this phase skipped. If it is true but the account ID is empty, stop and require a `log_archive` role binding; never guess by name
+- `log_archive_account_id` is a legacy input only. If supplied with a context, it must match exactly
 - Ask for `prefix` only when it is missing, because it is used for default naming of logging resources
 - `trail_event_sources` is optional by default. Ask only when the user explicitly wants to narrow the audit scope
-- Do not ask early in this phase for networking variables
 
 ## Execution Conventions
 
-- Check the cross-account `AssumeRole` prerequisite only once before entering this phase. If the current `ve` login identity cannot perform the required `AssumeRole`, stop and ask the user to switch to an IAM sub-user identity with `STSAssumeRoleAccess`
-- Before running Terraform for this phase, first run `ve organization RegisterDelegatedAdministrator --body '{"AccountId":"<log_archive_account_id>","ServicePrincipal":"cloud_trail"}'` in the organization-administrator context
+- This is a cross-account phase; follow the "Cross-account execution model" in [guidebook.md](guidebook.md). Provider-supported objects go through Terraform `assume_role`; CloudTrail, TOS activation, and delegated-administrator registration are the enumerated `ve` CLI exceptions. Check AssumeRole readiness right before this phase and stop for the user to fix identity if it fails.
+- Validate the confirmed architecture digest, prefix, region, and target account before G2. Rebinding an already deployed log capability to another physical account is `migration_required`
+- Include the delegated-administrator write in the Phase 04 impact summary. After G2 confirmation and before Terraform apply, run `ve organization RegisterDelegatedAdministrator --body '{"AccountId":"<log_archive_account_id>","ServicePrincipal":"cloud_trail"}'` in the organization-administrator context
 - Duplicate or already-exists style results may be treated as satisfying the delegated-administrator prerequisite. Permission-denied, trusted-service-disabled, or organization-access-restricted errors should stop the phase
 - Terraform in this phase assumes the delegated-administrator prerequisite is already satisfied and does not register it again inside the blueprint
 - Use an isolated temporary CLI home after `AssumeRole` so the phase keeps one explicit `ve` execution target for TOS and CloudTrail commands without touching the user's global current profile

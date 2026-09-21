@@ -2,11 +2,155 @@ prefix     = "example"
 region     = "cn-beijing"
 root_ou_id = "ou-xxxxxxxx"
 
-# This example matches the refactored Landing Zone org layout:
-# - Top-level OUs: Platform, Applications, SandBox
-# - Applications sub OUs: Dev, Staging, Prod
-# - Platform accounts: LogArchive, Security, SharedService, Network
-#
-# If these standard OUs already exist, the recommended flow is to let the
-# skill discover them first and auto-fill the corresponding
-# existing_*_ou_id variables before apply.
+# The standard skill path writes these values from the exact
+# confirmed-architecture.json bytes. The zero digest is only a shape example.
+configuration_schema_version = 1
+architecture_profile         = "recommended-v1"
+architecture_mode            = "default"
+confirmed_architecture_sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+management_account_id         = "2000000000000000000"
+# organization_id             = "org-xxxxxxxx"
+
+enabled_capabilities = {
+  finance  = true
+  identity = true
+  log      = true
+  network  = true
+}
+
+# The standard skill path always materializes the complete confirmed design,
+# including the recommended-v1 default shown below. A direct Terraform caller
+# may still omit this value for legacy compatibility, but an existing workspace
+# must not keep following an evolving null default.
+organization_architecture = {
+  ous = {
+    platform = {
+      name        = "Platform"
+      parent_key  = null
+      level       = 1
+      description = "Landing Zone governance accounts"
+    }
+    applications = {
+      name        = "Applications"
+      parent_key  = null
+      level       = 1
+      description = "Application workload accounts"
+    }
+    sandbox = {
+      name        = "SandBox"
+      parent_key  = null
+      level       = 1
+      description = "Sandbox and proof-of-concept accounts"
+    }
+    applications_dev = {
+      name        = "Dev"
+      parent_key  = "applications"
+      level       = 2
+      description = "Development workload accounts"
+    }
+    applications_staging = {
+      name        = "Staging"
+      parent_key  = "applications"
+      level       = 2
+      description = "Staging workload accounts"
+    }
+    applications_prod = {
+      name        = "Prod"
+      parent_key  = "applications"
+      level       = 2
+      description = "Production workload accounts"
+    }
+  }
+  accounts = {
+    log_archive = {
+      account_name             = "example-Log"
+      show_name                = "example-LogArchiveAccount"
+      ou_key                   = "platform"
+      description              = "Landing Zone log archive account"
+      financial_account_alias  = "example-log_archive"
+      finance_enabled          = true
+      identity_enabled         = true
+      allow_console            = null
+      allow_exit               = null
+      verification_relation_id = null
+      tags                     = {}
+    }
+    security = {
+      account_name             = "example-Sec"
+      show_name                = "example-SecurityAccount"
+      ou_key                   = "platform"
+      description              = "Landing Zone security account"
+      financial_account_alias  = "example-security"
+      finance_enabled          = true
+      identity_enabled         = true
+      allow_console            = null
+      allow_exit               = null
+      verification_relation_id = null
+      tags                     = {}
+    }
+    shared_service = {
+      account_name             = "example-Shared"
+      show_name                = "example-SharedServiceAccount"
+      ou_key                   = "platform"
+      description              = "Landing Zone shared services account"
+      financial_account_alias  = "example-shared_service"
+      finance_enabled          = true
+      identity_enabled         = true
+      allow_console            = null
+      allow_exit               = null
+      verification_relation_id = null
+      tags                     = {}
+    }
+    network = {
+      account_name             = "example-Net"
+      show_name                = "example-NetworkAccount"
+      ou_key                   = "platform"
+      description              = "Landing Zone network account"
+      financial_account_alias  = "example-network"
+      finance_enabled          = true
+      identity_enabled         = true
+      allow_console            = null
+      allow_exit               = null
+      verification_relation_id = null
+      tags                     = {}
+    }
+    sandbox_test = {
+      account_name             = "example-SandBox"
+      show_name                = "example-SandBoxTestAccount"
+      ou_key                   = "sandbox"
+      description              = "Landing Zone sandbox test account"
+      financial_account_alias  = "example-sandbox_test"
+      finance_enabled          = true
+      identity_enabled         = true
+      allow_console            = null
+      allow_exit               = null
+      verification_relation_id = null
+      tags                     = {}
+    }
+  }
+  role_account_keys = {
+    log_archive    = "log_archive"
+    security       = "security"
+    shared_service = "shared_service"
+    network        = "network"
+    sandbox_test   = "sandbox_test"
+  }
+}
+
+# Read-only discovery injects existing resources by stable key. Omit entries
+# that do not exist; Terraform creates only the missing items. A reused child OU
+# requires its confirmed parent OU to be reused as well.
+existing_ou_ids = {
+  # platform     = "ou-existing-platform"
+  # applications = "ou-existing-applications"
+}
+
+existing_account_ids = {
+  # log_archive = "2000000000000000001"
+  # network     = "2000000000000000002"
+}
+
+# For a custom design, change architecture_mode to "custom" and replace the
+# whole organization_architecture object. Stable keys do not change when only a
+# display name changes. Removing a key, changing OU parent/level, or moving an
+# applied account is a migration, not an ordinary tfvars update.
