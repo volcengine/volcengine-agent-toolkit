@@ -20,7 +20,7 @@ Optional catalogued skills:
 - `volcengine-compliance` — `volcengine-security`; Recommend compliance baselines, report posture, and author custom Rego compliance rules.
 - `volcengine-cloud-trail` — `volcengine-security`; Query CloudTrail audit logs and manage trails and backfill delivery tasks.
 - `volcengine-landing-zone` — `volcengine-identity-access-control`; Consult, set up, and manage Volcengine landing zones and account baselines, and deploy solutions or blueprints.
-- `volcengine-sale` — `volcengine-service-support`; Route Volcengine product sale/purchase intents and delegate to the owning skill.
+- `volcengine-sale` — `volcengine-service-support`; Orchestrate Volcengine product transactions: purchase, price enquiry, and unsubscribe.
 - `volcengine-prepare` — `volcengine-service-support`; Analyze a repository and recommend ECS, VKE, or veFaaS deployment shapes.
 - `volcengine-deploy` — `volcengine-service-support`; Deploy a local directory or Git repository to Volcengine.
 - `volcengine-iac` — `volcengine-service-support`; Manage Volcengine infrastructure with Terraform and infrastructure as code.

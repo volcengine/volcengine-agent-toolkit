@@ -168,7 +168,7 @@
     {
       "name": "volcengine-service-support",
       "source": "./plugins/volcengine-service-support",
-      "description": "Route product purchases, prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
+      "description": "Route product transactions (purchase, price enquiry, unsubscribe), prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
       "version": "1.2.3",
       "author": {
         "name": "Volcengine Team"
@@ -188,6 +188,11 @@
         "售卖",
         "开通",
         "commonbuy",
+        "price",
+        "询价",
+        "价格",
+        "unsubscribe",
+        "退订",
         "deployment",
         "terraform",
         "iac",

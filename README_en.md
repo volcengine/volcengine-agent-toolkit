@@ -67,7 +67,7 @@ are maintained in their plugins; the sync script generates the copies.
 | [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | Recommend compliance baselines, report posture, and author custom Rego compliance rules. |
 | [`volcengine-cloud-trail`](./skills/specialized/security/volcengine-cloud-trail/SKILL.md) | `volcengine-security` | Query CloudTrail audit logs and manage trails and backfill delivery tasks. |
 | [`volcengine-landing-zone`](./skills/specialized/identity-access-control/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | Consult, set up, and manage Volcengine landing zones and account baselines, and deploy solutions or blueprints. |
-| [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | Route Volcengine product sale/purchase intents and delegate to the owning skill. |
+| [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | Orchestrate Volcengine product transactions: purchase, price enquiry, and unsubscribe. |
 | [`volcengine-prepare`](./skills/specialized/service-support/volcengine-prepare/SKILL.md) | `volcengine-service-support` | Analyze a repository and recommend ECS, VKE, or veFaaS deployment shapes. |
 | [`volcengine-deploy`](./skills/specialized/service-support/volcengine-deploy/SKILL.md) | `volcengine-service-support` | Deploy a local directory or Git repository to Volcengine. |
 | [`volcengine-iac`](./skills/specialized/service-support/volcengine-iac/SKILL.md) | `volcengine-service-support` | Manage Volcengine infrastructure with Terraform and infrastructure as code. |

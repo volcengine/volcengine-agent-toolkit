@@ -60,7 +60,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 | [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | 推荐合规基线、汇总合规态势并编写自定义 Rego 合规规则。 |
 | [`volcengine-cloud-trail`](./skills/specialized/security/volcengine-cloud-trail/SKILL.md) | `volcengine-security` | 查询操作审计日志，并管理跟踪和历史补投任务。 |
 | [`volcengine-landing-zone`](./skills/specialized/identity-access-control/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | 咨询、搭建和管理火山引擎 Landing Zone 与账号基线，并支持部署方案或蓝图。 |
-| [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | 识别火山商品售卖意图并移交给具体产品 skill 完成开通与查询。 |
+| [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | 编排火山商品交易意图：识别开通购买、询价预估与退订三类动作并分流执行。 |
 | [`volcengine-prepare`](./skills/specialized/service-support/volcengine-prepare/SKILL.md) | `volcengine-service-support` | 分析代码仓库并推荐 ECS、VKE 或 veFaaS 部署形态。 |
 | [`volcengine-deploy`](./skills/specialized/service-support/volcengine-deploy/SKILL.md) | `volcengine-service-support` | 将本地目录或 Git 仓库部署到火山引擎。 |
 | [`volcengine-iac`](./skills/specialized/service-support/volcengine-iac/SKILL.md) | `volcengine-service-support` | 使用 Terraform 和基础设施即代码管理火山引擎资源。 |

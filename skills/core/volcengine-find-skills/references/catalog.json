@@ -216,11 +216,13 @@
       "domain": "服务支持",
       "domain_en": "Service Support",
       "default": false,
-      "description": "Route product purchases, prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
-      "short_description": "Route purchases, prepare deployments, and support API integrations",
-      "keywords": ["服务支持", "service support", "billing", "sale", "purchase", "购买", "售卖", "开通", "commonbuy", "deployment", "terraform", "iac", "ecs", "vke", "vefaas", "云控制api", "openapi", "sdk", "api"],
+      "description": "Route product transactions (purchase, price enquiry, unsubscribe), prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
+      "short_description": "Route transactions, prepare deployments, and support API integrations",
+      "keywords": ["服务支持", "service support", "billing", "sale", "purchase", "购买", "售卖", "开通", "commonbuy", "price", "询价", "价格", "unsubscribe", "退订", "deployment", "terraform", "iac", "ecs", "vke", "vefaas", "云控制api", "openapi", "sdk", "api"],
       "default_prompts": [
         "Open a Volcengine Ark endpoint / veFaaS app / TLS project / TOS bucket.",
+        "How much does this Volcengine product cost for my usage?",
+        "Unsubscribe a prepaid Volcengine instance.",
         "Assess this repository for Volcengine deployment.",
         "Deploy this application to Volcengine.",
         "Create Terraform for this Volcengine architecture.",
@@ -231,9 +233,9 @@
         {
           "name": "volcengine-sale",
           "path": "plugins/volcengine-service-support/skills/volcengine-sale",
-          "summary": "Route Volcengine product sale/purchase intents and delegate to the owning skill.",
-          "summary_zh": "识别火山商品售卖意图并移交给具体产品 skill 完成开通与查询。",
-          "keywords": ["billing", "sale", "售卖", "开通", "购买", "下单", "方舟", "ark", "vefaas", "函数计算", "tls", "日志服务", "tos", "对象存储", "commonbuy"]
+          "summary": "Orchestrate Volcengine product transactions: purchase, price enquiry, and unsubscribe.",
+          "summary_zh": "编排火山商品交易意图：识别开通购买、询价预估与退订三类动作并分流执行。",
+          "keywords": ["billing", "sale", "售卖", "开通", "购买", "下单", "price", "pricing", "quote", "询价", "价格", "报价", "费用", "预估", "unsubscribe", "refund", "退订", "退款", "取消订阅", "方舟", "ark", "vefaas", "函数计算", "tls", "日志服务", "tos", "对象存储", "commonbuy"]
         },
         {
           "name": "volcengine-prepare",
