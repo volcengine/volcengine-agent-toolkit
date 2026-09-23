@@ -107,9 +107,9 @@
       "domain_en": "Storage",
       "default": false,
       "description": "Operate Volcengine storage products and data with product-specific tools.",
-      "short_description": "Manage Volcengine object storage with tosutil",
-      "keywords": ["存储", "storage", "对象存储", "object storage", "tos"],
-      "default_prompts": ["Manage these TOS buckets and objects with tosutil."],
+      "short_description": "Manage Volcengine object storage and log service",
+      "keywords": ["存储", "storage", "对象存储", "object storage", "tos", "日志服务", "log service", "tls", "volclog"],
+      "default_prompts": ["Manage these TOS buckets and objects with tosutil.", "Search and analyze logs in this TLS topic with volclog.", "Set up LogCollector to collect these logs into TLS."],
       "skills": [
         {
           "name": "volcengine-tosutil",
@@ -117,6 +117,20 @@
           "summary": "Manage TOS buckets and objects with the tosutil command-line tool.",
           "summary_zh": "使用 tosutil 命令行工具管理 TOS 桶和对象。",
           "keywords": ["tos", "tosutil", "bucket", "object", "对象存储", "桶", "上传", "下载"]
+        },
+        {
+          "name": "volcengine-tls",
+          "path": "plugins/volcengine-storage/skills/volcengine-tls",
+          "summary": "Operate Volcengine TLS log service with volclog: contract-first discover/describe/exec, log search, analysis, ingest, export, and error recovery.",
+          "summary_zh": "使用 volclog 操作火山引擎日志服务 TLS：按契约发现/描述/执行，覆盖日志检索、分析、导入、导出与错误恢复。",
+          "keywords": ["tls", "日志服务", "log service", "volclog", "日志", "log", "日志检索", "日志分析", "search logs", "日志导出", "export", "日志导入", "ingest", "log project", "日志项目", "log topic", "日志主题", "trace"]
+        },
+        {
+          "name": "volcengine-tls-logcollector",
+          "path": "plugins/volcengine-storage/skills/volcengine-tls-logcollector",
+          "summary": "Design, validate, deploy, and troubleshoot TLS LogCollector collection on Linux hosts or Kubernetes through volclog.",
+          "summary_zh": "通过 volclog 设计、校验、部署并排查 Linux 主机或 Kubernetes 上的 TLS LogCollector 日志采集。",
+          "keywords": ["tls", "logcollector", "日志采集", "log collection", "采集配置", "机器组", "host group", "daemonset", "kubernetes", "k8s", "心跳", "heartbeat", "volclog"]
         }
       ]
     },

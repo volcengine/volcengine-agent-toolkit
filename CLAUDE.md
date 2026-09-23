@@ -28,6 +28,7 @@
 - 所有 skill 必须以 `volcengine-` 为前缀；读 env / 调 bin 必须在 `metadata.openclaw.requires` 声明。
 - 用户补充某个 API 的精确 payload、Action、Version 或服务名时，脚本、skill 正文、reference 和测试示例必须同步使用该精确值。
 - 跨 skill 经验放在“决策发生的 skill”里；工具型 skill 只保留自身能力、参数约束和安全边界。
+- 产品 skill 经 `ve` 代理调用产品 CLI（如 `ve tosutil`、`ve arkcli`、`ve volclog`）时，只写调用前缀和 `ve` 版本门槛；PATH/托管副本解析、首次安装与升级差异属于 `volcengine-cli`，不要在产品 skill 里重复。
 - 不要把一次验证里的具体地域、规格、镜像、镜像源候选、清理顺序或临时资源形状写成默认流程，除非它是强依赖约束。
 - 排障 skill 按症状、证据类型和判断分支组织；仅在存在真实依赖时规定顺序。
 - 不得提交账号信息、AK/SK、本地绝对目录、真实资源 ID 或 TRN。

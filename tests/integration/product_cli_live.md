@@ -19,8 +19,8 @@
 
 ## 前置条件
 
-- 从目标 CLI 源码构建新版 `ve`，先执行 `ve version`，确认 **版本大于等于 `1.1.9`**
-  （稳定版 `1.1.9` 起）；版本不满足或无法确认时先升级，再验证 `ve tosutil version` 和
+- 从目标 CLI 源码构建新版 `ve`，先执行 `ve version`，确认 **版本大于等于 `1.1.11`**
+  （稳定版 `1.1.11` 起）；版本不满足或无法确认时先升级，再验证 `ve tosutil version` 和
   `ve arkcli --version`。代理命令在旧版本中可见也不能替代该版本要求。
 - 使用当前或用户明确指定的账号；`ve sts GetCallerIdentity` 必须成功。
 - 通过 `volcengine-find-skills` 获取 `volcengine-tosutil`，按照其配置说明准备有效的 tosutil
