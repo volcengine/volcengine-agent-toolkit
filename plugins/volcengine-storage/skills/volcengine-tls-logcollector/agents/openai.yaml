@@ -1,0 +1,4 @@
+interface:
+  display_name: "Volcengine TLS LogCollector"
+  short_description: "设计、校验并验收 TLS LogCollector 采集配置"
+  default_prompt: "使用 $volcengine-tls-logcollector 通过 volclog 设计、校验并验收目标环境的 LogCollector 采集链路。"

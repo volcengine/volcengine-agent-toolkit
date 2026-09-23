@@ -37,7 +37,7 @@ For `ve arkcli ...`, `ve` translates the caller metadata. The Agent does not dup
 | Plugin | Product domain | Skills | Default |
 | --- | --- | --- | --- |
 | `volcengine-core` | Core | `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills`, `volcengine-feedback` | Yes |
-| `volcengine-storage` | Storage | `volcengine-tosutil` | No |
+| `volcengine-storage` | Storage | `volcengine-tosutil`, `volcengine-tls`, `volcengine-tls-logcollector` | No |
 | `volcengine-database` | Database | `volcengine-db-supabase` | No |
 | `volcengine-containers-middleware` | Containers and Middleware | `volcengine-vefaas` | No |
 | `volcengine-security` | Security | `volcengine-compliance`, `volcengine-cloud-trail` | No |
@@ -62,6 +62,8 @@ are maintained in their plugins; the sync script generates the copies.
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | List all Volcengine skills so an agent can select and install missing capabilities. |
 | [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) | `volcengine-core` | Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task. |
 | [`volcengine-tosutil`](./skills/specialized/storage/volcengine-tosutil/SKILL.md) | `volcengine-storage` | Manage TOS buckets and objects with the tosutil command-line tool. |
+| [`volcengine-tls`](./skills/specialized/storage/volcengine-tls/SKILL.md) | `volcengine-storage` | Operate Volcengine TLS log service with volclog: contract-first discover/describe/exec, log search, analysis, ingest, export, and error recovery. |
+| [`volcengine-tls-logcollector`](./skills/specialized/storage/volcengine-tls-logcollector/SKILL.md) | `volcengine-storage` | Design, validate, deploy, and troubleshoot TLS LogCollector collection on Linux hosts or Kubernetes through volclog. |
 | [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions. |
 | [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | Deploy and manage serverless applications on Volcengine veFaaS. |
 | [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | Recommend compliance baselines, report posture, and author custom Rego compliance rules. |

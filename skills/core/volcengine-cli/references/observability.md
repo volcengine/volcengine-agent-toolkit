@@ -1,10 +1,12 @@
 # Observability Service Notes
 
-## TLS Is Not Available in This ve Build
+## TLS Uses ve volclog
 
-The current `ve` command list does not include `tls`. Running `ve tls --help` returns `unknown command`.
+`ve` has no native `tls` OpenAPI command. TLS (日志服务) runs through the delegated `volclog` CLI as `ve volclog ...`, which requires the `ve` version stated in the SKILL.md Product CLI routing section.
 
-Do not troubleshoot TLS resource operations as CLI parameter mistakes in this environment; there is no matching `ve tls` command to validate.
+For TLS tasks such as log search, analysis, ingest, export, Project/Topic management, or LogCollector collection, use `volcengine-find-skills` to find `volcengine-tls` (or `volcengine-tls-logcollector` for collection setup and troubleshooting), install it if missing, and follow its `volclog` workflow with the `ve volclog` prefix.
+
+If `ve volclog` reports an unknown service or suggests `--force`, the `ve` build predates the `volclog` proxy. Upgrade `ve`; do not call TLS through `--force`.
 
 ## CloudMonitor Read Path Works
 

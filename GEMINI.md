@@ -15,6 +15,8 @@ Core skills:
 Optional catalogued skills:
 
 - `volcengine-tosutil` — `volcengine-storage`; Manage TOS buckets and objects with the tosutil command-line tool.
+- `volcengine-tls` — `volcengine-storage`; Operate Volcengine TLS log service with volclog: contract-first discover/describe/exec, log search, analysis, ingest, export, and error recovery.
+- `volcengine-tls-logcollector` — `volcengine-storage`; Design, validate, deploy, and troubleshoot TLS LogCollector collection on Linux hosts or Kubernetes through volclog.
 - `volcengine-db-supabase` — `volcengine-database`; Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions.
 - `volcengine-vefaas` — `volcengine-containers-middleware`; Deploy and manage serverless applications on Volcengine veFaaS.
 - `volcengine-compliance` — `volcengine-security`; Recommend compliance baselines, report posture, and author custom Rego compliance rules.

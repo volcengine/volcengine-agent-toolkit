@@ -1,7 +1,7 @@
 {
   "name": "volcengine-storage",
   "description": "Operate Volcengine storage products and data with product-specific tools.",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "author": {
     "name": "Volcengine Team"
   },
@@ -16,7 +16,13 @@
     "对象存储",
     "object storage",
     "tos",
-    "volcengine-tosutil"
+    "日志服务",
+    "log service",
+    "tls",
+    "volclog",
+    "volcengine-tosutil",
+    "volcengine-tls",
+    "volcengine-tls-logcollector"
   ],
   "skills": [
     "./skills/"

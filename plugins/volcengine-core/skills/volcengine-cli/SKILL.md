@@ -9,8 +9,9 @@ description: >-
   mentioning "火山引擎" or "火山" (e.g., "火山引擎上有哪些 ECS"、"查一下我火山的云服务器"、
   "火山引擎创建一个 VPC"、"火山的 Redis 实例列一下"). Also trigger when the user encounters
   errors from `ve` commands and needs troubleshooting help. Also use for TOS bucket/object operations,
-  tosutil (sometimes written tosutils), and Ark CLI / arkcli model discovery, inference, generation,
-  endpoints, fine-tuning, plans, or usage through `ve tosutil` and `ve arkcli`.
+  tosutil (sometimes written tosutils), Ark CLI / arkcli model discovery, inference, generation,
+  endpoints, fine-tuning, plans, or usage, and TLS (日志服务) / volclog log search, analysis, ingest,
+  export, or LogCollector collection, through `ve tosutil`, `ve arkcli` and `ve volclog`.
 license: MIT
 metadata:
   openclaw:
@@ -82,12 +83,12 @@ metadata:
 
 # Volcengine CLI Skill
 
-Use `ve` as the unified entry point for Volcengine OpenAPIs, TOS object operations, and Ark product workflows.
+Use `ve` as the unified entry point for Volcengine OpenAPIs, TOS object operations, Ark product workflows, and TLS log service workflows.
 
 ## Agent caller metadata (mandatory)
 
 Every `ve` process launched by an Agent must receive these environment variables, including
-help/version checks, authentication, API calls, retries, polling, and `ve tosutil` / `ve arkcli`:
+help/version checks, authentication, API calls, retries, polling, and `ve tosutil` / `ve arkcli` / `ve volclog`:
 
 | Variable | Required value |
 | --- | --- |
@@ -153,14 +154,13 @@ Standalone `arkcli ...` calls continue to follow the upstream Ark skill's enviro
 
 ## Product CLI routing
 
-**Version requirement:** Before any skill uses `ve` to delegate to another CLI, including
-`ve tosutil` or `ve arkcli`, run `ve version` and require **`ve >= 1.1.9`** (stable releases
-`1.1.9` or newer). If the version is older than `1.1.9`, or cannot be verified, install/upgrade
-as described in §0 and check again before delegation. The presence of a proxy command in
-`--help` alone does not satisfy this requirement.
+**Version requirement:** The [§0 minimum version](#0-install-or-upgrade-the-ve-cli) (`ve >= 1.1.11`)
+also gates delegation to another CLI, including `ve tosutil`, `ve arkcli` and `ve volclog`. Verify
+it before delegation. The presence of a proxy command in `--help` alone does not satisfy this
+requirement.
 
-When `ve` is available, prefer **`ve tosutil`** and **`ve arkcli`**, even when a standalone
-`tosutil` or `arkcli` is also installed. The TOS command is spelled `tosutil`; `toscli` is a
+When `ve` is available, prefer **`ve tosutil`**, **`ve arkcli`** and **`ve volclog`**, even when a
+standalone `tosutil`, `arkcli` or `volclog` is also installed. The TOS command is spelled `tosutil`; `toscli` is a
 compatibility alias. The existing TOS skill is named `volcengine-tosutil` (not `volcengine-tosutils`).
 
 | Task | Entry point | Read before use |
@@ -168,10 +168,17 @@ compatibility alias. The existing TOS skill is named `volcengine-tosutil` (not `
 | General cloud resource OpenAPIs | `ve <service> <Action>` | Native API workflow in §§1–5 |
 | TOS buckets, objects and transfers | `ve tosutil <command>` | Use `volcengine-find-skills` to find `volcengine-tosutil`, install it if missing, and read its instructions |
 | Ark models, inference, generation, Endpoints, fine-tuning, plans and usage | `ve arkcli <command>` | Download and read the relevant [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills) as below |
+| TLS (日志服务) log search, analysis, ingest, export, Project/Topic and LogCollector collection | `ve volclog <command>` | Use `volcengine-find-skills` to find `volcengine-tls` (or `volcengine-tls-logcollector` for collection), install it if missing, and read its instructions |
 
 For TOS, follow the finder's `list` → select exact `volcengine-tosutil` → install if missing →
 verify installation flow. Load the installed skill and the references it selects before executing.
 Use its native tosutil command examples, replacing `tosutil ...` with `ve tosutil ...`.
+
+For TLS, follow the same finder flow with exact `volcengine-tls`, or `volcengine-tls-logcollector`
+for LogCollector collection. Those skills write native `volclog ...` examples; run them as
+`ve volclog ...`. `ve` has no native `tls` OpenAPI command: if `ve volclog` reports an unknown
+service or suggests `--force`, the `ve` build is older than the version requirement above, so
+upgrade `ve` instead of adding `--force`.
 
 For Ark, select the task skill from the official repository above and install it with
 `arkcli-shared` and the dependencies its instructions require. These upstream `arkcli-*` names
@@ -191,7 +198,7 @@ execution. If the host cannot load newly installed skills, start a new conversat
 the original task and completed context, as the finder instructs. Keep product instructions in
 those skills; this skill only routes to them.
 
-`arkcli` and `tosutil` are transparent delegated CLIs: replace only the executable prefix in
+`arkcli`, `tosutil` and `volclog` are transparent delegated CLIs: replace only the executable prefix in
 their examples, keeping all later arguments unchanged. They retain their own authentication,
 profile, parameters, output, and exit codes. Native API rules such as `--output`, `--query`,
 `--force`, `--detail`, PascalCase parameters and `--DryRun` do **not** carry over.
@@ -199,7 +206,8 @@ profile, parameters, output, and exit codes. Native API rules such as `--output`
 - Put supported child flags after the child command. `ve --profile <name> arkcli ...` is invalid;
   `ve arkcli ... --profile <name>` selects an **Ark** profile, not a `ve` profile.
 - Follow the product skill's authentication, flags, and output handling. Change `tosutil ...` /
-  `arkcli ...` into `ve tosutil ...` / `ve arkcli ...` while keeping all child arguments unchanged.
+  `arkcli ...` / `volclog ...` into `ve tosutil ...` / `ve arkcli ...` / `ve volclog ...` while
+  keeping all child arguments unchanged.
   For `ve arkcli`, use only the `VE_*` caller metadata as described in
   [Ark delegation](#ark-delegation-one-set-of-caller-variables); do not copy the standalone Ark
   caller/notifier prefix. Keep any required product environment assignments before `ve`.
@@ -220,9 +228,13 @@ ve tosutil version
 ve tosutil help
 ve arkcli --version
 ve arkcli --help
+ve volclog --version
+ve volclog --help
 ```
 
-Upgrade a managed child with `ve proxycli upgrade tosutil` or `ve proxycli upgrade arkcli`.
+Upgrade a managed child with `ve proxycli upgrade tosutil`, `ve proxycli upgrade arkcli` or
+`ve proxycli upgrade tls-cli`. Management commands take the product ID (`tls-cli` for TLS),
+while invocation uses the native command name (`ve volclog`).
 These commands leave external installations on `PATH` to their original package manager;
 upgrading `ve` alone does not upgrade them. If a child command is missing from `ve --help`,
 upgrade `ve` first. Product flags and available capabilities follow the resolved child's help.
@@ -232,6 +244,8 @@ upgrade `ve` first. Product flags and available capabilities follow the resolved
 ## 0. Install or upgrade the ve CLI
 
 Always run the latest release. This skill assumes the current `ve`: device-code `ve login`, `--output`/`--query`, `--force`, `--detail`, and double-dash system flags. There is no support path for older builds — upgrade instead.
+
+**Minimum version (mandatory):** Before the first other `ve` command in a task — native OpenAPI calls, login, or product CLI delegation — run `ve version` and require **`ve >= 1.1.11`** (stable releases `1.1.11` or newer). If `ve` is missing, older than `1.1.11`, or its version cannot be verified, install or upgrade with one of the options below and run `ve version` again before continuing. If npm still installs an older version, the configured npm mirror may lag behind; use the CDN installer or GitHub Releases instead.
 
 **Option 1: npm (preferred)**
 
@@ -251,7 +265,7 @@ The same script ships as `scripts/install_ve.sh`. It reads the latest version fr
 
 **Option 3: GitHub Releases** — https://github.com/volcengine/volcengine-cli/releases
 
-**Native OpenAPI capability checks:** `ve login --help` must list `--no-browser`, and `ve ecs DescribeInstances --help` must list `--output` under *System Flags*. If either is missing, upgrade with `npm i -g @volcengine/cli@latest` or rerun the CDN installer, then continue. These checks do not replace the version requirement in [Product CLI routing](#product-cli-routing).
+**Native OpenAPI capability checks:** `ve login --help` must list `--no-browser`, and `ve ecs DescribeInstances --help` must list `--output` under *System Flags*. If either is missing, upgrade with `npm i -g @volcengine/cli@latest` or rerun the CDN installer, then continue. These checks do not replace the minimum version requirement above.
 
 ---
 
@@ -458,6 +472,7 @@ ve newservice DescribeNewResource \
 - `--force` is a presence flag: `--force`, not `--force true`.
 - Parameters are unvalidated: take them from the user's material, the `volcengine-api` skill, or [references/extend-apis.md](references/extend-apis.md) — never guess them. `find_api.py` only locates Service/Action/Version; it does not return parameters, method, or endpoint.
 - The read/write/destructive rules in §2 apply exactly as for a listed action.
+- Do not use `--force` for TLS (日志服务); `ve` has no `tls` OpenAPI command, so route TLS tasks to `ve volclog` through the Product CLI routing table instead.
 
 [references/extend-apis.md](references/extend-apis.md) carries the service-code / version / endpoint / signing-region recipes for the extension services that were previously wrapped by a helper script (CDN, DCDN, domain, Flink, GA, IoT, Live, MCDN, Metrics, sec_agent, trademark, VEEN, VKE).
 
@@ -549,7 +564,7 @@ Rules of thumb:
 
 ### Error Handling
 
-Whenever a native `ve <service> <Action>` command or extension helper fails, or a response contains `ResponseMetadata.Error`, read [references/common-errors.md](references/common-errors.md) completely before diagnosing the error or responding to the user. Partial searches, matched lines, or excerpts do not satisfy this requirement. For `ve tosutil` / `ve arkcli` failures, follow the selected product skill and native child error format.
+Whenever a native `ve <service> <Action>` command or extension helper fails, or a response contains `ResponseMetadata.Error`, read [references/common-errors.md](references/common-errors.md) completely before diagnosing the error or responding to the user. Partial searches, matched lines, or excerpts do not satisfy this requirement. For `ve tosutil` / `ve arkcli` / `ve volclog` failures, follow the selected product skill and native child error format.
 
 First classify the error as request-format, missing dependency, account state, service activation, real-name verification, purchase qualification, or permission related. For product-specific errors, also read the matching service note below. For permission errors (`AccessDenied`, `NoPermission`, `RoleNotExist`, `Forbidden`, or STS-related failures), activate the `volcengine-troubleshooting` skill and use its account-permission diagnosis capability to locate the root cause and guide the user through remediation.
 
