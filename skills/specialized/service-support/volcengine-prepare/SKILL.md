@@ -168,8 +168,6 @@ Include:
 - known blockers or setup needed if the user chooses it
 - resource management recommendation (`iac` or `cli`) and why
 
-Do not describe an option as highly available or zero-downtime unless the user gave availability targets (SLO / RTO / RPO) and the option's topology meets them; otherwise state the availability assumption, such as single instance or single zone.
-
 Do not check every tool before the user chooses. Phrase setup needs as decision guidance. Fill the resource management recommendation from [`references/deploy-mode-heuristics.md`](./references/deploy-mode-heuristics.md), but do not mention that internal reference path to the user:
 
 ```text
