@@ -235,4 +235,4 @@ MIT. See [LICENSE](./LICENSE).
 
 ## Project Rules
 
-Besides skills, add the recommended Volcengine rules file [`rules/volcengine-agent-rules.md`](rules/volcengine-agent-rules.md) to customer projects so the agent prefers skills, verifies API details, and stays within authorized change scope in every session. Installing plugins does not enable the rules: copy the content into `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, or `.cursor/rules/volcengine.mdc`. See [rules/README.md](rules/README.md) (Chinese).
+Besides skills, add the recommended Volcengine rules file [`rules/volcengine-agent-rules.md`](rules/volcengine-agent-rules.md) to customer projects so the agent prefers skills, determines targets from evidence, and verifies API details in every session. Installing plugins does not enable the rules: copy the content into `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, or `.cursor/rules/volcengine.mdc`. See [rules/README.md](rules/README.md) (Chinese).

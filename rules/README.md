@@ -1,6 +1,6 @@
 # Rules
 
-大多数 AI coding agent 支持项目级规则文件，Agent 在每次会话中都会遵循其中的指令。[`volcengine-agent-rules.md`](./volcengine-agent-rules.md) 是推荐的火山引擎规则：优先使用已安装的 `volcengine-*` skill、核实 API 细节而不猜测、按授权范围执行云端变更，并约束凭证、部署、排障与费用相关的行为。
+大多数 AI coding agent 支持项目级规则文件，Agent 在每次会话中都会遵循其中的指令。[`volcengine-agent-rules.md`](./volcengine-agent-rules.md) 是推荐的火山引擎通用规则：优先使用已安装的 `volcengine-*` skill、按证据确定账号与地域、核实 API 细节而不猜测、优先沿用 IaC，并按证据报告完成程度。变更授权、凭证、部署、排障与费用等场景约束由对应 skill 描述。
 
 安装插件或 skill 不会自动启用这些规则，需要把规则内容加入项目的规则文件。
 
