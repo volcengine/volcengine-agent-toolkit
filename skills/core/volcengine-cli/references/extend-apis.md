@@ -5,7 +5,7 @@ Use this reference when an OpenAPI is missing from the `ve` command surface (unk
 1. **`ve ... --force`** — for any Action/Version API. This is the default.
 2. **`scripts/call_extend_api.py`** — only for APIs that need URL query parameters *and* a request body in one POST (VMP, Flink GWS), which `ve` cannot express.
 
-Apply the same read/write/destructive confirmation rules from `SKILL.md` to both.
+Apply the confirmation mode chosen in `SKILL.md` §2 to `ve --force` calls. Extension-helper calls retain the built-in read/write/destructive confirmation rules; do not manually evaluate local policy rules in the skill. The confirmation notes below apply to calls using the built-in rules.
 
 Apply [the mandatory Agent caller metadata](../SKILL.md#agent-caller-metadata-mandatory) to every
 `ve --force` invocation and to the Python helper process. The helper's internal `ve` credential
@@ -162,7 +162,7 @@ Facts gathered while validating these APIs. Pass them as `--Param` values (or `-
 - `CheckFee`: `domain`. `GetDomain`: `domain` or `instance_no`. `GetAsyncTask`: `task_no`. `GetTemplate`: `tag`.
 - `ListDomains`: optional `domain`, `status`, `verify_status`, `expired_after`, `is_auto_renew`, `domain_name_audit_status`, `order_by`, `asc_or_desc`, `page_number`, `page_size`.
 - `ListTemplates`: optional `registrant_zh`, `registration_type`, `tag`, `status`, `page_number`, `page_size`.
-- `RegisterDomain` (POST body): required `domain`, `template_tag`; optional `period`, `ns_list`, `is_auto_renew`, `package_id`. Billable, creates an async task — confirm with the user first.
+- `RegisterDomain` (POST body): required `domain`, `template_tag`; optional `period`, `ns_list`, `is_auto_renew`, `package_id`. Billable, creates an async task — in built-in mode, confirm with the user first.
 
 ### Flink
 
@@ -209,7 +209,7 @@ Identifiers by level: `InstanceId`; `ProductKey`/`ProductID`; `DeviceName`/`Devi
 ### VEEN
 
 - `StartCloudServer` and the four usage-query Actions are in the CLI metadata: use plain `ve veenedge <Action>` and read `--help --detail`.
-- `StopCloudServer` / `RebootCloudServer` stay force-only and take `cloud_server_id`; confirm before running.
+- `StopCloudServer` / `RebootCloudServer` stay force-only and take `cloud_server_id`; in built-in mode, confirm before running.
 
 ### VKE
 

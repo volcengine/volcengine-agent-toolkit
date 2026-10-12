@@ -52,6 +52,10 @@ invocation_id=$(ve ecs RunCommand \
   --Timeout 60 \
   --CommandContent "$command_b64" \
   | jq -r '.Result.InvocationId')
+if [ -z "$invocation_id" ] || [ "$invocation_id" = "null" ]; then
+  echo "RunCommand returned no InvocationId; check its error, including safety-policy blocks" >&2
+  exit 1
+fi
 
 for _ in $(seq 1 30); do
   result=$(ve ecs DescribeInvocationResults --InvocationId "$invocation_id" --InstanceId "$instance_id")

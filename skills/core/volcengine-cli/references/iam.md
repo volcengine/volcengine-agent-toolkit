@@ -18,6 +18,8 @@ The same applies to roles — use `TagResources` with `ResourceType` set to `Rol
 
 For testing IAM user tagging, create a disposable user and delete it in the same run. `CreateUser` can set initial tags, and `TagResources` adds more tags afterward.
 
+Run the write commands below one per call and check each result before the next: if one is blocked or held for confirmation (`SKILL.md` §2), the shell still runs the commands after it.
+
 ```bash
 user_name="cli-skill-test-user"
 

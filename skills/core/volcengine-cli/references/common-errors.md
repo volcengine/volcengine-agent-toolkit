@@ -37,6 +37,19 @@ Do not write real account IDs, request IDs, TRNs, personal names, certificate nu
 | `AccountNoPermission` | Product permission blocker | VEENEdge `StartCloudServer`, `StopCloudServer`, `RebootCloudServer` | Do not classify as real-name verification without another source. Check product permission or entitlement. |
 | `ProductUnsubscribed`, `ServiceNotActivated`, `KMS_ServiceNotOpen`, `OperationDenied.ServiceStopped` | Service not enabled or stopped | Multiple service activation checks | Treat as service activation/account service state, not as request-format bugs. |
 
+## Local Safety Policy
+
+These messages come from the user's local safety policy, not from the Volcengine service. No request was sent, so they are not permission, credential, or request-format errors and do not start a feedback invitation. Follow `SKILL.md` §2; never change the policy or its `VOLCENGINE_SAFETY_*` variables on your own to get past them.
+
+| Message | Meaning | Handling |
+| --- | --- | --- |
+| `operation blocked by safety policy: <service> <Action> (rule: <pattern>)` / `操作被安全策略拒绝：<service> <Action>（规则：<pattern>）` | A `deny` rule matched | Stop and tell the user the operation was denied and cannot continue under the current policy. Ask whether they want to adjust the policy, then end the turn and wait. Do not retry, use another route, or change the policy on your own. |
+| `safety policy requires confirmation for: <service> <Action>` / `安全策略要求确认以下操作：<service> <Action>` | A `confirm` rule matched in a non-interactive run | Explain the target and impact, ask, and end the turn. After a new approval, re-run the identical command once with `--yes`. |
+| `Type 'yes' to proceed, anything else to cancel:` / `输入 'yes' 继续，其他任意输入取消：` | A `confirm` rule matched and stdin is a terminal, so `ve` is waiting for an answer | Never answer it or pipe input into `ve`. Leave it for the user to answer, or cancel it and handle the operation like the row above. |
+| `operation cancelled by user` / `操作已由用户取消` | The interactive prompt got an answer other than `yes` | The operation did not run. Do not retry unless the user asks again. |
+| `operation cancelled: confirmation input is unavailable` / `操作已取消：无法读取确认输入`, `operation cancelled: reading confirmation: ...` / `操作已取消：读取确认输入失败：...` | The prompt could not read an answer | The operation did not run. Handle it like a confirmation request. |
+| `load effective safety policy: ...` | The policy file or a `VOLCENGINE_SAFETY_*` value is invalid; `ve` refuses every API call | Report the message to the user and stop. Do not edit the policy file or variables unless the user asks you to fix the policy. |
+
 ## Console Login Process Exited
 
 The following helper error means the `ve login` process started by `scripts/ve_login_remote.sh` is no longer running:
