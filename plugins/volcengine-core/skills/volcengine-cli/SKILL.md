@@ -108,7 +108,8 @@ Supply all three through the tool's process environment or command-local assignm
 execution**. A new tool call may start a fresh shell, so an earlier `export` is not sufficient.
 For a multi-command shell block, export all three at the beginning of that block and update the
 skill name before switching workflows. Put assignments before the executable; these are not CLI
-flags, API parameters, or fields to add to a request body.
+flags, API parameters, or fields to add to a request body. Never add the `VOLCENGINE_SAFETY_*`
+variables to this prefix (§2).
 For pipelines and `$(...)`, set the variables on the `ve` process itself or export them in that
 same shell before running the pipeline or expanding the command substitution.
 
@@ -201,7 +202,8 @@ those skills; this skill only routes to them.
 `arkcli`, `tosutil` and `volclog` are transparent delegated CLIs: replace only the executable prefix in
 their examples, keeping all later arguments unchanged. They retain their own authentication,
 profile, parameters, output, and exit codes. Native API rules such as `--output`, `--query`,
-`--force`, `--detail`, PascalCase parameters and `--DryRun` do **not** carry over.
+`--force`, `--detail`, PascalCase parameters and `--DryRun` do **not** carry over. Neither do the
+local safety policy and its `--yes` retry (§2); the product skill's own confirmation rules apply.
 
 - Put supported child flags after the child command. `ve --profile <name> arkcli ...` is invalid;
   `ve arkcli ... --profile <name>` selects an **Ark** profile, not a `ve` profile.
@@ -386,7 +388,40 @@ Then `ve sso login --sso-session <session-name>` (use `--no-browser` on headless
 
 ## 2. Safety Rules (mandatory)
 
-### Read/Write Classification
+These apply in every conversation:
+
+1. **Default to read-only** — unless the user explicitly requests a change, execute in read-only mode
+2. **Protect credentials** — never read `~/.volcengine/config.json`; never expose access-key, secret-key, or session-token in output
+3. **Leave the safety policy alone** — unless the user explicitly asks to change the policy itself, never run `ve configure safety-policy enable|disable|add|remove`, never read or edit `~/.volcengine/safety-policy.json`, and never set, unset or override `VOLCENGINE_SAFETY_POLICY_ENABLED`, `VOLCENGINE_SAFETY_POLICY_RULES` or `VOLCENGINE_SAFETY_SKIP_CONFIRM` in a command prefix, script or environment
+
+Approval to execute or retry an operation does not authorize changing the safety policy. A policy change requires an explicit request to change the policy itself.
+
+For native OpenAPI calls, use exactly one confirmation source: the CLI when the safety policy is enabled and its rules are non-empty, otherwise this skill's built-in rules. Never apply both to the same operation.
+
+### Choose the confirmation mode
+
+Before the first native `ve <service> <Action>` call of a conversation, including `ve sts GetCallerIdentity`, run this with the same caller metadata and environment as the later calls:
+
+```bash
+ve configure safety-policy show
+```
+
+Decide from stdout and the message text, not the exit code. A `ve` without safety policy support has no `safety-policy` command: it prints `ve configure` usage to stderr, nothing to stdout, and still exits 0.
+
+| Output | Mode |
+| --- | --- |
+| stdout is JSON with `"enabled": true` and a non-empty `rules` list | **Safety policy** — let the CLI enforce it; do not apply the skill's built-in confirmation rules |
+| stdout is JSON with `"enabled": false` or an empty `rules` list | **Built-in rules** — follow [Built-in rules](#built-in-rules) only |
+| The output contains `load effective safety policy:` | Neither. `ve` refuses every API call until the policy is fixed; report the error to the user and stop. |
+| Anything else: empty stdout, `ve configure` usage, an unknown-command error, or other non-JSON output, whatever the exit code | **Built-in rules** — the `ve` does not support a safety policy |
+
+Read only `enabled` and whether `rules` is empty to choose the mode. Do not interpret, match, or cache individual policy rules to decide whether an operation may run; the CLI makes that decision.
+
+Keep the mode for the conversation. Run `show` again only when the user says the policy changed, or when a call in built-in mode is blocked or asks for confirmation — then continue in the mode the new output selects.
+
+### Built-in rules
+
+Apply these to native calls only in built-in mode. Extension-helper calls retain these built-in confirmation rules.
 
 | Level | Operation Types | Behavior |
 |-------|----------------|----------|
@@ -394,12 +429,27 @@ Then `ve sso login --sso-session <session-name>` (use `--no-browser` on headless
 | **Write** | Create\* / Run\* / Allocate\* / Attach\* / Associate\* / Authorize\* | Show the full command and wait for user confirmation |
 | **Destructive** | Delete\* / Terminate\* / Release\* / Revoke\* / Modify\* / Stop\* / Detach\* | Show command + impact summary; **require** user confirmation |
 
-### Core Principles
+1. **DryRun first** — if a write/destructive operation supports `--DryRun true`, run a DryRun to preview the plan, then confirm before executing
+2. **Confirm before executing** — show the full command for write operations and wait for approval
 
-1. **Default to read-only** — unless the user explicitly requests a change, execute in read-only mode
-2. **DryRun first** — if a write/destructive operation supports `--DryRun true`, run a DryRun to preview the plan, then confirm before executing
-3. **Confirm before executing** — show the full command for write operations and wait for approval
-4. **Protect credentials** — never read `~/.volcengine/config.json`; never expose access-key, secret-key, or session-token in output
+Confirmation notes in the references ("confirm with the user first", "require explicit confirmation") belong to these rules.
+
+### Local safety policy
+
+For native calls in safety-policy mode, do not apply the built-in rules above or the confirmation notes in the references. `ve` checks every native call, including `--force` calls, so run the command the task needs and act on the CLI's result:
+
+| `ve` result | Policy decision | Action |
+| --- | --- | --- |
+| API response or API error | No safety-policy block | Handle the normal API result or error; do not add another confirmation step. |
+| `operation blocked by safety policy: <service> <Action> (rule: <pattern>)` / `操作被安全策略拒绝：...` | `deny`; no request was sent | Stop and tell the user the operation was denied and cannot continue under the current policy. Ask whether they want to adjust the policy, then end the turn and wait. Do not retry or change the policy on your own. |
+| `safety policy requires confirmation for: <service> <Action>` / `安全策略要求确认以下操作：...` | `confirm`; no request was sent | Briefly explain the target and impact, ask whether to continue, and end the turn. After a new explicit approval, re-run the identical command once with `--yes` added. The approval is then used up, even if that call fails. |
+
+- Start every operation without `--yes` (or `-y`); add it only for the single approved retry. Approvals from earlier in the conversation, including for the same command, do not count.
+- If `ve` waits at `Type 'yes' to proceed` / `输入 'yes' 继续`, never answer it or pipe input into `ve`; other messages are in [references/common-errors.md](references/common-errors.md#local-safety-policy).
+- Run one write or destructive operation per tool call and check its result before the next; a blocked command inside a multi-command shell block does not stop the commands after it. Reads can be held for confirmation too: stop a polling loop when a call is intercepted.
+- When several operations need confirmation, run each once without `--yes`, list every intercepted command for the user, and retry with `--yes` only the commands the user explicitly approves, once each.
+- Do not reach a denied or held operation another way: no other spelling or version of the service, `--force`, Cloud Control, the extension helper, a product CLI, an SDK or raw HTTP. `ve` applies a rule to every spelling of a service (`rds_mysql`, `rdsmysql` and `rdsmysqlv2`; `cloudtrail` and `cloudtrail20180101`).
+- The policy does not cover delegated product CLIs (`ve tosutil`, `ve arkcli`, `ve volclog`); follow their product skill.
 
 ### DryRun Notes
 
@@ -471,7 +521,7 @@ ve newservice DescribeNewResource \
 - `--method POST` for POST APIs (default GET); `--body '{...}'` for a JSON body (cannot be mixed with `--Param` values); `--region` when the service signs in a fixed region.
 - `--force` is a presence flag: `--force`, not `--force true`.
 - Parameters are unvalidated: take them from the user's material, the `volcengine-api` skill, or [references/extend-apis.md](references/extend-apis.md) — never guess them. `find_api.py` only locates Service/Action/Version; it does not return parameters, method, or endpoint.
-- The read/write/destructive rules in §2 apply exactly as for a listed action.
+- §2 applies exactly as for a listed action; a local safety policy checks `--force` calls too.
 - Do not use `--force` for TLS (日志服务); `ve` has no `tls` OpenAPI command, so route TLS tasks to `ve volclog` through the Product CLI routing table instead.
 
 [references/extend-apis.md](references/extend-apis.md) carries the service-code / version / endpoint / signing-region recipes for the extension services that were previously wrapped by a helper script (CDN, DCDN, domain, Flink, GA, IoT, Live, MCDN, Metrics, sec_agent, trademark, VEEN, VKE).
@@ -488,6 +538,8 @@ python3 scripts/call_extend_api.py --api QueryMetrics --params '{"workspace":"<i
 After upgrading `ve`, run `python3 scripts/audit_extend_apis.py` — it lists which recipes/helper entries the new metadata now covers natively, so they can be dropped.
 
 It also has a free mode (`--service/--version/--query-keys`) for unregistered APIs with the same shape. Credentials, options and the registered list are in [references/extend-apis.md](references/extend-apis.md). Do not pass `--profile` unless the user has explicitly selected one for this conversation.
+
+Extension helpers retain the built-in confirmation rules (§2). They are outside this native-CLI safety-policy integration.
 
 ---
 
@@ -564,6 +616,8 @@ Rules of thumb:
 
 ### Error Handling
 
+A safety-policy block or confirmation request (§2) means no request was sent. Handle it as §2 describes; it is neither a permission error nor a CLI anomaly, so it does not start permission diagnosis or a feedback invitation.
+
 Whenever a native `ve <service> <Action>` command or extension helper fails, or a response contains `ResponseMetadata.Error`, read [references/common-errors.md](references/common-errors.md) completely before diagnosing the error or responding to the user. Partial searches, matched lines, or excerpts do not satisfy this requirement. For `ve tosutil` / `ve arkcli` / `ve volclog` failures, follow the selected product skill and native child error format.
 
 First classify the error as request-format, missing dependency, account state, service activation, real-name verification, purchase qualification, or permission related. For product-specific errors, also read the matching service note below. For permission errors (`AccessDenied`, `NoPermission`, `RoleNotExist`, `Forbidden`, or STS-related failures), activate the `volcengine-troubleshooting` skill and use its account-permission diagnosis capability to locate the root cause and guide the user through remediation.
@@ -604,13 +658,14 @@ done
 ## 5. Native OpenAPI Execution Flow (Summary)
 
 ```text
-1. Set caller metadata for this execution -> verify credentials -> GetCallerIdentity -> confirm region
+1. Set caller metadata for this execution -> choose the confirmation mode (§2) -> verify credentials -> GetCallerIdentity -> confirm region
 2. Understand the task: is the user querying or making changes?
 3. Locate the API: ve --help first -> find_api.py as fallback -> --force if the metadata lacks it
 4. Retrieve parameters: --help, then --help --detail for write/destructive actions
 5. Query dependent resources: use Describe*/List* (with --query to pick IDs) to obtain required IDs
 6. Read operation -> execute directly and display results (--output table for lists)
-   Write operation -> show command -> DryRun (if supported) -> user confirmation -> execute
+   Write operation, built-in rules -> show command -> DryRun (if supported) -> user confirmation -> execute
+   Write operation, safety policy  -> execute -> if blocked or held for confirmation, follow §2
 7. Parse the response and report results to the user
 ```
 

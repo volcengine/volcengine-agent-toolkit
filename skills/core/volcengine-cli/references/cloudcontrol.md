@@ -19,7 +19,7 @@ Type names use the form `Volcengine::<Service>::<Resource>`, for example `Volcen
 
 ## Command Shapes
 
-Read/write actions follow this skill's safety classification: `List*`/`Describe*`/`Get*` are read-only; `Create*`/`Update*`/`Delete*` require confirmation.
+Confirmation follows the mode chosen in `SKILL.md` §2. In built-in mode, `List*`/`Describe*`/`Get*` are read-only and `Create*`/`Update*`/`Delete*` require confirmation; the confirmation notes below apply only in this mode. In safety-policy mode, run the Cloud Control command and follow the CLI's result (§2). Do not inspect policy rules to select another API route.
 
 Parameter form differs per action — always check `--help` first rather than assuming a shape:
 
@@ -57,7 +57,7 @@ Cloud Control validates against the resource schema, so **always fetch the schem
 
 ### Create
 
-`CreateResource` requires `TypeName` plus a `TargetState` object that holds the resource properties. `TargetState` is mandatory — top-level property fields are **not** accepted; they must be nested inside `TargetState`. Confirm the full command with the user first.
+`CreateResource` requires `TypeName` plus a `TargetState` object that holds the resource properties. `TargetState` is mandatory — top-level property fields are **not** accepted; they must be nested inside `TargetState`. In built-in mode, confirm the full command with the user first.
 
 ```bash
 ve cloudcontrol CreateResource --body '{
@@ -103,7 +103,7 @@ ve cloudcontrol DeleteResource --body '{
 }'
 ```
 
-Deletion is destructive — show the impact and require explicit confirmation before running. For multi-resource deletions, confirm each or the batch explicitly.
+Deletion is destructive. In built-in mode, show the impact and require explicit confirmation before running; for multi-resource deletions, confirm each or the batch explicitly.
 
 ## Listing Resources
 

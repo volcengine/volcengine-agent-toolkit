@@ -1,6 +1,6 @@
 {
   "name": "volcengine-containers-middleware",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Deploy and manage Volcengine serverless, container, and middleware application runtimes.",
   "author": {
     "name": "Volcengine Team",
