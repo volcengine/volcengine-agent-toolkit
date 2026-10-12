@@ -140,6 +140,7 @@ Rules:
 - New resources: `reused=false`, include exact delete command.
 - Reused resources: `reused=true`, do not include them in destructive cleanup.
 - If an EIP is created inline with an ECS instance and released with that instance, mark it as `dependent=true` / `cleanup_optional=true` or omit it as an independent ledger item. Do not make cleanup fail just because the instance already released the EIP.
+- Stopping an instance is not cleanup. Disks, snapshots, EIPs, and CLBs can keep billing after the instance stops; when the user stops rather than deletes resources, list the ledger items that remain billable.
 - On failure, print cleanup commands in reverse ledger order. There is currently no one-command cleanup runner; the user must review and run ledger `delete_command` values manually. Do not silently delete unless the user confirms.
 - Prefer creating or using an isolated Volcengine project named `deploy-<repo>` for new resources, but confirm the project exists or can be created before passing that project name to resource creation. If project creation is unavailable, use `default` and isolate resources with names and tags.
 
