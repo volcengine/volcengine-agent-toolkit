@@ -197,3 +197,7 @@ python3 -m unittest discover -s tests -v
 ## License
 
 MIT，见 [LICENSE](./LICENSE)。
+
+## 项目 Rules
+
+除 skill 外，推荐在客户项目中加入火山引擎规则文件 [`rules/volcengine-agent-rules.md`](rules/volcengine-agent-rules.md)，让 Agent 在每次会话中优先使用 skill、按证据确定目标、核实 API 细节。安装插件不会自动启用规则：把内容复制到 `CLAUDE.md`、`AGENTS.md`、`GEMINI.md` 或 `.cursor/rules/volcengine.mdc`，详见 [rules/README.md](rules/README.md)。
