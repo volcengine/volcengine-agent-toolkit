@@ -1,6 +1,6 @@
-# Contributing to volcengine-skills
+# Contributing to volcengine-agent-toolkit
 
-感谢你对 volcengine-skills 的关注。本文档说明如何参与本项目。
+感谢你对 volcengine-agent-toolkit 的关注。本文档说明如何参与本项目。
 
 ---
 
@@ -24,7 +24,7 @@
 
 ### 🐛 报告 Bug
 
-最有价值的反馈方式。请在 [Issues](https://github.com/volcengine/volcengine-skills/issues) 中提交，建议包含：
+最有价值的反馈方式。请在 [Issues](https://github.com/volcengine/volcengine-agent-toolkit/issues) 中提交，建议包含：
 
 - **复现步骤**：从零到出现问题的完整命令序列
 - **期望行为** vs **实际行为**
@@ -36,7 +36,7 @@
 
 ### 💡 提出 Feature Request
 
-在 [Issues](https://github.com/volcengine/volcengine-skills/issues) 中描述：
+在 [Issues](https://github.com/volcengine/volcengine-agent-toolkit/issues) 中描述：
 
 - **场景**：你希望在什么情况下用到这个能力
 - **当前痛点**：现在你是怎么解决的，为什么不够好

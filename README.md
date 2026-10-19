@@ -1,4 +1,4 @@
-# volcengine-skills
+# volcengine-agent-toolkit
 
 ---
 [![Volcengine SKILL & CLI Survey](img_new.png)](https://www.volcengine.com/survey/q/v2/7662656599489085475/q36U8r81/5ffc/channel=doc)
@@ -88,7 +88,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 添加 marketplace 后只安装核心插件：
 
 ```bash
-codex plugin marketplace add volcengine/volcengine-skills
+codex plugin marketplace add volcengine/volcengine-agent-toolkit
 codex plugin add volcengine-core@volcengine-skills
 codex plugin list
 ```
@@ -111,7 +111,7 @@ python3 plugins/volcengine-core/skills/volcengine-find-skills/scripts/find_skill
 下面的命令只安装当前核心 skill，不会默认安装可选产品域 skill：
 
 ```bash
-npx skills add volcengine/volcengine-skills \
+npx skills add volcengine/volcengine-agent-toolkit \
   --global --yes --copy --full-depth \
   --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback
 ```
@@ -119,13 +119,13 @@ npx skills add volcengine/volcengine-skills \
 后续可由 finder 调用 `npx skills add --skill` 精确安装单个或多个 skill。如需交互选择仓库内的 skill：
 
 ```bash
-npx skills add volcengine/volcengine-skills --full-depth
+npx skills add volcengine/volcengine-agent-toolkit --full-depth
 ```
 
 ### Claude Code
 
 ```text
-/plugin marketplace add volcengine/volcengine-skills
+/plugin marketplace add volcengine/volcengine-agent-toolkit
 /plugin install volcengine-core@volcengine-skills
 /reload-plugins
 /volcengine-core:volcengine-find-skills
@@ -134,11 +134,11 @@ npx skills add volcengine/volcengine-skills --full-depth
 ### Gemini CLI
 
 ```bash
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-cli
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-troubleshooting
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-knowledge-search
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-find-skills
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-feedback
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-cli
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-troubleshooting
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-knowledge-search
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-find-skills
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-feedback
 gemini skills list
 ```
 
@@ -151,7 +151,7 @@ gemini skills list
 ### Cursor
 
 ```text
-/add-plugin volcengine-core@https://github.com/volcengine/volcengine-skills
+/add-plugin volcengine-core@https://github.com/volcengine/volcengine-agent-toolkit
 /volcengine-find-skills
 ```
 
@@ -163,14 +163,14 @@ gemini skills list
 
 可直接说明“用 volcengine-feedback 帮我反馈：……”。默认核心 skill [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) 会根据已有上下文整理简短的脱敏草稿，供你审阅后选择发送、修改或保留草稿。无需先准备日志、版本或完整报告；发布成功后返回 issue 链接，继续原任务。
 
-也可以直接填写 [Feedback issue 表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)：填写标题与反馈内容即可，分类和补充信息均为选填。旧版本或未加载该 skill 的环境同样可用。反馈始终自愿，不会阻塞主任务；Agent 在同一对话中的主动邀请最多一次，不等待回复，也不为反馈安装工具或重启对话。
+也可以直接填写 [Feedback issue 表单](https://github.com/volcengine/volcengine-agent-toolkit/issues/new?template=feedback.yml)：填写标题与反馈内容即可，分类和补充信息均为选填。旧版本或未加载该 skill 的环境同样可用。反馈始终自愿，不会阻塞主任务；Agent 在同一对话中的主动邀请最多一次，不等待回复，也不为反馈安装工具或重启对话。
 
 GitHub issue 是公开内容。发布前请检查正文与附件，移除凭证、账号信息、真实资源 ID、内部地址和客户数据，不公开敏感漏洞细节，并遵守 [反馈与社区规则](./.github/FEEDBACK_GUIDELINES.md) 及其中的 GitHub 社区规范。欢迎客观描述使用中遇到的问题、影响和改进建议；包含人身攻击、骚扰、歧视等违规内容的 issue 会被维护者直接关闭。需要私密排障或紧急恢复时，请使用火山引擎官方支持渠道。
 
 ## 目录结构
 
 ```text
-volcengine-skills/
+volcengine-agent-toolkit/
 ├── skills/
 │   ├── core/                         # CLI 默认安装的核心 skill 源码
 │   └── specialized/

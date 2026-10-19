@@ -7,8 +7,8 @@
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"
   },
-  "homepage": "https://github.com/volcengine/volcengine-skills",
-  "repository": "https://github.com/volcengine/volcengine-skills",
+  "homepage": "https://github.com/volcengine/volcengine-agent-toolkit",
+  "repository": "https://github.com/volcengine/volcengine-agent-toolkit",
   "license": "MIT",
   "keywords": [
     "volcengine",

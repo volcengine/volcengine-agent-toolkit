@@ -364,12 +364,12 @@ def validate_installation_docs(core_skills: set[str]) -> None:
         (REPO_ROOT / "README_en.md", "#default-installation"),
     )
     required = (
-        "codex plugin marketplace add volcengine/volcengine-skills",
+        "codex plugin marketplace add volcengine/volcengine-agent-toolkit",
         "codex plugin add volcengine-core@volcengine-skills",
-        "/plugin marketplace add volcengine/volcengine-skills",
+        "/plugin marketplace add volcengine/volcengine-agent-toolkit",
         "/plugin install volcengine-core@volcengine-skills",
         "/volcengine-core:volcengine-find-skills",
-        "/add-plugin volcengine-core@https://github.com/volcengine/volcengine-skills",
+        "/add-plugin volcengine-core@https://github.com/volcengine/volcengine-agent-toolkit",
         "gemini skills list",
     )
     for path, quick_anchor in readmes:
@@ -389,7 +389,7 @@ def validate_installation_docs(core_skills: set[str]) -> None:
             )
         for skill in sorted(core_skills):
             command = (
-                "gemini skills install https://github.com/volcengine/volcengine-skills "
+                "gemini skills install https://github.com/volcengine/volcengine-agent-toolkit "
                 f"--path skills/core/{skill}"
             )
             if command not in text:

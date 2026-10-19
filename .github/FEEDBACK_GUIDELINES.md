@@ -6,7 +6,7 @@ We would like to understand your outcomes, challenges, and expectations when usi
 
 ## 写什么 / What to share
 
-[Feedback 表单](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)除标题外，只需填写“反馈内容”。类型与补充信息均为选填。可以分享：
+[Feedback 表单](https://github.com/volcengine/volcengine-agent-toolkit/issues/new?template=feedback.yml)除标题外，只需填写“反馈内容”。类型与补充信息均为选填。可以分享：
 
 - **使用问题**：相关 skill、任务目标、观察结果及期望改进。
 - **能力需求**：希望 Agent 提供的能力及其使用价值。

@@ -7,8 +7,8 @@
     "email": "volcengine@bytedance.com",
     "url": "https://www.volcengine.com"
   },
-  "homepage": "https://github.com/volcengine/volcengine-skills",
-  "repository": "https://github.com/volcengine/volcengine-skills",
+  "homepage": "https://github.com/volcengine/volcengine-agent-toolkit",
+  "repository": "https://github.com/volcengine/volcengine-agent-toolkit",
   "license": "MIT",
   "keywords": [
     "volcengine",
@@ -66,7 +66,7 @@
       "Find the request schema for this Volcengine API.",
       "Generate a runnable SDK example for this API."
     ],
-    "websiteURL": "https://github.com/volcengine/volcengine-skills",
+    "websiteURL": "https://github.com/volcengine/volcengine-agent-toolkit",
     "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
     "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
     "brandColor": "#1664FF"

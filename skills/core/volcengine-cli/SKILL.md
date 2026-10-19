@@ -625,7 +625,7 @@ First classify the error as request-format, missing dependency, account state, s
 For CLI anomalies or an incompletely solved task, follow the **non-blocking feedback** guidance in
 `volcengine-troubleshooting`: continue the main task and reserve any optional invitation for a natural
 summary. User-requested feedback belongs to `volcengine-feedback`; when unavailable, use the
-[feedback form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)
+[feedback form](https://github.com/volcengine/volcengine-agent-toolkit/issues/new?template=feedback.yml)
 in the current conversation rather than installing a skill or restarting the task for feedback.
 
 ### Async Resource Creation Requires Polling

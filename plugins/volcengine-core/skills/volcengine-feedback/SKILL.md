@@ -1,7 +1,7 @@
 ---
 name: volcengine-feedback
 description: >-
-  Help users draft and, when authorized, submit feedback to volcengine/volcengine-skills:
+  Help users draft and, when authorized, submit feedback to volcengine/volcengine-agent-toolkit:
   skill problems, missing capabilities, cloud scenarios, and successful Agent workflows.
   Use for explicit feedback or sharing requests, or an optional invitation at a natural summary
   after Volcengine CLI errors or an incompletely solved task. Feedback never blocks the main task.
@@ -14,9 +14,9 @@ Help users share practical experience of managing cloud services with an Agent: 
 difficulties encountered, and capabilities they would like to use. A short description of the
 scenario is sufficient; a diagnosis or proposed implementation is optional.
 
-Destination: **`volcengine/volcengine-skills`** on GitHub.
-[Feedback form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)
-· [Community and privacy guidance](https://github.com/volcengine/volcengine-skills/blob/main/.github/FEEDBACK_GUIDELINES.md).
+Destination: **`volcengine/volcengine-agent-toolkit`** on GitHub.
+[Feedback form](https://github.com/volcengine/volcengine-agent-toolkit/issues/new?template=feedback.yml)
+· [Community and privacy guidance](https://github.com/volcengine/volcengine-agent-toolkit/blob/main/.github/FEEDBACK_GUIDELINES.md).
 
 ## Keep the main task moving
 
@@ -28,7 +28,7 @@ Destination: **`volcengine/volcengine-skills`** on GitHub.
 - Keep an unsolicited invitation to one short sentence with the form link. Do not wait for an
   answer or start drafting, searching issues, collecting logs, installing tools/skills, logging
   in, or opening a browser just to invite feedback. Example:
-  “如需反馈本次未解决的问题，可通过 [Feedback](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)
+  “如需反馈本次未解决的问题，可通过 [Feedback](https://github.com/volcengine/volcengine-agent-toolkit/issues/new?template=feedback.yml)
   说明使用场景和改进建议；反馈不影响当前任务继续。”
 - Once the user asks for feedback, handle it as an optional side task. Missing details, unavailable
   GitHub access, declined publication, or submission failure never become prerequisites for cloud
@@ -64,8 +64,8 @@ Example preview when the conversation supports these facts:
 > 使用 Agent 部署测试应用时，已完成资源创建，但尚未验证服务可用性。
 > 建议继续执行可用性检查，并提供明确的验证结果。
 >
-> 将公开发布到 `volcengine/volcengine-skills`，仅包含以上脱敏内容。
-> 发布前请检查敏感信息，并遵守[反馈约定](https://github.com/volcengine/volcengine-skills/blob/main/.github/FEEDBACK_GUIDELINES.md)。
+> 将公开发布到 `volcengine/volcengine-agent-toolkit`，仅包含以上脱敏内容。
+> 发布前请检查敏感信息，并遵守[反馈约定](https://github.com/volcengine/volcengine-agent-toolkit/blob/main/.github/FEEDBACK_GUIDELINES.md)。
 > 你可以确认发送以上内容、修改或先留作草稿。
 
 For an active incident, continue troubleshooting or official support; a public issue carries no
