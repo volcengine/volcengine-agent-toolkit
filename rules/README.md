@@ -24,7 +24,7 @@
 <!-- END Volcengine Agent rules -->
 ```
 
-最新版本：<https://raw.githubusercontent.com/volcengine/volcengine-skills/main/rules/volcengine-agent-rules.md>
+最新版本：<https://raw.githubusercontent.com/volcengine/volcengine-agent-toolkit/main/rules/volcengine-agent-rules.md>
 
 ## 自定义
 

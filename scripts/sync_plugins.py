@@ -29,7 +29,7 @@ AUTHOR = {
     "email": "volcengine@bytedance.com",
     "url": "https://www.volcengine.com",
 }
-HOMEPAGE = "https://github.com/volcengine/volcengine-skills"
+HOMEPAGE = "https://github.com/volcengine/volcengine-agent-toolkit"
 PRIVACY_URL = "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
 TERMS_URL = (
     "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"

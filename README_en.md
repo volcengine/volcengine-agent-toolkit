@@ -1,4 +1,4 @@
-# volcengine-skills
+# volcengine-agent-toolkit
 
 ---
 [![Volcengine SKILL & CLI Survey](img_new.png)](https://www.volcengine.com/survey/q/v2/7662656599489085475/q36U8r81/5ffc/channel=doc)
@@ -101,7 +101,7 @@ plugin skill:
 Add the marketplace and install only the core plugin:
 
 ```bash
-codex plugin marketplace add volcengine/volcengine-skills
+codex plugin marketplace add volcengine/volcengine-agent-toolkit
 codex plugin add volcengine-core@volcengine-skills
 codex plugin list
 ```
@@ -126,7 +126,7 @@ python3 plugins/volcengine-core/skills/volcengine-find-skills/scripts/find_skill
 This command installs only the current core skills:
 
 ```bash
-npx skills add volcengine/volcengine-skills \
+npx skills add volcengine/volcengine-agent-toolkit \
   --global --yes --copy --full-depth \
   --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback
 ```
@@ -134,13 +134,13 @@ npx skills add volcengine/volcengine-skills \
 The finder can later invoke `npx skills add --skill` for exact skills. To select repository skills interactively:
 
 ```bash
-npx skills add volcengine/volcengine-skills --full-depth
+npx skills add volcengine/volcengine-agent-toolkit --full-depth
 ```
 
 ### Claude Code
 
 ```text
-/plugin marketplace add volcengine/volcengine-skills
+/plugin marketplace add volcengine/volcengine-agent-toolkit
 /plugin install volcengine-core@volcengine-skills
 /reload-plugins
 /volcengine-core:volcengine-find-skills
@@ -149,11 +149,11 @@ npx skills add volcengine/volcengine-skills --full-depth
 ### Gemini CLI
 
 ```bash
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-cli
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-troubleshooting
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-knowledge-search
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-find-skills
-gemini skills install https://github.com/volcengine/volcengine-skills --path skills/core/volcengine-feedback
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-cli
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-troubleshooting
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-knowledge-search
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-find-skills
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-feedback
 gemini skills list
 ```
 
@@ -167,7 +167,7 @@ directory.
 ### Cursor
 
 ```text
-/add-plugin volcengine-core@https://github.com/volcengine/volcengine-skills
+/add-plugin volcengine-core@https://github.com/volcengine/volcengine-agent-toolkit
 /volcengine-find-skills
 ```
 
@@ -185,7 +185,7 @@ Ask your Agent: "Use volcengine-feedback to share this: …". The default core s
 short, sanitized draft. Review it and choose to send, edit, or keep it; there is no need to prepare logs, versions,
 or a full report. After a successful submission, receive the issue link and continue the original task.
 
-You can also use the [Feedback issue form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml):
+You can also use the [Feedback issue form](https://github.com/volcengine/volcengine-agent-toolkit/issues/new?template=feedback.yml):
 besides the title, only the feedback itself is required; category and extra details are optional. Older installations
 and environments that have not loaded the skill can use the form directly.
 Feedback is always voluntary and never blocks the main task.
@@ -204,7 +204,7 @@ troubleshooting or urgent recovery.
 ## Directory Structure
 
 ```text
-volcengine-skills/
+volcengine-agent-toolkit/
 ├── skills/
 │   ├── core/                         # authoritative core skills installed by the CLI
 │   └── specialized/

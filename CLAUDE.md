@@ -1,4 +1,4 @@
-# volcengine-skills
+# volcengine-agent-toolkit
 
 本仓库是 Volcengine Team 维护的 skill marketplace，为 AI coding agent 提供火山引擎场景能力。
 

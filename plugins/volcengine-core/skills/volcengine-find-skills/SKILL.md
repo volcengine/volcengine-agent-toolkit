@@ -59,7 +59,7 @@ in the catalog. If none of the listed responsibilities covers the request, repor
 repository does not currently provide a matching skill.
 
 For an uncovered capability, continue the supported work and optionally include the
-[feedback form](https://github.com/volcengine/volcengine-skills/issues/new?template=feedback.yml)
+[feedback form](https://github.com/volcengine/volcengine-agent-toolkit/issues/new?template=feedback.yml)
 at a natural summary so the user can describe the scenario they need. Invite at most once per
 conversation across skills, without waiting for a reply. Feedback itself is optional, not a
 capability gap that requires installation: use `volcengine-feedback` when already available and

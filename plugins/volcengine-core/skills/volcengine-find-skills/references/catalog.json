@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "marketplace": "volcengine-skills",
-  "repository": "volcengine/volcengine-skills",
+  "repository": "volcengine/volcengine-agent-toolkit",
   "plugins": [
     {
       "name": "volcengine-core",
