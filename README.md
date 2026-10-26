@@ -59,7 +59,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 | [`volcengine-tls`](./skills/specialized/storage/volcengine-tls/SKILL.md) | `volcengine-storage` | 使用 volclog 操作火山引擎日志服务 TLS：按契约发现/描述/执行，覆盖日志检索、分析、导入、导出与错误恢复。 |
 | [`volcengine-tls-logcollector`](./skills/specialized/storage/volcengine-tls-logcollector/SKILL.md) | `volcengine-storage` | 通过 volclog 设计、校验、部署并排查 Linux 主机或 Kubernetes 上的 TLS LogCollector 日志采集。 |
 | [`volcengine-db-supabase`](./skills/specialized/database/volcengine-db-supabase/SKILL.md) | `volcengine-database` | 管理火山引擎 AI 原生 BaaS Supabase 工作区、SQL、Auth、Realtime 与 Edge Functions。 |
-| [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | 在火山引擎 veFaaS 上部署和管理 Serverless 应用。 |
+| [`volcengine-vefaas`](./skills/specialized/containers-middleware/volcengine-vefaas/SKILL.md) | `volcengine-containers-middleware` | 通过 vefaas CLI 部署 veFaaS 应用和 MCP 服务，管理函数、沙箱并调用 OpenAPI。 |
 | [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | 推荐合规基线、汇总合规态势并编写自定义 Rego 合规规则。 |
 | [`volcengine-cloud-trail`](./skills/specialized/security/volcengine-cloud-trail/SKILL.md) | `volcengine-security` | 查询操作审计日志，并管理跟踪和历史补投任务。 |
 | [`volcengine-landing-zone`](./skills/specialized/identity-access-control/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | 咨询、搭建和管理火山引擎 Landing Zone 与账号基线，并支持部署方案或蓝图。 |
