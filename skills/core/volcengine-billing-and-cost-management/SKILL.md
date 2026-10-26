@@ -1,5 +1,5 @@
 ---
-name: volcengine-billiing-and-cost-managment
+name: volcengine-billing-and-cost-management
 description: 用于 FinOps / 费用异常分析与 RCA 的技能。遇到用户询问费用上涨、账单波动、异常来源、根因定位、是哪类维度导致异常、是用量还是单价/折扣/其他指标导致异常等场景时，都应主动使用本 skill。该 skill 会根据问题自动选择异常维度定位、异常指标定位等能力，使用当前授权身份分析费用波动。
 license: MIT
 metadata:
@@ -8,7 +8,7 @@ metadata:
       bins: [python3, ve]
 ---
 
-# volcengine-billiing-and-cost-managment
+# volcengine-billing-and-cost-management
 
 该 skill 用于 FinOps 场景下的费用异常分析、波动解释和根因定位（RCA）。
 它是一个总控型分析 skill，但内部工具调用遵循更严格的 tool schema 设计原则：

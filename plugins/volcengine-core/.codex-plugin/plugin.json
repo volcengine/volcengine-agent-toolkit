@@ -1,6 +1,6 @@
 {
   "name": "volcengine-core",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
   "author": {
     "name": "Volcengine Team",
@@ -22,7 +22,7 @@
     "feedback",
     "反馈",
     "场景分享",
-    "volcengine-billiing-and-cost-managment",
+    "volcengine-billing-and-cost-management",
     "volcengine-cli",
     "volcengine-troubleshooting",
     "volcengine-knowledge-search",
