@@ -2,7 +2,7 @@
   "name": "volcengine-service-support",
   "displayName": "Volcengine Service Support",
   "description": "Route product transactions (purchase, price enquiry, unsubscribe), prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"
