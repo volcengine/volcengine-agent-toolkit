@@ -21,6 +21,21 @@
       ],
       "skills": [
         {
+          "name": "volcengine-billiing-and-cost-managment",
+          "path": "skills/core/volcengine-billiing-and-cost-managment",
+          "summary": "Analyze cloud cost changes and attribute anomalies to products, charge items, usage, price, and amount components.",
+          "summary_zh": "分析云费用波动，定位产品、计费项及用量、单价和金额构成的归因。",
+          "keywords": [
+            "billing",
+            "cost",
+            "FinOps",
+            "RCA",
+            "费用归因",
+            "费用异常",
+            "账单波动"
+          ]
+        },
+        {
           "name": "volcengine-cli",
           "path": "skills/core/volcengine-cli",
           "summary": "Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli.",

@@ -5,7 +5,7 @@
 ## 仓库结构
 
 - `skills/`：包含 `core/` 和 `specialized/`。
-- `skills/core/`：只允许 `volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`、`volcengine-feedback`。
+- `skills/core/`：只允许 `volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`、`volcengine-feedback`、`volcengine-billiing-and-cost-managment`。
 - `plugins/volcengine-core/`：默认核心 plugin，包含 hooks 和上述 core skill 的生成副本。
 - `plugins/volcengine-<domain>/`：按产品域拆分的可选 plugin，也是其 skill 的唯一源码位置。
 - `skills/specialized/<domain>/<skill>/`：可选 plugin 的生成副本；分类名为 plugin 名去掉 `volcengine-` 前缀。

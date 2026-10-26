@@ -36,7 +36,7 @@ For `ve arkcli ...`, `ve` translates the caller metadata. The Agent does not dup
 <!-- BEGIN GENERATED: plugin-catalog -->
 | Plugin | Product domain | Skills | Default |
 | --- | --- | --- | --- |
-| `volcengine-core` | Core | `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills`, `volcengine-feedback` | Yes |
+| `volcengine-core` | Core | `volcengine-billiing-and-cost-managment`, `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills`, `volcengine-feedback` | Yes |
 | `volcengine-storage` | Storage | `volcengine-tosutil`, `volcengine-tls`, `volcengine-tls-logcollector` | No |
 | `volcengine-database` | Database | `volcengine-db-supabase` | No |
 | `volcengine-containers-middleware` | Containers and Middleware | `volcengine-vefaas` | No |
@@ -56,6 +56,7 @@ are maintained in their plugins; the sync script generates the copies.
 <!-- BEGIN GENERATED: skill-catalog -->
 | Skill | Plugin | Use case |
 | --- | --- | --- |
+| [`volcengine-billiing-and-cost-managment`](./skills/core/volcengine-billiing-and-cost-managment/SKILL.md) | `volcengine-core` | Analyze cloud cost changes and attribute anomalies to products, charge items, usage, price, and amount components. |
 | [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli. |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures. |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with ve docs search/fetch, without login. |
@@ -128,7 +129,7 @@ This command installs only the current core skills:
 ```bash
 npx skills add volcengine/volcengine-agent-toolkit \
   --global --yes --copy --full-depth \
-  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback
+  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback volcengine-billiing-and-cost-managment
 ```
 
 The finder can later invoke `npx skills add --skill` for exact skills. To select repository skills interactively:
@@ -154,6 +155,7 @@ gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --p
 gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-knowledge-search
 gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-find-skills
 gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-feedback
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-billiing-and-cost-managment
 gemini skills list
 ```
 
