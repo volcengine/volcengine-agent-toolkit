@@ -21,7 +21,7 @@ The `volcengine-vefaas` skill owns:
 vefaas --version
 vefaas login --check
 vefaas inspect
-vefaas deploy --newApp <app-name> --gatewayName $(vefaas run listgateways --first) --yes
+vefaas deploy --newApp <app-name> --gatewayName $(vefaas gateway list --first) --yes
 vefaas domains
 ```
 

@@ -19,7 +19,7 @@ Optional catalogued skills:
 - `volcengine-tls` — `volcengine-storage`; Operate Volcengine TLS log service with volclog: contract-first discover/describe/exec, log search, analysis, ingest, export, and error recovery.
 - `volcengine-tls-logcollector` — `volcengine-storage`; Design, validate, deploy, and troubleshoot TLS LogCollector collection on Linux hosts or Kubernetes through volclog.
 - `volcengine-db-supabase` — `volcengine-database`; Manage Volcengine AI-native BaaS Supabase workspaces, SQL, Auth, Realtime, and Edge Functions.
-- `volcengine-vefaas` — `volcengine-containers-middleware`; Deploy and manage serverless applications on Volcengine veFaaS.
+- `volcengine-vefaas` — `volcengine-containers-middleware`; Deploy veFaaS applications and MCP servers, and manage functions, sandboxes, and OpenAPI calls through the vefaas CLI.
 - `volcengine-compliance` — `volcengine-security`; Recommend compliance baselines, report posture, and author custom Rego compliance rules.
 - `volcengine-cloud-trail` — `volcengine-security`; Query CloudTrail audit logs and manage trails and backfill delivery tasks.
 - `volcengine-landing-zone` — `volcengine-identity-access-control`; Consult, set up, and manage Volcengine landing zones and account baselines, and deploy solutions or blueprints.

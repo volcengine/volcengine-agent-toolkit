@@ -183,9 +183,9 @@
         {
           "name": "volcengine-vefaas",
           "path": "plugins/volcengine-containers-middleware/skills/volcengine-vefaas",
-          "summary": "Deploy and manage serverless applications on Volcengine veFaaS.",
-          "summary_zh": "在火山引擎 veFaaS 上部署和管理 Serverless 应用。",
-          "keywords": ["vefaas", "serverless", "函数服务", "function", "deploy", "mcp"]
+          "summary": "Deploy veFaaS applications and MCP servers, and manage functions, sandboxes, and OpenAPI calls through the vefaas CLI.",
+          "summary_zh": "通过 vefaas CLI 部署 veFaaS 应用和 MCP 服务，管理函数、沙箱并调用 OpenAPI。",
+          "keywords": ["vefaas", "serverless", "函数服务", "function", "deploy", "mcp", "sandbox", "沙箱"]
         }
       ]
     },
