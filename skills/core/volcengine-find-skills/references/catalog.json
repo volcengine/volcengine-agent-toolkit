@@ -21,8 +21,8 @@
       ],
       "skills": [
         {
-          "name": "volcengine-billiing-and-cost-managment",
-          "path": "skills/core/volcengine-billiing-and-cost-managment",
+          "name": "volcengine-billing-and-cost-management",
+          "path": "skills/core/volcengine-billing-and-cost-management",
           "summary": "Analyze cloud cost changes and attribute anomalies to products, charge items, usage, price, and amount components.",
           "summary_zh": "分析云费用波动，定位产品、计费项及用量、单价和金额构成的归因。",
           "keywords": [

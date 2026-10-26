@@ -2,7 +2,7 @@
   "name": "volcengine-storage",
   "displayName": "Volcengine Storage",
   "description": "Operate Volcengine storage products and data with product-specific tools.",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "author": {
     "name": "Volcengine Team",
     "email": "volcengine@bytedance.com"
