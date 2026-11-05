@@ -9,6 +9,11 @@ diagnostics are written to stderr.
 from __future__ import annotations
 
 import argparse
+import csv
+import io
+import os
+import tempfile
+from pathlib import Path
 import hashlib
 import json
 import re
@@ -59,6 +64,7 @@ WRITE_ACTIONS = {
     "StopBackfillDeliveryTask",
 }
 ALLOWED_ACTIONS = {
+    "ListSearchTemplates",
     "LookupEvents",
     "DescribeTrails",
     "CreateTrail",
@@ -434,7 +440,6 @@ def add_bool_argument(
     group.add_argument(negative, dest=resolved_dest, action="store_false")
 
 
-
 class CloudTrailError(RuntimeError):
     """A user-actionable validation or API error."""
 
@@ -505,15 +510,10 @@ def parse_time(value: str) -> int:
 
 def parse_requested_time(value: Any, field: str, command_hint: str) -> int:
     text = str(value)
-    if (
-        field == "EndTime"
-        and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", text)
-    ):
-        parsed_date = datetime.strptime(text, "%Y-%m-%d").replace(tzinfo=LOCAL_TIMEZONE)
-        return int(
-            parsed_date.replace(hour=23, minute=59, second=59).timestamp()
-        )
     try:
+        if field == "EndTime" and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", text):
+            parsed_date = datetime.strptime(text, "%Y-%m-%d").replace(tzinfo=LOCAL_TIMEZONE)
+            return int(parsed_date.replace(hour=23, minute=59, second=59).timestamp())
         return parse_time(text)
     except (argparse.ArgumentTypeError, TypeError, ValueError) as exc:
         raise CloudTrailError(
@@ -630,8 +630,8 @@ def response_result(data: Any, action: str) -> ApiResult:
             "；当前 Trail 尚未具备可开启的事件范围配置"
             if code == "MissingEventSelector"
             else (
-                "；在 Action/Version/Endpoint 已确认正确时通常表示账号未完成历史补投开白，"
-                "请联系运营确认后再试"
+                "；请核对 Action/Version/Endpoint、地域及账号能力开通情况，"
+                "并向产品支持确认对应环境的接口支持情况"
             )
             if action == "CreateBackfillDeliveryTask"
             and code == "InvalidActionOrVersion"
@@ -697,8 +697,8 @@ def call_ve(
     ):
         raise CloudTrailError(
             "[CreateBackfillDeliveryTask] Code=InvalidActionOrVersion："
-            "已确认 Action/Version/Endpoint 正确时通常表示账号未完成历史补投开白；"
-            "请联系运营确认，不要重复创建",
+            "请核对 Action/Version/Endpoint、地域及补投开通情况；"
+            "保留请求 ID 联系支持，不要直接重复创建",
             code="InvalidActionOrVersion",
             detail=proc.stderr,
         )
@@ -900,7 +900,10 @@ def auth_context(args: argparse.Namespace, *, verify: bool = True) -> dict[str, 
         "Profile": args.profile or "current/default ve profile",
         "Region": args.region or "profile/CLI default",
     }
-    if not verify:
+    expected_account = getattr(args, "expected_account_id", None)
+    if expected_account is not None and not re.fullmatch(r"[0-9]+", expected_account):
+        raise CloudTrailError("预期账号必须是数字账号 ID", code="InvalidExpectedAccountId")
+    if not verify and expected_account is None:
         return {**context, "Identity": "not checked before whitelist confirmation"}
     command = ["ve", "sts", "GetCallerIdentity"]
     if args.profile:
@@ -925,6 +928,12 @@ def auth_context(args: argparse.Namespace, *, verify: bool = True) -> dict[str, 
         raise CloudTrailError(
             "GetCallerIdentity 未返回有效 AccountId，拒绝生成写操作预案",
             code="InvalidIdentityResponse",
+        )
+    if expected_account is not None and account_id != expected_account:
+        raise CloudTrailError(
+            f"当前凭证账号 {account_id} 与目标账号 {expected_account} 不一致，已停止操作；请核对凭证或 profile",
+            code="AccountMismatch",
+            context={"ExpectedAccountId": expected_account, "ActualAccountId": account_id, **context},
         )
     return {
         **context,
@@ -1055,8 +1064,22 @@ def matching_trail(
     for trail in trails:
         if not isinstance(trail, dict) or trail.get("TrailName") != trail_name:
             continue
+        observed = dict(trail)
+        sources = (expected or {}).get("EventSources")
+        # DescribeTrails may omit false for an explicit event-source selection.
+        # Accept that omission only when the requested scope is fully observed.
+        if (
+            "IncludeAllEventSources" not in observed
+            and (expected or {}).get("IncludeAllEventSources") is False
+            and isinstance(sources, list)
+            and sources
+            and all(isinstance(source, str) and source for source in sources)
+            and isinstance(observed.get("EventSources"), list)
+            and observed["EventSources"] == sources
+        ):
+            observed["IncludeAllEventSources"] = False
         return all(
-            normalized_equal(trail.get(field), value)
+            normalized_equal(observed.get(field), value)
             for field, value in (expected or {}).items()
             if field != "TrailName"
         )
@@ -1085,9 +1108,17 @@ def describe_trails(args: argparse.Namespace, trail_name: str | None = None) -> 
     if getattr(args, "include_organization_trail", False):
         body["IncludeOrganizationTrail"] = 1
     result = call_ve("DescribeTrails", body, args)
-    trails = result.get("Trails", [])
-    if not isinstance(trails, list):
-        raise CloudTrailError("DescribeTrails 响应缺少合法 Trails 列表")
+    trails = result.get("Trails")
+    if not isinstance(trails, list) or any(
+        not isinstance(trail, dict)
+        or not isinstance(trail.get("TrailName"), str)
+        or not trail["TrailName"]
+        for trail in trails
+    ):
+        raise CloudTrailError(
+            "DescribeTrails 响应缺少合法 Trails 列表或有效 TrailName，无法确认跟踪状态",
+            code="InvalidResponseShape",
+        )
     return TrailList(trails, api_metadata(result))
 
 
@@ -1195,6 +1226,7 @@ def lookup_time_window(
 
 
 def validate_lookup_time_window(start: int, end: int, now_epoch: int) -> tuple[int, int]:
+    requested_start = start
     if end <= start:
         raise CloudTrailError(
             "EndTime 必须晚于 StartTime",
@@ -1258,6 +1290,19 @@ def validate_lookup_time_window(start: int, end: int, now_epoch: int) -> tuple[i
                     "SuggestedCommand": "events lookup --lookback-days 90",
                 },
             )
+    if end <= start:
+        raise CloudTrailError(
+            "90 天边界修正后查询时间范围为空或倒序，请重新指定起止时间",
+            code="LookupWindowEmpty" if end == start else "LookupWindowReversed",
+            context={
+                "Reason": "empty-window-after-boundary-adjustment" if end == start else "reversed-window-after-boundary-adjustment",
+                "RequestedStartTime": requested_start,
+                "RequestedEndTime": end,
+                "AdjustedStartTime": start,
+                "AdjustedEndTime": end,
+                "AllowedRange": {"MinimumSeconds": 1, "MaximumDays": 90},
+            },
+        )
     return start, end
 
 
@@ -1268,6 +1313,7 @@ def validate_lookup_limit(args: argparse.Namespace) -> None:
         (
             args.start_time is not None,
             args.end_time is not None,
+            args.lookback_days is not None,
             bool(args.condition),
             bool(args.signin_action),
             bool(args.resource_id),
@@ -1496,13 +1542,18 @@ def cmd_events_lookup(args: argparse.Namespace) -> dict[str, Any]:
     identity = auth_context(args)
     body = lookup_body(args)
     result = call_ve("LookupEvents", body, args)
-    events = result.get("Trails", [])
-    events = sorted(events if isinstance(events, list) else [], key=lambda x: x.get("EventTime", ""), reverse=True)
+    events = result.get("Trails")
+    if not isinstance(events, list) or any(not isinstance(event, dict) for event in events):
+        raise CloudTrailError(
+            "LookupEvents 返回的 Trails 必须是日志对象列表，无法判断查询结果",
+            code="InvalidResponseShape",
+        )
+    events = sorted(events, key=lambda x: x.get("EventTime", ""), reverse=True)
     rendered_events = events if args.raw else [event_summary(event) for event in events]
     annotated_logs = [annotated_event_log(event) for event in events] if args.raw else []
     next_token = result.get("NextToken") or ""
     output = {
-        "Conclusion": "当前查询范围内无记录" if not events else f"查询到 {len(events)} 条候选审计事件",
+        "Conclusion": "当前查询范围及筛选条件下未查到匹配记录" if not events else f"查询到 {len(events)} 条候选审计事件",
         "AuthContext": identity,
         "Query": body,
         "Events": rendered_events,
@@ -1541,6 +1592,196 @@ def cmd_events_lookup(args: argparse.Namespace) -> dict[str, Any]:
     if args.raw:
         output["AnnotatedEventLogs"] = annotated_logs
     return output
+
+
+def cmd_events_lookup_dispatch(args: argparse.Namespace) -> dict[str, Any]:
+    return cmd_events_lookup_all(args) if args.fetch_all else cmd_events_lookup(args)
+
+
+def cmd_events_lookup_all(args: argparse.Namespace) -> dict[str, Any]:
+    if args.next_token or args.query_fingerprint or not 1 <= args.max_pages <= 1000:
+        raise CloudTrailError("全页查询不能携带续页参数；--max-pages 必须在 1..1000 内", code="InvalidPagination")
+    page_args = argparse.Namespace(**vars(args))
+    page_args.all = True
+    events, request_ids, tokens = [], [], set()
+    first = None
+    for _ in range(args.max_pages):
+        result = cmd_events_lookup(page_args)
+        if first is None:
+            first = result
+            page_args.expected_account_id = result["AuthContext"]["AccountId"]
+        elif result["AuthContext"]["AccountId"] != first["AuthContext"]["AccountId"]:
+            raise CloudTrailError("分页期间调用账号发生变化", code="AccountMismatch")
+        events.extend(result["Events"])
+        request_ids.append(result.get("ResponseMetadata", {}).get("RequestId"))
+        token = result["NextToken"]
+        if not isinstance(token, str) or (token and token in tokens):
+            raise CloudTrailError("分页标记无效或重复，不能确认全量结果", code="InvalidPagination")
+        if not token:
+            break
+        tokens.add(token)
+        page_args.lookback_days = None
+        page_args.start_time = str(first["Query"]["StartTime"])
+        page_args.end_time = str(first["Query"]["EndTime"])
+        page_args.next_token = token
+        page_args.query_fingerprint = result["QueryFingerprint"]
+    output = {**first, "Events": events, "Complete": not bool(token), "HasMore": bool(token),
+              "NextToken": token, "RequestIds": request_ids, "PageCount": len(request_ids),
+              "Conclusion": f"查询到 {len(events)} 条事件" + ("；达到页数上限，仍有结果" if token else "；已到末页"),
+              "PaginationNote": "达到页数上限，结果不完整" if token else "已查询至末页"}
+    output.pop("ApiResponse", None)  # Per-page envelopes must not masquerade as the aggregate.
+    output.pop("AnnotatedEventLogs", None)
+    if args.raw:
+        output["AnnotatedEventLogs"] = [annotated_event_log(e) for e in events]
+    return output
+
+
+def cmd_advanced_templates_describe(args: argparse.Namespace) -> dict[str, Any]:
+    if not args.template_name:
+        raise CloudTrailError("系统模板详情需要 --template-name，可用 --category 区分同名模板", code="InvalidTemplateSelector")
+    # There is no separate CloudTrail template-detail API; scan validated list pages.
+    page_args = argparse.Namespace(**vars(args))
+    page_args.max_results, page_args.next_token = 100, None
+    matches, tokens = [], set()
+    for _ in range(1000):
+        page = cmd_advanced_templates_list(page_args)
+        matches.extend(item for item in page["TemplateList"] if item["TemplateName"] == args.template_name
+                       and (args.category is None or item.get("Category") == args.category))
+        token = page["NextToken"]
+        if not token:
+            break
+        if token in tokens:
+            raise CloudTrailError("模板列表分页标记重复，无法确定唯一模板", code="InvalidResponseShape")
+        tokens.add(token)
+        page_args.next_token = token
+    else:
+        raise CloudTrailError("模板列表超过读取页数上限，无法确定唯一模板", code="TemplateReadIncomplete")
+    if len(matches) != 1:
+        raise CloudTrailError("未找到匹配系统模板" if not matches else "存在同名系统模板，请补充分类或明确目标", code="TemplateNotFound" if not matches else "AmbiguousTemplate")
+    return {"Source": "system", "Template": matches[0], "AuthContext": page["AuthContext"]}
+
+
+def cmd_advanced_templates_list(args: argparse.Namespace) -> dict[str, Any]:
+    body: dict[str, Any] = {"MaxResults": args.max_results}
+    if args.next_token:
+        body["NextToken"] = args.next_token
+    identity = auth_context(args)
+    result = call_ve("ListSearchTemplates", body, args)
+    templates = result.get("TemplateList")
+    if not isinstance(templates, list):
+        raise CloudTrailError("ListSearchTemplates 返回的 TemplateList 无效", code="InvalidResponseShape")
+    for item in templates:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("TemplateName"), str)
+            or not isinstance(item.get("Sql"), str)
+            or (item.get("Category") is not None and not isinstance(item["Category"], str))
+        ):
+            raise CloudTrailError("ListSearchTemplates 返回的模板内容无效", code="InvalidResponseShape")
+    next_token = result.get("NextToken", "")
+    if not isinstance(next_token, str):
+        raise CloudTrailError("ListSearchTemplates 返回的 NextToken 无效", code="InvalidResponseShape")
+    return {
+        "Source": "system",
+        "AuthContext": identity,
+        "Query": body,
+        "TemplateList": templates,
+        "NextToken": next_token,
+        "HasMore": bool(next_token),
+        "ApiResponse": api_response(result),
+        **response_metadata_fields(result),
+    }
+
+
+def cmd_events_export(args: argparse.Namespace) -> dict[str, Any]:
+    output_path = Path(args.output_file).expanduser().absolute()
+    if output_path.exists():
+        raise CloudTrailError("导出文件已存在，请使用其他文件名")
+    body = lookup_body(args)
+    if body["StartTime"] >= body["EndTime"]:
+        raise CloudTrailError("导出时间范围无效，请重新指定起止时间")
+    identity = auth_context(args)
+    events: list[dict[str, Any]] = []
+    tokens: set[str] = set()
+    request_ids: list[str] = []
+    next_token = ""
+    try:
+        # Build the window once; continuation must never recalculate relative time.
+        for _ in range(200):
+            request = dict(body)
+            request["MaxResults"] = min(50, 200 - len(events))
+            if next_token:
+                request["NextToken"] = next_token
+            result = call_ve("LookupEvents", request, args)
+            page = result.get("Trails")
+            if not isinstance(page, list) or any(not isinstance(event, dict) for event in page):
+                raise CloudTrailError("导出查询返回的日志列表无效")
+            if len(page) > request["MaxResults"]:
+                raise CloudTrailError("导出查询返回条数超过请求上限")
+            events.extend(page)
+            request_id = api_metadata(result).get("RequestId")
+            if request_id:
+                request_ids.append(request_id)
+            next_token = result.get("NextToken") or ""
+            if not isinstance(next_token, str):
+                raise CloudTrailError("导出查询返回的分页标记无效")
+            if next_token and next_token in tokens:
+                raise CloudTrailError("导出查询返回重复分页标记，已停止")
+            if next_token:
+                tokens.add(next_token)
+            if not next_token or len(events) >= 200:
+                break
+        else:
+            raise CloudTrailError("导出分页次数超过安全上限，已停止")
+    except CloudTrailError as exc:
+        raise CloudTrailError(
+            f"导出查询失败，未生成文件：{exc}",
+            code="ExportQueryFailed",
+            context={"FetchedCount": len(events), "Complete": False},
+        ) from exc
+
+    saved_path = None
+    if events:
+        temporary_path = None
+        try:
+            if args.export_format == "json":
+                content = json.dumps(events, ensure_ascii=False, indent=2) + "\n"
+            else:
+                stream = io.StringIO(newline="")
+                fields = list(dict.fromkeys(key for event in events for key in event))
+                writer = csv.DictWriter(stream, fieldnames=fields)
+                writer.writeheader()
+                for event in events:
+                    writer.writerow({key: json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else value for key, value in event.items()})
+                content = "\ufeff" + stream.getvalue()
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="", dir=output_path.parent, prefix=".cloudtrail-export-", delete=False) as handle:
+                temporary_path = Path(handle.name)
+                handle.write(content)
+            # Publish a fully written file atomically, without replacing an existing path.
+            os.link(temporary_path, output_path)
+            saved_path = str(output_path)
+        except (OSError, TypeError, ValueError) as exc:
+            raise CloudTrailError(
+                f"导出文件生成失败：{exc}", code="ExportFileFailed",
+                context={"FetchedCount": len(events), "Complete": False},
+            ) from exc
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+    return {
+        "Conclusion": (
+            "当前查询范围及筛选条件下未查到匹配记录，未生成文件" if not events
+            else f"已导出 {len(events)} 条日志" + ("；达到 200 条上限，仍有未导出的日志" if next_token else "")
+        ),
+        "AuthContext": identity,
+        "Query": body,
+        "ExportedCount": len(events),
+        "Complete": not bool(next_token),
+        "HasMore": bool(next_token),
+        "OutputFile": saved_path,
+        "ExportFormat": args.export_format,
+        "RequestIds": request_ids,
+    }
 
 
 class TrailFieldSpec:
@@ -1731,6 +1972,10 @@ def complete_update_patch(
     ):
         request["EventSources"] = list(current["EventSources"])
     effective.update(request)
+    if request.get("IncludeAllEventSources") is True:
+        # The backend clears explicit sources when switching to all sources.
+        # Keep the wire request aligned with the console: no empty array needed.
+        effective["EventSources"] = []
     return request, effective
 
 
@@ -1790,8 +2035,15 @@ def cmd_trails_create(args: argparse.Namespace) -> dict[str, Any]:
     )
     start_result: ApiResult | None = None
     start_verification: dict[str, Any] | None = None
+    start_error: dict[str, Any] | None = None
+    start_attempted = False
     if auto_start and create_verification.get("StateVerified"):
-        start_result = call_ve("StartLogging", {"TrailName": args.trail_name}, args)
+        start_attempted = True
+        try:
+            start_result = call_ve("StartLogging", {"TrailName": args.trail_name}, args)
+        except CloudTrailError as exc:
+            # A failed response does not undo creation or prove start was rejected.
+            start_error = {"Code": exc.code, "Message": str(exc)}
         start_verification = verify_after_write(
             lambda: describe_trails(args, args.trail_name),
             lambda trails: any(
@@ -1800,6 +2052,12 @@ def cmd_trails_create(args: argparse.Namespace) -> dict[str, Any]:
                 for trail in trails
             ),
         )
+        if start_error is not None:
+            start_verification["VerificationNote"] = (
+                "跟踪已创建；自动开启调用报错，但回读已确认开启，不要重新创建跟踪"
+                if start_verification.get("StateVerified")
+                else "跟踪已创建；自动开启调用报错，尚未确认开启状态。不要重新创建跟踪，先只读核实状态"
+            )
     elif auto_start:
         start_verification = {
             "StateVerified": False,
@@ -1836,14 +2094,15 @@ def cmd_trails_create(args: argparse.Namespace) -> dict[str, Any]:
             None
             if not auto_start
             else {
+                "Attempted": start_attempted,
                 "Submitted": start_result is not None,
+                **({"Error": start_error} if start_error is not None else {}),
                 "ApiResponse": api_response(start_result) if start_result is not None else None,
                 **(response_metadata_fields(start_result) if start_result is not None else {}),
                 **(start_verification or {}),
             }
         ),
     )
-
 
 
 def cmd_trails_update(args: argparse.Namespace) -> dict[str, Any]:
@@ -1886,9 +2145,16 @@ def cmd_trails_update(args: argparse.Namespace) -> dict[str, Any]:
             "Verification": [current],
         }
     result = call_ve("UpdateTrail", body, args)
+    # Verify submitted configuration, including supplemented delivery anchors.
+    # As with creation, project assignment fields are not checked via DescribeTrails.
+    expected = {
+        field: value
+        for field, value in body.items()
+        if field not in {"TosBucketProject", "TlsProjectTopicProject"}
+    }
     verification = verify_after_write(
         lambda: describe_trails(args, args.trail_name),
-        lambda trails: matching_trail(trails, args.trail_name, effective),
+        lambda trails: matching_trail(trails, args.trail_name, expected),
     )
     return write_result("UpdateTrail", result, verification)
 
@@ -1982,7 +2248,9 @@ def active_backfills_for_trail(args: argparse.Namespace, trail_name: str) -> lis
     raise CloudTrailError("补投任务分页超过安全页数，拒绝继续")
 
 
-def active_backfill_any(args: argparse.Namespace) -> list[dict[str, Any]]:
+def active_backfill_any(
+    args: argparse.Namespace, existing_task_ids: set[str] | None = None
+) -> list[dict[str, Any]]:
     page_number = 1
     seen = 0
     while page_number <= MAX_BACKFILL_PAGES:
@@ -1996,6 +2264,11 @@ def active_backfill_any(args: argparse.Namespace) -> list[dict[str, Any]]:
             raise CloudTrailError("补投任务分页响应中的 Total 无效") from exc
         if total < 0:
             raise CloudTrailError("补投任务分页响应中的 Total 不一致")
+        if existing_task_ids is not None:
+            for task in tasks:
+                if not isinstance(task, dict) or not isinstance(task.get("TaskID"), str) or not task["TaskID"]:
+                    raise CloudTrailError("补投任务快照缺少有效 TaskID，拒绝创建")
+                existing_task_ids.add(task["TaskID"])
         active = [
             task
             for task in tasks
@@ -2138,6 +2411,7 @@ def backfill_time_body(args: argparse.Namespace, now: datetime | None = None) ->
         "EndTime",
         "backfill create --start-time <rfc3339> --end-time <rfc3339>",
     )
+    requested_start = start
     if end <= start:
         raise CloudTrailError(
             "EndTime 必须晚于 StartTime",
@@ -2194,6 +2468,19 @@ def backfill_time_body(args: argparse.Namespace, now: datetime | None = None) ->
                     "SuggestedCommand": "backfill create --start-time <within-last-90-days> --end-time <past-end>",
                 },
             )
+    if end <= start:
+        raise CloudTrailError(
+            "90 天边界修正后补投时间范围为空或倒序，请重新指定起止时间",
+            code="BackfillWindowEmpty" if end == start else "BackfillWindowReversed",
+            context={
+                "Reason": "empty-window-after-boundary-adjustment" if end == start else "reversed-window-after-boundary-adjustment",
+                "RequestedStartTime": requested_start,
+                "RequestedEndTime": end,
+                "AdjustedStartTime": start,
+                "AdjustedEndTime": end,
+                "AllowedRange": {"MinimumSeconds": 1, "MaximumDays": 90},
+            },
+        )
     if not args.enable_tos and not args.enable_tls:
         raise CloudTrailError("EnableTOS 与 EnableTLS 至少一项为 true")
     return {
@@ -2234,8 +2521,9 @@ def parse_backfill_task_time(value: Any) -> int:
 
 
 def find_matching_backfill(
-    args: argparse.Namespace, body: dict[str, Any]
+    args: argparse.Namespace, body: dict[str, Any], existing_task_ids: set[str]
 ) -> dict[str, Any] | None:
+    matches: dict[str, dict[str, Any]] = {}
     page_number = 1
     seen = 0
     while page_number <= MAX_BACKFILL_PAGES:
@@ -2250,13 +2538,17 @@ def find_matching_backfill(
         if total < 0:
             raise CloudTrailError("补投任务核对中的 Total 不一致")
         for task in tasks:
-            if isinstance(task, dict) and backfill_matches_request(task, body):
-                return task
+            if not isinstance(task, dict) or not isinstance(task.get("TaskID"), str) or not task["TaskID"]:
+                raise CloudTrailError("补投任务核对缺少有效 TaskID")
+            if task["TaskID"] not in existing_task_ids and backfill_matches_request(task, body):
+                matches[task["TaskID"]] = task
         seen += len(tasks)
         if seen > total:
             raise CloudTrailError("补投任务核对中的 Tasks 数量超过 Total")
         if seen >= total:
-            return None
+            if len(matches) > 1:
+                raise CloudTrailError("存在多个新增匹配任务，无法确认本次创建结果")
+            return next(iter(matches.values()), None)
         if not tasks:
             raise CloudTrailError("补投任务核对尚未完成但服务端返回空页")
         page_number += 1
@@ -2283,8 +2575,9 @@ def cmd_backfill_create(args: argparse.Namespace) -> dict[str, Any]:
         and trail.get("TlsTopicName")
     ):
         raise CloudTrailError("目标 Trail 未配置可见的 TLS 投递目标")
+    existing_task_ids: set[str] = set()
     try:
-        active_tasks = active_backfill_any(args)
+        active_tasks = active_backfill_any(args, existing_task_ids)
     except CloudTrailError as exc:
         raise CloudTrailError(f"补投任务预检失败，拒绝创建：{exc}") from exc
     if active_tasks:
@@ -2315,7 +2608,13 @@ def cmd_backfill_create(args: argparse.Namespace) -> dict[str, Any]:
     try:
         result = call_ve("CreateBackfillDeliveryTask", body, args, force=force)
     except CloudTrailError as exc:
-        matched = find_matching_backfill(args, body)
+        try:
+            matched = find_matching_backfill(args, body, existing_task_ids)
+        except CloudTrailError as verification_error:
+            raise CloudTrailError(
+                f"补投创建结果不确定：{exc}；核对失败：{verification_error}；不要直接重试创建",
+                code="BackfillCreateUncertain",
+            ) from exc
         if matched is None:
             raise CloudTrailError(
                 f"补投创建结果不确定，且未发现匹配任务：{exc}；不要直接重试创建",
@@ -2325,6 +2624,14 @@ def cmd_backfill_create(args: argparse.Namespace) -> dict[str, Any]:
             {"TaskID": matched.get("TaskID"), "RecoveredFromUncertainResult": True}
         )
     task_id = result.get("TaskID")
+    if not task_id:
+        try:
+            matched = find_matching_backfill(args, body, existing_task_ids)
+        except CloudTrailError as exc:
+            raise CloudTrailError(
+                f"补投创建已受理，但响应未包含 TaskID，核对失败：{exc}；不要直接重试创建",
+                code="BackfillCreateUncertain",
+            ) from exc
     verification = (
         verify_after_write(
             lambda: describe_backfill(args, task_id),
@@ -2337,9 +2644,9 @@ def cmd_backfill_create(args: argparse.Namespace) -> dict[str, Any]:
             {
                 "Verification": matched,
                 "StateVerified": True,
-                "VerificationNote": "响应未包含 TaskID；通过全页核对找到精确匹配任务",
+                "VerificationNote": "响应未包含 TaskID；排除创建前已有任务后，全页核对找到唯一新增匹配任务",
             }
-            if (matched := find_matching_backfill(args, body)) is not None
+            if matched is not None
             else {
                 "Verification": None,
                 "StateVerified": False,
@@ -2422,6 +2729,7 @@ def add_trail_fields(parser: argparse.ArgumentParser) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", help="仅在用户明确指定时传入")
+    parser.add_argument("--expected-account-id", help="本次 CloudTrail 操作的预期账号；身份不一致时停止业务调用")
     parser.add_argument("--region", help="仅在用户明确指定时传入")
     parser.add_argument("--format", choices=("json", "md", "table"), default="json")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -2446,7 +2754,24 @@ def build_parser() -> argparse.ArgumentParser:
     lookup.add_argument(
         "--query-fingerprint", help="续页时原样传回上一页输出的 QueryFingerprint"
     )
-    lookup.set_defaults(handler=cmd_events_lookup)
+    lookup.add_argument("--fetch-all", action="store_true", help="连续分页；默认最多 20 页，达到上限明确返回不完整")
+    lookup.add_argument("--max-pages", type=int, default=20, help="--fetch-all 页数上限，1..1000，默认 20")
+    lookup.set_defaults(handler=cmd_events_lookup_dispatch)
+
+    export = event_commands.add_parser("export", help="导出基础检索结果，最多 200 条")
+    export.add_argument("--signin-action", choices=("login", "logout", "other"))
+    export.add_argument("--operation", choices=("read", "write", "any"), default="any")
+    export.add_argument("--resource-id")
+    export.add_argument("--iam-user-name")
+    export.add_argument("--event-source")
+    export.add_argument("--event-name")
+    export.add_argument("--condition", action="append", default=[])
+    export.add_argument("--start-time")
+    export.add_argument("--end-time")
+    export.add_argument("--lookback-days")
+    export.add_argument("--output-file", required=True, help="导出文件路径，不覆盖已有文件")
+    export.add_argument("--export-format", choices=("json", "csv"), default="json")
+    export.set_defaults(handler=cmd_events_export, max_results=50, all=False, next_token=None, query_fingerprint=None)
 
     resolve = event_commands.add_parser("resolve")
     resolve.add_argument("--service")
@@ -2457,6 +2782,21 @@ def build_parser() -> argparse.ArgumentParser:
     resolve.add_argument("--resource-id")
     resolve.add_argument("--operation", choices=("read", "write", "any"), default="any")
     resolve.set_defaults(handler=cmd_events_resolve)
+
+    advanced = groups.add_parser("advanced")
+    advanced_commands = advanced.add_subparsers(dest="advanced_command", required=True)
+    templates = advanced_commands.add_parser("templates", help="读取 CloudTrail 系统检索模板")
+    template_commands = templates.add_subparsers(dest="template_command", required=True)
+    template_list = template_commands.add_parser("list")
+    template_list.add_argument("--source", choices=("system",), default="system")
+    template_list.add_argument("--max-results", type=int, choices=range(10, 101), default=10, metavar="10..100")
+    template_list.add_argument("--next-token")
+    template_list.set_defaults(handler=cmd_advanced_templates_list)
+    template_describe = template_commands.add_parser("describe")
+    template_describe.add_argument("--source", choices=("system",), default="system")
+    template_describe.add_argument("--template-name", required=True)
+    template_describe.add_argument("--category")
+    template_describe.set_defaults(handler=cmd_advanced_templates_describe)
 
     trails = groups.add_parser("trails")
     trail_commands = trails.add_subparsers(dest="trail_command", required=True)
@@ -2470,7 +2810,7 @@ def build_parser() -> argparse.ArgumentParser:
     trail_create.add_argument(
         "--no-auto-start",
         action="store_true",
-        help="兼容参数，已无效果；创建始终不会隐式 StartLogging",
+        help="创建跟踪后不自动开启日志投递；默认创建并校验成功后自动开启。",
     )
     trail_create.set_defaults(handler=cmd_trails_create)
     trail_update = trail_commands.add_parser("update")
@@ -2510,11 +2850,19 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def render(value: Any, output_format: str) -> str:
-    if isinstance(value, dict) and value.get("RawEventOutput") and value.get("AnnotatedEventLogs"):
-        annotated = value["AnnotatedEventLogs"]
-        if isinstance(annotated, list):
-            return "\n\n".join(str(item) for item in annotated)
-        return str(annotated)
+    if isinstance(value, dict) and value.get("RawEventOutput"):
+        # Keep the query envelope available to agents; only Events uses JSONC annotations.
+        fields = []
+        for key, item in value.items():
+            if key == "AnnotatedEventLogs":
+                continue
+            if key == "Events":
+                display_events = [event_detail_object(event) or event for event in item]
+                rendered = "\n".join(annotated_jsonc(display_events, indent=2))
+            else:
+                rendered = json.dumps(item, ensure_ascii=False, indent=2)
+            fields.append("  " + json.dumps(key, ensure_ascii=False) + ": " + rendered.replace("\n", "\n  "))
+        return "{\n" + ",\n".join(fields) + "\n}"
     if isinstance(value, dict) and value.get("DryRun") and value.get("UserFacingSummary"):
         user_preview = {
             "操作摘要": value.get("操作摘要", []),
@@ -2557,10 +2905,39 @@ def render(value: Any, output_format: str) -> str:
     return "\n".join(f"{key:<{width}}  {value}" for key, value in rows)
 
 
+def require_compatible_cli() -> None:
+    """Check locally before identity lookup or business calls; help stays offline."""
+    guidance = "请按 volcengine-cli skill 安装或升级 @volcengine/cli 至稳定版 1.2.0 或更高版本，再重试；脚本不会自动升级"
+    try:
+        result = subprocess.run(
+            ["ve", "--version"], capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise CloudTrailError(
+            f"无法读取 ve CLI 版本；{guidance}", code="CLICompatibilityUnknown",
+        ) from exc
+    version = result.stdout.strip()
+    match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", version)
+    if result.returncode != 0 or match is None:
+        raise CloudTrailError(
+            f"无法确认 ve CLI 稳定版兼容性；{guidance}",
+            code="CLICompatibilityUnknown",
+            context={"ObservedVersion": version[:100], "MinimumVersion": "1.2.0"},
+        )
+    if tuple(int(part) for part in match.groups()) < (1, 2, 0):
+        raise CloudTrailError(
+            f"当前 ve CLI {version} 不兼容本脚本所需的系统参数和 --force 调用；{guidance}",
+            code="IncompatibleCLI",
+            context={"ObservedVersion": version, "MinimumVersion": "1.2.0"},
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if not (args.group == "events" and args.event_command == "resolve"):
+            require_compatible_cli()
         result = args.handler(args)
         print(render(result, args.format))
         if result.get("WriteAccepted") and result.get("StateVerified") is False:
