@@ -6,7 +6,7 @@
 
 沙箱是一种特殊/定制的函数。它的 Function、Revision、Instance 模型和普通函数类似，但创建和运行方式不同：
 
-- **Sandbox application**：沙箱应用，本质上是 `FunctionType=sandbox` 的函数资源，用来定义镜像、启动命令、端口、环境变量、资源规格和发布版本。
+- **Sandbox application**：沙箱应用，是 `FunctionType=sandbox` 的函数资源，用来定义镜像、启动命令、端口、环境变量、资源规格和发布版本。
 - **Sandbox revision**：沙箱应用的镜像和配置版本。修改镜像、启动命令、端口、环境变量或资源规格后，需要发布 revision 才会影响后续实例。
 - **Sandbox instance**：从沙箱应用主动创建出来的隔离运行实体。它不是由请求流量自动扩缩容出来的普通函数实例。
 - **预热镜像**：沙箱必须基于已预热镜像创建，预热后才能达到秒级拉起实例的效果。
@@ -56,14 +56,14 @@ vefaas sandbox images precache <image-url> --registry <registry>
 
 CR tag 列表默认只展示 Linux/amd64 镜像。除非用户明确知道镜像架构和平台限制，不要引导使用非 Linux/amd64 镜像。
 
-CLI 在提交 CR 镜像预热前会先调用 `GetImageConfig` 验证镜像可访问性。只有 `GetImageConfig` 超时、镜像地址看似无效或提示 internal service timeout 时，才可能需要 CR VPC tunnel；不要仅根据 registry 类型或 tunnel 查询状态判断。遇到这类问题时，带上具体镜像地址检查，确认需要后再打通：
+CLI 在提交 CR 镜像预热前会先调用 `GetImageConfig` 验证镜像可访问性。只有 `GetImageConfig` 超时、镜像地址看似无效或提示 internal service timeout 时，才可能需要 CR VPC tunnel；不要仅根据 registry 类型或 tunnel 查询状态判断。遇到这类问题时，带上具体镜像地址检查，确认需要后再启用 CR VPC 隧道：
 
 ```bash
 vefaas cr tunnel --registry <registry> --image-url <image-url>
 vefaas cr tunnel --registry <registry> --image-url <image-url> --enable --wait
 ```
 
-也可以让预热命令仅在 `GetImageConfig` 判定需要时自动尝试打通：
+也可以让预热命令仅在 `GetImageConfig` 判定需要时自动尝试启用 CR VPC 隧道：
 
 ```bash
 vefaas sandbox images precache <image-url> --registry <registry> --enable-cr-tunnel
