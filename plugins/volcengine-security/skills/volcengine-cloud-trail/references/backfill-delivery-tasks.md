@@ -60,9 +60,9 @@ python3 scripts/cloud_trail.py --expected-account-id <account-id> backfill creat
 python3 scripts/cloud_trail.py --expected-account-id <account-id> backfill stop --task-id bdt-<id>
 ```
 
-只允许停止 `PENDING` 或 `RUNNING`；终态为 `FAILED`、`STOPPED`、`COMPLETED`。停止成功只表示接口受理，
+只允许停止 `PENDING` 或 `RUNNING`；任务结束后的状态为 `FAILED`、`STOPPED`、`COMPLETED`。停止接口返回成功后，仍需查询任务是否已停止。
 `ApiResponse` 保留成功 envelope，在诊断中保存顶层 `ResponseMetadata.RequestId`，默认不向用户展示，并用
-`WriteAccepted` / `StateVerified` 区分受理和实际状态；状态尚未符合预期时先做只读复查。
+`WriteAccepted` / `StateVerified` 分别表示写入请求是否成功、实际状态是否验证通过；状态尚未符合预期时先做只读复查。
 
 删除 Trail 前必须检查补投任务；存在活跃任务时需先单独完成停止和验证。删除流程不会自动停止任务。
 
@@ -78,7 +78,7 @@ python3 scripts/cloud_trail.py --expected-account-id <account-id> backfill stop 
 
 - 用户要求某时段全部日志时，先核对正确账号、已有投递配置及该时段已有日志覆盖；已投递的日志完整覆盖所需范围则直接下载。需补投时核对已完成任务与时间重叠，避免不必要的重复写入；不能仅因当前跟踪启动较晚就断定早期数据不存在。
 - 确认方案包含日志时段、事件范围、日志保存位置、保留策略和费用；创建跟踪会持续投递后续日志，必须在预案中说明。涉及临时变更时，将需要恢复的配置和触发条件纳入方案；执行后验证恢复结果。一次确认可覆盖已明确的资源准备、创建跟踪和补投步骤及临时变更的恢复；停止投递仍须单独说明要停止的跟踪和影响，并取得针对停止动作的明确授权，不从上述授权中推定。若涉及的资源或影响改变，再说明变化。
-- 任务仍在 PENDING／RUNNING 时按合理间隔检查，不重复创建。执行受阻或当前会话无法继续等待时，保留任务 ID、账号、日志保存位置、时间窗口和最新状态；恢复后先查询原任务，再继续等待或下载，不从头重建。
+- 任务仍在 PENDING／RUNNING 时按合理间隔检查，不重复创建。执行受阻或当前会话无法继续等待时，保留任务 ID、账号、日志保存位置、时间窗口和最新状态；恢复后先查询原任务，再继续等待或下载，不重新创建任务。
 - 用户还要求导出时，等待补投任务终态；投递到 TOS 的日志按 result-export.md 的 TOS 流程下载；投递到 TLS 的日志在补投任务 COMPLETED 后检查实际审计字段和日志时间，再按 [result-export.md](result-export.md) 创建 TLS 离线下载任务、等待文件生成并下载；超过单任务限制时按时间分段。TLS 中已有所需日志时，不为解决下载超限重复补投。部分失败、停止、超时或下载未完成时分别说明实际状态，不报告全部导出成功。
 - 导出时，核实下载时间覆盖历史补投日志的真实写入时间，以 EventTime 判断请求的历史时段；主题混存时须有可靠的审计日志筛选条件，不能直接下载主题中全部业务日志冒充审计日志。
 - 本次范围为操作审计可补投的管理事件；用户的“全部”若还包含数据事件，先说明实际支持范围，不把管理事件导出称为全部类型日志。
