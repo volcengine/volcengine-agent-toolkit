@@ -47,7 +47,7 @@ run_rca_workflow.py step --state-file <path>
 # 消费 LLM hook 响应，推进 state
 run_rca_workflow.py resume --state-file <path> --hook-response-file <path>
 
-# 消费工具执行结果（仅写入文件，不推进 state）
+# 消费工具执行结果（仅落盘，不推进 state）
 run_rca_workflow.py resume --state-file <path> --tool-result-file <path>
 
 # 初始化（首次调用）
@@ -163,7 +163,7 @@ step → execute_tool
     │  (有 tool      │        (输出 tool_args)
     │   result 文件) │
     └───────┬────────┘
-            │ Yes (tool_result 已写入文件)
+            │ Yes (tool_result 已落盘)
             ▼
     ┌────────────────┐
     │  interpretation│──No──→ hook: interpret_result
@@ -204,7 +204,7 @@ step → execute_tool
 - **每次 step/resume 调用后脚本退出**，不做循环等待
 - **所有状态从 canonical state 文件恢复**，不依赖内存
 - **所有产生新 canonical state 的动作，由 orchestrator 校验后原子写回 `state-file`**（使用 `runtime_utils.atomic_write_json`）
-- `resume --tool-result-file` 只将 tool_result 写入文件（不写回 state-file，因为 state 尚未迁移），并输出 `interpret_result` hook
+- `resume --tool-result-file` 只落盘 tool_result（不写回 state-file，因为 state 尚未迁移），并输出 `interpret_result` hook
 - `resume --hook-response-file`（interpret_result）：将 tool_result + interpretation 一起交给 `analysis_state.py apply-result`，返回的 `analysis_state` 原子写回 state-file
 - **hook_request 和 hook_response 是独立文件**，可审计
 - **schema 校验失败**：脚本输出错误，不修改 state，要求 agent 重试
@@ -266,12 +266,12 @@ step → execute_tool
 
 ### 4.2 hook: interpret_result
 
-**时机**：`resume --tool-result-file` 已将 tool_result 写入文件（但尚未调用 `apply-result`，因为 `apply_tool_success` 需要 `llm_interpretation` 参数）。脚本输出此 hook 让 LLM 解释结果。
+**时机**：`resume --tool-result-file` 已将 tool_result 落盘（但尚未调用 `apply-result`，因为 `apply_tool_success` 需要 `llm_interpretation` 参数）。脚本输出此 hook 让 LLM 解释结果。
 
 **正确时序**：
 ```
 execute_tool → agent 调 call_openapi.py
-  → resume --tool-result-file（将 tool_result 写入文件，输出 interpret_result hook）
+  → resume --tool-result-file（落盘 tool_result，输出 interpret_result hook）
   → agent 填 hook_response
   → resume --hook-response-file（tool_result + interpretation → apply-result → 原子写回 state）
 ```
@@ -517,11 +517,11 @@ tests/
 ### V1.0 → V1.1 (2026-07-01)
 
 **阻塞修复**（TraeX 审查）：
-1. **interpret_result 时序修正**：`execute_tool` 后先 `resume --tool-result-file`（将 tool_result 写入文件），输出 `interpret_result` hook；agent 填 interpretation 后再 `resume --hook-response-file`（tool_result + interpretation → `analysis_state.py apply-result` → 原子写回 state）。修正了 V1.0 中"apply-result 已完成再让 LLM interpret"的倒置。
+1. **interpret_result 时序修正**：`execute_tool` 后先 `resume --tool-result-file`（落盘 tool_result），输出 `interpret_result` hook；agent 填 interpretation 后再 `resume --hook-response-file`（tool_result + interpretation → `analysis_state.py apply-result` → 原子写回 state）。修正了 V1.0 中"apply-result 已完成再让 LLM interpret"的倒置。
 2. **canonical state 原子写回规则**：明确所有产生新 canonical state 的动作由 orchestrator 校验后 `atomic_write` 回 `state-file`。`resume --tool-result-file` 不写回 state。
 
 **非阻塞修复**：
-3. 删除 `ask_user` action（V1 不处理用户追问，`--user-response` 参数同步删除）
+3. 删除 `ask_user` action（V1 不做用户追问闭环，`--user-response` 参数同步删除）
 4. 修正 `answer_readiness` 枚举对齐 `analysis_state.py` 的 `ANSWER_READINESS = {not_ready, partially_ready, ready, ready_with_limitations}`
 5. 修正 `apply-result` 参数：`--error-json/--error-file` 而非 `--is-failure`
 6. 明确 `draft_answer` 消费后由 orchestrator 写 `final_answer.json`，agent 不自行输出答案
