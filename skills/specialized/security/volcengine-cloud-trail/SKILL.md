@@ -40,20 +40,20 @@ metadata:
 
 先读取 [账号与操作规则](references/rules.md)，再按下表读取本次操作的参考；上下文中已有的有效内容可直接复用。
 
-## 能力与选路
+## 能力与使用方式
 
-| 用户目标 | 执行路径 | 必读参考 |
+| 用户需求 | 执行路径 | 必读参考 |
 | --- | --- | --- |
 | 近 90 天的事件查询、详情或小规模结果导出，且条件组合受支持 | 基础检索；单次查询最多 50 条，基础导出最多 200 条 | [event-query.md](references/event-query.md) |
 | 解析产品事件源、事件名或操作语义 | 事件名解析，按需结合官方资料核实 | [event-query.md](references/event-query.md) |
-| 复杂条件或 SQL 统计，且已有覆盖目标时段的 TLS 日志 | TLS 高级检索 | [advanced-query.md](references/advanced-query.md) |
-| 全部匹配日志或当前页导出不足 | 按筛选条件、结果数量和已有日志覆盖选择基础导出或副本下载，详见“路径选择” | [result-export.md](references/result-export.md)，缺副本需补投时读 [backfill-delivery-tasks.md](references/backfill-delivery-tasks.md) |
-| 超过 90 天的事件查询 | 先查已有 TLS／TOS 日志及保留时间，再选择检索或下载；见“已有副本发现” | [result-export.md](references/result-export.md#已有副本发现) |
-| 开通、调整或停止审计日志投递，排查投递异常 | 跟踪与投递管理，包含目标资源准备和日志到达验证 | [event-trail-management.md](references/event-trail-management.md) |
+| 复杂条件或 SQL 统计，且已有覆盖所查时段的 TLS 日志 | TLS 高级检索 | [advanced-query.md](references/advanced-query.md) |
+| 全部匹配日志或当前页导出不足 | 按筛选条件、结果数量和已有日志覆盖选择基础导出或下载已投递的日志，详见“路径选择” | [result-export.md](references/result-export.md)，缺少已投递的日志需补投时读 [backfill-delivery-tasks.md](references/backfill-delivery-tasks.md) |
+| 超过 90 天的事件查询 | 先查已有 TLS／TOS 日志及保留时间，再选择检索或下载；见“查找已投递的日志” | [result-export.md](references/result-export.md#查找已投递的日志) |
+| 开通、调整或停止审计日志投递，排查投递异常 | 跟踪与投递管理，包含 TOS 存储桶或 TLS 日志主题的准备和日志到达验证 | [event-trail-management.md](references/event-trail-management.md) |
 | 保存指定历史时段日志或管理补投任务 | 历史补投管理 | [backfill-delivery-tasks.md](references/backfill-delivery-tasks.md) |
 | 查找、使用或管理检索模板 | 模板管理；仅管理模板不检查历史数据覆盖 | [search-templates.md](references/search-templates.md) |
 
-完整导出优先级高于原查询路径，但“全部”不等于“大批量”：基础路径可以证明完整时，不为切换工具而发现副本或准备补投。仅要求保存当前页或当前已取得结果时，按用户指定范围处理，不扩大为全量任务。
+完整导出优先级高于原查询路径，但“全部”不等于“大批量”：基础路径可以证明完整时，不为切换工具而查找已投递的日志或准备补投。仅要求保存当前页或当前已取得结果时，按用户指定范围处理，不扩大为全量任务。
 
 ## 工具与前置条件
 
@@ -66,13 +66,13 @@ metadata:
 
 ## 写操作边界
 
-写操作先预览并核对授权。停止投递必须单独列出目标和影响，取得针对该动作的明确授权；不得从导出、补投或清理授权中推定。相同动作已明确授权时不重复询问。组织级操作须明确组织范围及影响。
+写操作先预览并核对授权。停止投递必须单独列出要停止的跟踪和影响，取得针对该动作的明确授权；不得从导出、补投或清理授权中推定。相同动作已明确授权时不重复询问。组织级操作须明确组织范围及影响。
 
 ## 时间与条件
 
 - 基础检索限近 90 天；TLS 实际可查范围取决于投递覆盖和保留情况；补投窗口见对应参考。
 - 续查与导出沿用已固定的账号、时间范围和筛选条件。时间格式、时区解析、单位转换与边界处理见对应能力参考。
-- 根据真实条件组合和预期结果选路，不先试基础检索再丢弃不受支持的条件。基础检索空结果先核对范围，不能只因空结果自动改走 TLS。
+- 根据真实条件组合和预期结果选择查询方式，不先试基础检索再丢弃不受支持的条件。基础检索空结果先核对范围，不能只因空结果自动改走 TLS。
 - 产品、事件源、事件名和读写语义不确定时先核实。“完整原始事件”指字段完整，“全部事件”指结果集合完整，分别处理。
 
 ## 调用入口
