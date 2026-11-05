@@ -4,9 +4,10 @@ description: >-
   当用户需要查询火山引擎 CloudTrail 审计日志、调查登录或资源操作、分析或导出已投递到 TLS 的审计日志、导出已投递到 TOS 的审计日志、管理检索模板，或开通、调整、排查审计日志投递及管理历史补投任务时使用。
   在火山引擎语境下，出现“操作审计、审计日志、日志检索、CloudTrail、cloud_trail、trail、跟踪、审计日志投递、历史补投、backfill”等词时触发。
 license: MIT
+version: 1.1.0
+user-invocable: true
 allowed-tools: Bash, Read
 metadata:
-  version: 1.0.0
   openclaw:
     requires:
       bins:
@@ -62,6 +63,10 @@ metadata:
 - ve 安装、鉴权与配置按 `volcengine-cli`；TLS 操作按 `volcengine-tls`；TOS 操作按 `volcengine-tosutil`。具体命令、参数与工具要求由对应技能维护。
 - 身份选择、账号绑定与登录恢复统一按 rules.md；需要时读取相关工具技能。遵循当前工具要求携带 Agent 调用来源标识，不记录或回显密钥和令牌。
 - 标准输出保留结构化结果，诊断进入标准错误；成功 API envelope 保留在 `ApiResponse`。技术证据的保存与面向用户展示分开处理。
+
+## 写操作边界
+
+写操作先预览并核对授权。停止投递必须单独列出目标和影响，取得针对该动作的明确授权；不得从导出、补投或清理授权中推定。相同动作已明确授权时不重复询问。组织级操作须明确组织范围及影响。
 
 ## 时间与条件
 

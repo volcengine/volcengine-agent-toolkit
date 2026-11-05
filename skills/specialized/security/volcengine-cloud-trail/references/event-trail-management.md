@@ -101,7 +101,7 @@ python3 scripts/cloud_trail.py --expected-account-id <account-id> trails create 
 
 ## 启停、删除与验证
 
-- `StopLogging` 停止指定 Trail 的后续记录和投递，不影响其他 Trail，也不删除已有归档；授权须明确包含停止动作及影响，已有明确确认不重复询问。
+- `StopLogging` 停止指定 Trail 的后续记录和投递，不影响其他 Trail，也不删除已有归档；必须单独预览目标和停止影响，取得针对该动作的明确授权；不得从导出、补投或清理授权中推定。相同动作已明确授权时不重复询问。
 - 删除前严格分页列出全部补投任务；所有分页读取成功且该 Trail 无 `PENDING` / `RUNNING` 任务后再删除。
   确认前重新核对目标状态，以覆盖预检后的并发变化。
 - wrapper 对写 API 只发起一次 `ve` 调用；`ve` / SDK 内部重试由底层控制。成功 envelope 通过 `ApiResponse` 传递，将顶层

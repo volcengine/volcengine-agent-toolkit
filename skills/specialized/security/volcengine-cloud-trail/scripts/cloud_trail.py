@@ -1222,10 +1222,12 @@ def lookup_time_window(
             if start_input is not None
             else end - int(DEFAULT_LOOKBACK.total_seconds())
         )
-    return validate_lookup_time_window(start, end, now_epoch)
+    return validate_lookup_time_window(start, end, now_epoch, preserve_window=bool(args.next_token))
 
 
-def validate_lookup_time_window(start: int, end: int, now_epoch: int) -> tuple[int, int]:
+def validate_lookup_time_window(
+    start: int, end: int, now_epoch: int, *, preserve_window: bool = False
+) -> tuple[int, int]:
     requested_start = start
     if end <= start:
         raise CloudTrailError(
@@ -1272,7 +1274,9 @@ def validate_lookup_time_window(start: int, end: int, now_epoch: int) -> tuple[i
     if start < earliest:
         drift = earliest - start
         if 0 < drift <= WINDOW_BOUNDARY_TOLERANCE_SECONDS:
-            start = earliest + WINDOW_BOUNDARY_SAFETY_MARGIN_SECONDS
+            # A continuation must retain the window bound to its query fingerprint.
+            if not preserve_window:
+                start = earliest + WINDOW_BOUNDARY_SAFETY_MARGIN_SECONDS
         else:
             raise CloudTrailError(
                 "StartTime 不得早于最近 90 天；请使用 --lookback-days 90 避免边界漂移",
@@ -1538,9 +1542,11 @@ def event_detail_object(event: dict[str, Any]) -> dict[str, Any] | None:
     return parsed if isinstance(parsed, dict) else None
 
 
-def cmd_events_lookup(args: argparse.Namespace) -> dict[str, Any]:
+def cmd_events_lookup(
+    args: argparse.Namespace, *, body: dict[str, Any] | None = None
+) -> dict[str, Any]:
     identity = auth_context(args)
-    body = lookup_body(args)
+    body = lookup_body(args) if body is None else dict(body)
     result = call_ve("LookupEvents", body, args)
     events = result.get("Trails")
     if not isinstance(events, list) or any(not isinstance(event, dict) for event in events):
@@ -1605,10 +1611,12 @@ def cmd_events_lookup_all(args: argparse.Namespace) -> dict[str, Any]:
     page_args.all = True
     events, request_ids, tokens = [], [], set()
     first = None
+    body = None
     for _ in range(args.max_pages):
-        result = cmd_events_lookup(page_args)
+        result = cmd_events_lookup(page_args, body=body)
         if first is None:
             first = result
+            body = dict(result["Query"])
             page_args.expected_account_id = result["AuthContext"]["AccountId"]
         elif result["AuthContext"]["AccountId"] != first["AuthContext"]["AccountId"]:
             raise CloudTrailError("分页期间调用账号发生变化", code="AccountMismatch")
@@ -1620,11 +1628,8 @@ def cmd_events_lookup_all(args: argparse.Namespace) -> dict[str, Any]:
         if not token:
             break
         tokens.add(token)
-        page_args.lookback_days = None
-        page_args.start_time = str(first["Query"]["StartTime"])
-        page_args.end_time = str(first["Query"]["EndTime"])
-        page_args.next_token = token
-        page_args.query_fingerprint = result["QueryFingerprint"]
+        # Reuse the first validated request; elapsed time must not move its window.
+        body["NextToken"] = token
     output = {**first, "Events": events, "Complete": not bool(token), "HasMore": bool(token),
               "NextToken": token, "RequestIds": request_ids, "PageCount": len(request_ids),
               "Conclusion": f"查询到 {len(events)} 条事件" + ("；达到页数上限，仍有结果" if token else "；已到末页"),
