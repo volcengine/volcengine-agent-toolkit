@@ -45,17 +45,17 @@ IAM 用户名可映射为 `IdentityType=IAMUser` 与 `IdentityName=<name>`。数
 ## 时间与分页
 
 - 月份按上下文确定年份并覆盖整月；年份有歧义时再确认。基础检索范围之外的历史记录按已有 TLS／TOS 日志选择查询方式。
-- 相对时间优先用 `--lookback-days <1..90>`，由同一进程基于同一个 UTC `now` 计算起止秒，避免手算边界漂移。
+- 相对时间优先用 `--lookback-days <1..90>`，由程序在同一进程中使用同一个 UTC `now` 计算起止时间戳，避免手算不一致。
 - 绝对时间支持 Unix 秒、带时区 RFC3339、`YYYY-MM-DD` 和本地时间 `YYYY-MM-DD HH:MM:SS`。无时区输入按
   Asia/Shanghai 解释；仅日期作为 `EndTime` 时按当天 `23:59:59` 处理。
-- 未来、倒序、明显超过 90 天、或开始时间明显早于当前时刻前 90 天时，返回结构化纠错信息（字段、原因、
-  允许范围和建议命令）。贴近 90 天边界的执行漂移按秒级安全余量收窄，当前实现预留 60 秒。
+- 未来、倒序、明显超过 90 天、或开始时间明显早于当前时刻前 90 天时，返回错误信息，说明哪个字段有问题、原因、
+  允许范围和建议命令。开始时间接近最近 90 天的最早允许时间时，脚本预留 60 秒，避免计算和执行之间的时间差导致请求超出允许范围。
 - `--lookback-days` 与 `--start-time` / `--end-time` 互斥。未指定时间时默认最近 3 天。
 - 普通查询默认 10 条，单次最多 50 条；有边界的 `--all` 只请求一页 50 条，不代表全部。`--fetch-all` 每页 50 条，固定初次解析的时间与条件，连续查询至末页或 `--max-pages` 上限（默认 20，范围 1..1000）。返回 `Complete`、`HasMore`、`PageCount`、`RequestIds`；重复游标或身份变化时报错，不报告完整。相对时间也是有效查询边界。
 - 普通查看中，`HasMore=true` 表示还有结果。用户明确要求下一页时，原样重传起止时间、筛选条件、数量模式、
   `NextToken` 和 `QueryFingerprint`；每次取一页。
-- 自动翻页复用首次请求体，仅更新游标；手动续页在原有边界容差内保留原时间窗口，并继续校验查询指纹。服务端拒绝过期窗口或游标时如实报错，不静默移动窗口。
-- 输出 `ResolvedWindow`，其中包含最终采用的 UTC 起止时间与来源，便于确认结构化纠错后的有效窗口。
+- 自动翻页复用首次请求体，仅更新游标；手动续页在原有边界容差内保留原时间窗口，并继续校验查询指纹。服务端拒绝过期窗口或游标时如实报错，不擅自改变起止时间。
+- 输出 `ResolvedWindow`，其中包含最终采用的 UTC 起止时间与来源，便于核对脚本最终使用的时间范围。
 
 ## agent 内部调用示例
 
@@ -72,7 +72,7 @@ python3 scripts/cloud_trail.py --expected-account-id <account-id> events lookup 
 该模式的 stdout 输出完整 JSONC 响应，保留 `AuthContext`、`Query`、`ResolvedWindow`、`HasMore`、`NextToken`、
 `QueryFingerprint`、`PaginationNote` 及调用响应元数据。`Events` 中的事件字段以 `"Field": value, // 字段含义` 展示，
 事件顶层与嵌套对象字段都带注释，`SourceIPAddress` 注释为“来源 IP”。若 `EventDetail` 是可解析的 JSON object，展示其内部内容并加注释，省略外层
-`"EventDetail": ...` 字段本身；按 `Events` 中的带注释内容转述。保留事件自身的 `RequestID`，成功 envelope 放在
+`"EventDetail": ...` 字段本身；按 `Events` 中的带注释内容转述。保留事件自身的 `RequestID`，接口成功时的完整响应 放在
 `ApiResponse`，将调用 `LookupEvents` 的顶层 `ResponseMetadata.RequestId` 保留为诊断证据，默认不向用户展示。空结果必须连同
 账号、地域和实际时间范围表述；profile 与 `ResolvedWindow` 原始结构保留在诊断中。
 
@@ -94,10 +94,10 @@ python3 scripts/cloud_trail.py --expected-account-id <account-id> events export 
 
 - 沿用已执行查询时，保持账号与筛选条件不变，传入固定的 `--start-time`、`--end-time`，不重新使用相对时间计算窗口；尚未查询时，先明确账号、筛选条件和时间范围。
 - 用户仅要求保存已获取的结果时，不重新扫描日志；需要继续获取结果时，自动连续分页，无需每页再次询问，分页过程中保持查询条件和时间范围不变。
-- `events export` 最多导出 200 条；保存已取得的结果时按该集合实际条数交付。未知规模时，若执行后发现达到上限且仍有结果，保留该状态作为内部证据并继续选择全量路径，不将截断文件作为任务成果；仅在符合 result-export.md 的部分结果交付条件时提供局部文件。
-- 文件保存完整事件字段与查询范围，不以展示用摘要替代原始日志。可附操作结果、资源名称等解释列，但保留其来源，不静默替换原字段；已有文件不覆盖。
+- `events export` 最多导出 200 条；保存已查到的结果时，按这些结果的实际条数保存。如果事先不知道数量，导出后发现达到上限且仍有结果，记录未导完的情况，再按 result-export.md 继续导出其余日志。不把只含部分日志的文件当作最终结果；只有符合该文档中提供部分结果的条件时，才提供这个文件。
+- 文件保存完整事件字段与查询范围，不以展示用摘要替代原始日志。可附操作结果、资源名称等解释列，但保留其来源，不擅自替换原字段；已有文件不覆盖。
 - 成功后返回文件路径或下载入口，并说明实际导出条数、时间范围及筛选条件。
-- 无匹配日志时不生成文件，说明当前查询范围及筛选条件下未查到记录；分页或文件生成失败时，说明失败情况及已获取条数，不交付部分文件。
+- 无匹配日志时不生成文件，说明当前查询范围及筛选条件下未查到记录；分页或文件生成失败时，说明失败情况及已获取条数，不提供未完成的文件。
 - 用户需要超出基础检索导出上限的完整日志时，按 [result-export.md](result-export.md) 的导出方式处理，不通过反复拆分基础检索绕过上限。
 
 ## 全部删除事件
@@ -116,10 +116,10 @@ python3 scripts/cloud_trail.py events resolve --service vpc --keyword Delete --r
 
 返回 `action-unique` 时，仅表示本地 Action 候选唯一；仍需确认审计支持范围后，才可使用 `ResolvedEventName` 作为查询条件。
 
-- 返回 `ambiguous` 时，先结合用户原话、动作语义、资源类型和读写属性判断候选；字符串候选不唯一时继续做语义判断。
-- 语义判断后仍不能唯一确认，或返回 `unresolved` 时，可以在用户已安装相应 skill 的前提下，选择用 `volcengine-api` / `volcengine-knowledge-search` 补证；外部 skill 是可选补证手段。
-- 跳过补证或补证后仍不唯一时，已有 ResourceID 则去掉存疑的 EventSource/EventName 宽查一次，并说明精度下降；没有 ResourceID 时请用户补充上下文。
-- 机器字段 `RecommendedLookupMode=semantic-review` 表示先做语义判断；`ExternalFallback.Required=false` 明确外部兜底可选，`NextWithoutExternalFallback` 与 `AfterExternalFallback` 分别给出不使用外部 skill、以及外部补证无结论时的降级动作。
+- 返回 `ambiguous` 时，结合用户描述、操作含义、资源类型和读写属性，判断哪个事件名符合需求。名称匹配到多个事件时，不直接选第一条。
+- 仍无法确定事件名，或返回 `unresolved` 时，如果已安装 `volcengine-api` / `volcengine-knowledge-search`，可以用它们查资料核实，但不是必需步骤。
+- 未查资料，或查过后仍无法确定时，如果已有 ResourceID，可以去掉不确定的 EventSource/EventName 查询一次，并说明结果可能包含其他操作；没有 ResourceID 时，请用户补充信息。
+- 返回字段 `RecommendedLookupMode=semantic-review` 表示先根据用户描述和操作含义判断事件名；`ExternalFallback.Required=false` 表示不强制使用其他 skill 查资料。`NextWithoutExternalFallback` 和 `AfterExternalFallback` 分别说明不使用其他 skill、以及查资料后仍无法确定时，可以继续做什么。
 
 ## 条件 allowlist
 
