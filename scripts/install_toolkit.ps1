@@ -132,18 +132,34 @@ function Test-ToolkitDir([string]$Path) {
 function Expand-Toolkit([string]$Archive, [string]$Destination) {
     # Off Windows, unzip keeps the executable bits that Expand-Archive drops.
     if (-not $OnWindows -and (Test-Command 'unzip')) {
-        & unzip -o -q $Archive -d $Destination
-        if ($LASTEXITCODE -ne 0) { Stop-Install "unzip failed for $Archive" }
+        $result = Invoke-NativeCommand 'unzip' @('-o', '-q', $Archive, '-d', $Destination) -Log
+        if ($result.ExitCode -ne 0) { Stop-Install "unzip failed for $Archive" }
         return
     }
     Expand-Archive -LiteralPath $Archive -DestinationPath $Destination -Force
 }
 
+# Every native program is run through this function. Windows PowerShell 5.1
+# wraps each stderr line captured by 2>&1 in an error record, and under
+# $ErrorActionPreference = 'Stop' the first such line ends the script even when
+# the program exits 0. npm, claude and codex all write progress and warnings to
+# stderr, so the preference is lowered for the call (the assignment is local to
+# this function) and only the exit code decides success.
+function Invoke-NativeCommand([string]$Command, [string[]]$Arguments, [switch]$Log) {
+    $ErrorActionPreference = 'Continue'
+    $lines = @(& $Command @Arguments 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($Log) { Write-Log $line }
+        $line
+    })
+    return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Output = $lines }
+}
+
 function Invoke-Host([string]$Description, [string]$Command, [string[]]$Arguments) {
     # Host CLIs are native programs (often .cmd shims on Windows); their output
     # is progress for the user, not part of this script's result lines.
-    & $Command @Arguments 2>&1 | ForEach-Object { Write-Log "$_" }
-    if ($LASTEXITCODE -ne 0) { Stop-Install "$Description failed" }
+    $result = Invoke-NativeCommand $Command $Arguments -Log
+    if ($result.ExitCode -ne 0) { Stop-Install "$Description failed" }
 }
 
 # ---------------------------------------------------------------------------
@@ -295,7 +311,7 @@ try {
         return $true
     }
     function Get-HostOutput([string]$Command, [string[]]$Arguments) {
-        return ((& $Command @Arguments 2>&1 | ForEach-Object { "$_" }) -join "`n")
+        return ((Invoke-NativeCommand $Command $Arguments).Output -join "`n")
     }
 
     function Install-ForClaude {
@@ -311,9 +327,9 @@ try {
         if (-not (Test-Command 'codex')) { Stop-Install "'codex' is not on PATH. Install Codex, then rerun with -Agent codex." }
         # Codex refuses a marketplace name that is bound to another source, so
         # drop the old binding and add this one.
-        & codex plugin marketplace add $installSource 2>&1 | ForEach-Object { Write-Log "$_" }
-        if ($LASTEXITCODE -ne 0) {
-            & codex plugin marketplace remove $Marketplace 2>&1 | Out-Null
+        $added = Invoke-NativeCommand 'codex' @('plugin', 'marketplace', 'add', $installSource) -Log
+        if ($added.ExitCode -ne 0) {
+            Invoke-NativeCommand 'codex' @('plugin', 'marketplace', 'remove', $Marketplace) | Out-Null
             Invoke-Host "codex plugin marketplace add $installSource" 'codex' @('plugin', 'marketplace', 'add', $installSource)
         }
         # Codex copies the plugin into its own cache, so this also refreshes an upgrade.
@@ -343,7 +359,7 @@ try {
         if (-not $traeBin) { Stop-Install 'Trae CLI (coco, traecli, or trae-agent) is not on PATH. Install it, then rerun with -Agent trae-cli.' }
         # Trae CLI names a marketplace after its directory unless told otherwise, and
         # keeps an existing name bound to its old source, so rebind it explicitly.
-        & $traeBin plugin marketplace remove $Marketplace 2>&1 | Out-Null
+        Invoke-NativeCommand $traeBin @('plugin', 'marketplace', 'remove', $Marketplace) | Out-Null
         $type = if ($Source -eq 'cdn') { 'local' } else { 'github' }
         Invoke-Host "$traeBin plugin marketplace add $installSource" $traeBin @('plugin', 'marketplace', 'add', $installSource, '--name', $Marketplace, '--type', $type)
         Invoke-Host "$traeBin plugin install $CorePlugin" $traeBin @('plugin', 'install', $CorePlugin, '--type', 'marketplace', '--yes')

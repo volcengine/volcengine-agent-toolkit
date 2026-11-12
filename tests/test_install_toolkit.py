@@ -403,6 +403,24 @@ class InstallerContractTest(unittest.TestCase):
         assert match
         self.assertEqual(set(match.group(1).split()), self.core_skills())
 
+    def test_powershell_runs_native_programs_only_through_the_guarded_helper(self) -> None:
+        # Windows PowerShell 5.1 turns stderr captured by 2>&1 into a
+        # terminating error under ErrorActionPreference Stop, so a bare
+        # native call would abort the install on any warning.
+        text = POWERSHELL_SCRIPT.read_text(encoding="utf-8")
+        helper = re.search(
+            r"function Invoke-NativeCommand\(.*?\n}\n", text, re.DOTALL
+        )
+        assert helper
+        self.assertIn("$ErrorActionPreference = 'Continue'", helper.group(0))
+        outside = text.replace(helper.group(0), "")
+        code_lines = [
+            line for line in outside.splitlines() if not line.lstrip().startswith("#")
+        ]
+        self.assertFalse([line for line in code_lines if "2>&1" in line])
+        self.assertFalse([line for line in code_lines if re.match(r"\s*& ", line)])
+        self.assertNotIn("$LASTEXITCODE", "\n".join(code_lines))
+
     def test_powershell_installer_matches_the_shell_installer(self) -> None:
         text = POWERSHELL_SCRIPT.read_text(encoding="utf-8")
         block = re.search(r"\$CoreSkills = @\((.*?)\)", text, re.DOTALL)
