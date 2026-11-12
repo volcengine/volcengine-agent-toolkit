@@ -81,6 +81,108 @@ class BuildReleaseBundleTests(unittest.TestCase):
                 for skill in core_skills:
                     self.assertIn("%s/SKILL.md" % skill, names)
 
+    def test_builds_deterministic_toolkit_package_and_manifest(self):
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            self.build(first)
+            self.build(second)
+
+            toolkit = Path(first) / "volcengine-agent-toolkit.zip"
+            self.assertEqual(
+                toolkit.read_bytes(),
+                (Path(second) / "volcengine-agent-toolkit.zip").read_bytes(),
+            )
+            package = json.loads((REPO_ROOT / "package.json").read_text())
+            manifest = json.loads((Path(first) / "toolkit-manifest.json").read_text())
+            self.assertEqual(manifest["schemaVersion"], 1)
+            self.assertEqual(manifest["version"], package["version"])
+            self.assertEqual(
+                manifest["toolkit"]["sha256"],
+                hashlib.sha256(toolkit.read_bytes()).hexdigest(),
+            )
+            self.assertEqual(manifest["toolkit"]["size"], toolkit.stat().st_size)
+            self.assertEqual(manifest["toolkit"]["url"], toolkit.name)
+            cdn_manifest = json.loads(
+                (Path(first) / "cdn-toolkit-manifest.json").read_text()
+            )
+            self.assertEqual(
+                cdn_manifest["toolkit"]["url"],
+                "https://cloudcache.volccdn.com/ve/skills/v%s/%s"
+                % (package["version"], toolkit.name),
+            )
+            # The core bundle manifest is the Volcengine CLI contract; the
+            # toolkit must not leak into it.
+            self.assertNotIn(
+                "toolkit", json.loads((Path(first) / "manifest.json").read_text())
+            )
+
+            with zipfile.ZipFile(toolkit) as archive:
+                names = set(archive.namelist())
+                script = archive.getinfo("hooks/run-apmplus-reporter.sh")
+            self.assertTrue((script.external_attr >> 16) & 0o100)
+            # Everything a host reads at install time is at the archive root.
+            for required in (
+                ".claude-plugin/marketplace.json",
+                ".agents/plugins/marketplace.json",
+                ".cursor-plugin/marketplace.json",
+                "package.json",
+                "plugins/volcengine-core/.claude-plugin/plugin.json",
+                "plugins/volcengine-core/skills/volcengine-find-skills/SKILL.md",
+                "skills/core/volcengine-find-skills/references/catalog.json",
+            ):
+                self.assertIn(required, names)
+            roots = {name.split("/", 1)[0] for name in names}
+            self.assertFalse(roots & {"tests", "scripts", ".github", "docs", "README.md"})
+            catalog = json.loads(
+                (
+                    CORE_ROOT / "volcengine-find-skills" / "references" / "catalog.json"
+                ).read_text()
+            )
+            for plugin in catalog["plugins"]:
+                for skill in plugin["skills"]:
+                    self.assertIn(
+                        "plugins/%s/skills/%s/SKILL.md" % (plugin["name"], skill["name"]),
+                        names,
+                    )
+
+    def test_interpreter_caches_are_left_out_of_release_archives(self):
+        with tempfile.TemporaryDirectory() as root:
+            skill_dir = Path(root) / "volcengine-cli"
+            (skill_dir / "scripts" / "__pycache__").mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text("# test\n")
+            (skill_dir / "scripts" / "tool.py").write_text("print('x')\n")
+            (skill_dir / "scripts" / "__pycache__" / "tool.cpython-312.pyc").write_bytes(b"x")
+            (skill_dir / "scripts" / "stray.pyc").write_bytes(b"x")
+            (skill_dir / ".DS_Store").write_bytes(b"x")
+            files = [
+                path.relative_to(skill_dir).as_posix()
+                for path in BUILD_MODULE.skill_files(skill_dir)
+            ]
+            self.assertEqual(files, ["SKILL.md", "scripts/tool.py"])
+
+            clean = Path(root) / "clean"
+            clean.mkdir()
+            (clean / "SKILL.md").write_text("# test\n")
+            (clean / "scripts").mkdir()
+            (clean / "scripts" / "tool.py").write_text("print('x')\n")
+            self.assertEqual(
+                BUILD_MODULE.content_digest(skill_dir, BUILD_MODULE.skill_files(skill_dir)),
+                BUILD_MODULE.content_digest(clean, BUILD_MODULE.skill_files(clean)),
+            )
+
+    def test_toolkit_paths_must_be_valid_on_every_supported_os(self):
+        BUILD_MODULE.validate_portable_paths(
+            [".agents/plugins/marketplace.json", "plugins/a/skills/b/SKILL.md"]
+        )
+        for paths, message in (
+            (["skills/aux.md"], "not valid on Windows"),
+            (["skills/a:b.md"], "not valid on Windows"),
+            (["skills/trailing./SKILL.md"], "not valid on Windows"),
+            (["skills/Readme.md", "skills/README.md"], "differ only by case"),
+            (["skills/" + "x" * 200], "Windows path limit"),
+        ):
+            with self.assertRaisesRegex(ValueError, message):
+                BUILD_MODULE.validate_portable_paths(paths)
+
     def test_discovers_core_skills_without_a_fixed_allowlist(self):
         with tempfile.TemporaryDirectory() as root:
             core_root = Path(root)
@@ -135,6 +237,43 @@ class BuildReleaseBundleTests(unittest.TestCase):
             '"s3://${bucket}/${prefix}/latest/manifest.json"', workflow
         )
         self.assertNotIn("tosutil", workflow)
+
+    def test_release_workflow_publishes_the_toolkit_and_installers(self):
+        workflow = RELEASE_WORKFLOW.read_text()
+
+        for target in (
+            '"s3://${bucket}/${prefix}/v${version}/volcengine-agent-toolkit.zip"',
+            '"s3://${bucket}/${prefix}/v${version}/toolkit-manifest.json"',
+            '"s3://${bucket}/${prefix}/latest/toolkit-manifest.json"',
+            '"s3://${bucket}/${prefix}/install.sh"',
+            '"s3://${bucket}/${prefix}/install.ps1"',
+            '"s3://${bucket}/${prefix}/install.md"',
+        ):
+            self.assertIn(target, workflow)
+        for source in (
+            "scripts/install_toolkit.sh",
+            "scripts/install_toolkit.ps1",
+            "docs/install.md",
+        ):
+            self.assertIn(source, workflow)
+            self.assertTrue((REPO_ROOT / source).is_file())
+        self.assertIn("published toolkit sha256 mismatch", workflow)
+        # Versioned objects are verified before any latest pointer moves.
+        self.assertLess(
+            workflow.index("- name: Install the published toolkit from the CDN"),
+            workflow.index("- name: Publish latest manifest last"),
+        )
+        self.assertLess(
+            workflow.index('"s3://${bucket}/${prefix}/v${version}/toolkit-manifest.json"'),
+            workflow.index('"s3://${bucket}/${prefix}/latest/toolkit-manifest.json"'),
+        )
+        for refreshed in (
+            "latest/toolkit-manifest.json",
+            "install.sh",
+            "install.ps1",
+            "install.md",
+        ):
+            self.assertIn('"$refresh_base/%s"' % refreshed, workflow)
 
     def test_release_workflow_refreshes_latest_cdn_manifest(self):
         workflow = RELEASE_WORKFLOW.read_text()

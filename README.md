@@ -73,6 +73,50 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 
 ## 默认安装
 
+### 一句话安装
+
+把下面这句话发给你的 Agent，它会按[安装手册](./docs/install.md)识别宿主、选择下载源并完成安装：
+
+```text
+打开 https://cloudcache.volccdn.com/ve/skills/install.md ，按说明帮我安装火山引擎 Skills，装完告诉我是否需要重启对话。
+```
+
+豆包也用同一句话，但请在**工作模式**下发送：对话模式不能执行命令和写文件，无法安装 Skill，手册会让豆包提醒你切换。
+
+### 一条命令安装（GitHub 不通时自动走 CDN）
+
+安装脚本先探测 GitHub：可达就从 GitHub 仓库安装；不通就从火山引擎 CDN 下载整包到
+`~/.volcengine/agent-toolkit/`，校验 SHA-256 后从本地目录安装。两条路径安装的内容相同。
+
+macOS、Linux、WSL、Git Bash：
+
+```bash
+curl -fsSL https://cloudcache.volccdn.com/ve/skills/install.sh | sh -s -- --agent claude
+```
+
+Windows PowerShell：
+
+```powershell
+& ([scriptblock]::Create((irm https://cloudcache.volccdn.com/ve/skills/install.ps1))) -Agent claude
+```
+
+`--agent` 可以用逗号连接多个宿主，例如 `claude,codex`：
+
+| agent | 宿主 | 安装形态 |
+|---|---|---|
+| `claude` | Claude Code | 核心 plugin |
+| `codex` | Codex | 核心 plugin |
+| `trae-cli` | Trae CLI | 核心 plugin |
+| `gemini` | Gemini CLI | 逐个安装核心 skill |
+| `doubao-work` | 豆包（工作模式） | 复制核心 skill 到豆包的用户 skill 目录 |
+| `trae`、`trae-cn`、`cursor`、`opencode` 等 | Trae IDE、Cursor、OpenCode 及 skills CLI 支持的其他宿主 | `npx skills add` |
+
+不带 `--agent` 时脚本只准备下载源并打印各宿主的安装命令。`--source cdn` 跳过 GitHub 探测，
+`--dir` 更换本地目录，`--dry-run` 只打印将使用的来源和版本。升级时重新运行同一条命令。
+本地目录需要长期保留，宿主会持续从它读取 marketplace。
+
+下面各小节是直接访问 GitHub 时的分宿主命令。
+
 ### 按需发现与安装
 
 `volcengine-find-skills` 内置唯一 catalog，覆盖全部 core skill 和所有可选 plugin skill：

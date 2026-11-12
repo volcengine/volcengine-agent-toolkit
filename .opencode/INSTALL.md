@@ -24,6 +24,13 @@
 
 3. **重启 OpenCode** 让 skills 被发现。
 
+无法访问 GitHub 时，第 1 步改为从火山引擎 CDN 下载整包到本地目录，第 2 步的路径相应改为
+`~/.volcengine/agent-toolkit/plugins/volcengine-core/skills`：
+
+```bash
+curl -fsSL https://cloudcache.volccdn.com/ve/skills/install.sh | sh -s -- --source cdn
+```
+
 ## 使用
 
 先确认所有核心 skill 均可发现：
