@@ -80,6 +80,55 @@ are maintained in their plugins; the sync script generates the copies.
 
 ## Default Installation
 
+### One-sentence install
+
+Send this sentence to your agent. It follows the [install guide](./docs/install.md) to identify the
+host, choose a download source, and install:
+
+```text
+Open https://cloudcache.volccdn.com/ve/skills/install.md and follow it to install the Volcengine Skills for me. Tell me afterwards whether I need to restart the conversation.
+```
+
+Doubao uses the same sentence, sent in **Work mode**: Chat mode cannot run commands or write files,
+so it cannot install skills, and the guide tells Doubao to ask you to switch.
+
+### One-command install (falls back to the CDN when GitHub is unreachable)
+
+The installer probes GitHub first. When GitHub answers, it installs from the GitHub repository. When
+it does not, it downloads the full toolkit package from the Volcengine CDN to
+`~/.volcengine/agent-toolkit/`, verifies its SHA-256, and installs from that local directory. Both
+paths install the same content.
+
+macOS, Linux, WSL, Git Bash:
+
+```bash
+curl -fsSL https://cloudcache.volccdn.com/ve/skills/install.sh | sh -s -- --agent claude
+```
+
+Windows PowerShell:
+
+```powershell
+& ([scriptblock]::Create((irm https://cloudcache.volccdn.com/ve/skills/install.ps1))) -Agent claude
+```
+
+`--agent` accepts several hosts joined by commas, for example `claude,codex`:
+
+| agent | Host | What is installed |
+|---|---|---|
+| `claude` | Claude Code | Core plugin |
+| `codex` | Codex | Core plugin |
+| `trae-cli` | Trae CLI | Core plugin |
+| `gemini` | Gemini CLI | Each core skill |
+| `doubao-work` | Doubao (Work mode) | Core skills copied to the Doubao user skill directory |
+| `trae`, `trae-cn`, `cursor`, `opencode`, ... | Trae IDE, Cursor, OpenCode, and other hosts the skills CLI supports | `npx skills add` |
+
+Without `--agent` the script only prepares the source and prints the install commands for each host.
+`--source cdn` skips the GitHub probe, `--dir` changes the local directory, and `--dry-run` prints
+the source and version it would use. Rerun the same command to upgrade. Keep the local directory:
+hosts continue to read the marketplace from it.
+
+The sections below are the per-host commands for direct GitHub access.
+
 ### Discover and install on demand
 
 `volcengine-find-skills` embeds the single catalog for all core skills and every optional

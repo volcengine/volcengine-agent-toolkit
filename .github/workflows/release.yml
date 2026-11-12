@@ -1,3 +1,9 @@
+# Publishes two artifacts to TOS for each v* tag:
+#   - the core Skill bundle that Volcengine CLI installs (`ve skills update`);
+#   - the full toolkit package, plus the installers and the agent-readable
+#     install guide, used when GitHub is unreachable.
+# Versioned objects are uploaded and verified first; the latest pointers and
+# the unversioned installer files are replaced last.
 name: release-core-skills
 
 on:
@@ -37,7 +43,7 @@ jobs:
           python3 scripts/validate_codex_plugin_layout.py
           python3 -m unittest discover -s tests -v
 
-      - name: Build core Skill release
+      - name: Build core Skill and toolkit release
         env:
           RELEASE_TAG: ${{ github.ref_name }}
           TOS_PUBLIC_BASE_URL: ${{ vars.TOS_PUBLIC_BASE_URL }}
@@ -57,6 +63,8 @@ jobs:
           files: |
             dist/manifest.json
             dist/volcengine-skill-bundle.zip
+            dist/toolkit-manifest.json
+            dist/volcengine-agent-toolkit.zip
 
       - name: Install AWS CLI
         run: |
@@ -92,6 +100,13 @@ jobs:
             dist/cdn-manifest.json \
             "s3://${bucket}/${prefix}/v${version}/manifest.json" \
             --content-type application/json
+          aws --endpoint-url "$endpoint" s3 cp \
+            dist/volcengine-agent-toolkit.zip \
+            "s3://${bucket}/${prefix}/v${version}/volcengine-agent-toolkit.zip"
+          aws --endpoint-url "$endpoint" s3 cp \
+            dist/cdn-toolkit-manifest.json \
+            "s3://${bucket}/${prefix}/v${version}/toolkit-manifest.json" \
+            --content-type application/json
           aws --endpoint-url "$endpoint" s3 ls \
             "s3://${bucket}/${prefix}/v${version}/" --recursive
 
@@ -107,6 +122,8 @@ jobs:
           release_base="${public_base%/}/${prefix#/}/v${version}"
           curl --fail --location --retry 5 "$release_base/manifest.json" -o published-manifest.json
           curl --fail --location --retry 5 "$release_base/volcengine-skill-bundle.zip" -o published-bundle.zip
+          curl --fail --location --retry 5 "$release_base/toolkit-manifest.json" -o published-toolkit-manifest.json
+          curl --fail --location --retry 5 "$release_base/volcengine-agent-toolkit.zip" -o published-toolkit.zip
           python3 - <<'PY'
           import hashlib
           import json
@@ -114,7 +131,27 @@ jobs:
           actual = hashlib.sha256(open("published-bundle.zip", "rb").read()).hexdigest()
           if actual != expected:
               raise SystemExit("published bundle sha256 mismatch")
+          expected = json.load(open("published-toolkit-manifest.json"))["toolkit"]["sha256"]
+          actual = hashlib.sha256(open("published-toolkit.zip", "rb").read()).hexdigest()
+          if actual != expected:
+              raise SystemExit("published toolkit sha256 mismatch")
           PY
+
+      - name: Install the published toolkit from the CDN
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          TOS_PUBLIC_BASE_URL: ${{ vars.TOS_PUBLIC_BASE_URL }}
+          TOS_PREFIX: ${{ vars.TOS_PREFIX }}
+        run: |
+          # Run the installer the way a host without GitHub would, before the
+          # latest pointers move to this version.
+          version="${RELEASE_TAG#v}"
+          public_base="${TOS_PUBLIC_BASE_URL:-https://cloudcache.volccdn.com}"
+          prefix="${TOS_PREFIX:-ve/skills}"
+          VOLCENGINE_TOOLKIT_BASE_URL="${public_base%/}/${prefix#/}" \
+            sh scripts/install_toolkit.sh --source cdn --version "$version" \
+            --dir "$RUNNER_TEMP/agent-toolkit"
+          test -f "$RUNNER_TEMP/agent-toolkit/plugins/volcengine-core/skills/volcengine-find-skills/SKILL.md"
 
       - name: Publish latest manifest last
         env:
@@ -135,6 +172,26 @@ jobs:
             "s3://${bucket}/${prefix}/latest/manifest.json" \
             --content-type application/json \
             --cache-control 'no-cache, max-age=0'
+          aws --endpoint-url "$endpoint" s3 cp \
+            dist/cdn-toolkit-manifest.json \
+            "s3://${bucket}/${prefix}/latest/toolkit-manifest.json" \
+            --content-type application/json \
+            --cache-control 'no-cache, max-age=0'
+          aws --endpoint-url "$endpoint" s3 cp \
+            scripts/install_toolkit.sh \
+            "s3://${bucket}/${prefix}/install.sh" \
+            --content-type 'text/plain; charset=utf-8' \
+            --cache-control 'no-cache, max-age=0'
+          aws --endpoint-url "$endpoint" s3 cp \
+            scripts/install_toolkit.ps1 \
+            "s3://${bucket}/${prefix}/install.ps1" \
+            --content-type 'text/plain; charset=utf-8' \
+            --cache-control 'no-cache, max-age=0'
+          aws --endpoint-url "$endpoint" s3 cp \
+            docs/install.md \
+            "s3://${bucket}/${prefix}/install.md" \
+            --content-type 'text/markdown; charset=utf-8' \
+            --cache-control 'no-cache, max-age=0'
 
       - name: Refresh CDN release pointers
         env:
@@ -151,8 +208,13 @@ jobs:
 
           public_base="${TOS_PUBLIC_BASE_URL:-https://cloudcache.volccdn.com}"
           prefix="${TOS_PREFIX:-ve/skills}"
+          refresh_base="${public_base%/}/${prefix#/}"
           refresh_url="${public_base%/}/${prefix#/}/latest/manifest.json"
           npm install -g "@volcengine/cli@1.1.5"
           ve cdn SubmitRefreshTask \
             --Type file \
-            --UrlList.1 "$refresh_url"
+            --UrlList.1 "$refresh_url" \
+            --UrlList.2 "$refresh_base/latest/toolkit-manifest.json" \
+            --UrlList.3 "$refresh_base/install.sh" \
+            --UrlList.4 "$refresh_base/install.ps1" \
+            --UrlList.5 "$refresh_base/install.md"

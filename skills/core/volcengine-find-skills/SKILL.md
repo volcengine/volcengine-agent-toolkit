@@ -15,6 +15,13 @@ metadata:
       bins:
         - python3
         - npx
+    envVars:
+      - name: VOLCENGINE_TOOLKIT_BASE_URL
+        required: false
+        description: Base URL of the toolkit package used when GitHub is unreachable; defaults to https://cloudcache.volccdn.com/ve/skills
+      - name: VOLCENGINE_TOOLKIT_DIR
+        required: false
+        description: Local directory that holds the downloaded toolkit package; defaults to ~/.volcengine/agent-toolkit
 ---
 
 # Volcengine Skills Finder
@@ -91,6 +98,13 @@ Passing a plugin name is an error, even when every skill in that plugin is neede
 Use `--scope global` for user-level installation or `--scope project` for the current project. The
 default is global. `--source` may point at a reviewed local checkout or another repository source;
 otherwise the catalog's official repository is used.
+
+When GitHub does not answer within a short probe, the script installs from the Volcengine CDN
+instead: it downloads the toolkit package, verifies its SHA-256 against the release manifest,
+unpacks it to `~/.volcengine/agent-toolkit` (or `VOLCENGINE_TOOLKIT_DIR`), and passes that directory
+to the skills CLI. The fallback needs no flag and reports on stderr which source it used. If the
+CDN is also unreachable, an existing local copy is used and its version is reported; with no local
+copy the install fails and says so. The skills CLI itself still comes from the npm registry.
 
 Use `--dry-run` when the user asks to inspect the command first. Installation is local, but any
 later cloud-resource operation remains governed by the installed skill's own confirmation and
