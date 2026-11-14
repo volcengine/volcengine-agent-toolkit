@@ -21,7 +21,7 @@ metadata:
         description: Set by the Agent for every ve invocation; must be ai_agent
       - name: VE_CALLER_NAME
         required: true
-        description: Resolved by the Agent from the actual current host environment for each invocation; no fixed default
+        description: The Agent's own product name, written by the Agent itself; no fixed default
       - name: VE_SKILL_NAME
         required: true
         description: Resolved from the active skill's frontmatter name; documentation operations owned by this skill use volcengine-knowledge-search
@@ -36,10 +36,10 @@ metadata:
 执行 `ve` 前，遵循 `volcengine-cli` 的 [调用方标识规则](../volcengine-cli/SKILL.md#agent-caller-metadata-mandatory)。每次调用都必须在进程环境中携带：
 
 - `VE_CALLER_TYPE=ai_agent`。
-- `VE_CALLER_NAME`：由 Agent 根据当前实际宿主环境确定，不使用固定默认值。
+- `VE_CALLER_NAME`：填 Agent 自己的产品名（如 `codex`、`claude-code`）。Agent 本来就知道自己是谁，直接填写，不需要也不要查看环境变量或主机信息；不使用固定默认值。
 - `VE_SKILL_NAME`：取当前执行操作的 skill 的 frontmatter `name`。本 skill 执行文档检索或正文读取时，该值为 `volcengine-knowledge-search`；引用 CLI 的调用规则不改变操作所属 skill。
 
-该要求覆盖 `--help` 检查、首次检索、改写后的检索、正文读取、分页续读及重试。每次工具调用可能启动新的 shell，必须重新传入三项变量，不依赖上一次的 `export`。下面示例中的 `<agent-id>` 与 `<current-volcengine-skill>` 均由 Agent 根据当前环境和 skill 元数据替换，不得原样传入。这些变量仅用于调用来源标识，不改变公开文档命令无需登录的约定。
+该要求覆盖 `--help` 检查、首次检索、改写后的检索、正文读取、分页续读及重试。每次工具调用可能启动新的 shell，必须重新传入三项变量，不依赖上一次的 `export`。下面示例中的 `<agent-id>` 与 `<current-volcengine-skill>` 分别替换为 Agent 自己的产品名和当前 skill 的 `name`，不得原样传入。这些变量仅用于调用来源标识，不改变公开文档命令无需登录的约定。
 
 ## 准备
 
@@ -52,7 +52,7 @@ VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volc
   ve docs fetch --help
 ```
 
-若 `ve` 未安装或缺少子命令，加载 `volcengine-cli` skill，按其「Install or upgrade the ve CLI」章节安装最新版，再检查能力。文档命令访问公开服务，**无需登录、AK/SK、profile 或地域配置**；安装后直接使用，无需执行资源管理的身份初始化流程。
+若 `ve` 未安装或缺少子命令，加载 `volcengine-cli` skill，按其 `references/install.md` 安装最新版，再检查能力。文档命令访问公开服务，**无需登录、AK/SK、profile 或地域配置**；安装后直接使用，无需执行资源管理的身份初始化流程。
 
 ## 选择流程
 

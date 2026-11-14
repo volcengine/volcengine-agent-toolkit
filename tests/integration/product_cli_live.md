@@ -52,7 +52,7 @@ python3 tests/integration/verify_product_clis_live.py \
 ```
 
 `ve` 优先使用 PATH 中的子 CLI；需要验证特定托管版本时，先核对二进制的实际解析来源。
-测试不自动升级子 CLI，也不读取或打印凭证文件。Agent 根据实际运行环境和当前 skill
+测试不自动升级子 CLI，也不读取或打印凭证文件。Agent 用自己的产品名和当前 skill 名
 提供 `--agent-id` 与 `--skill-name`；测试统一传入三项 `VE_*` 调用标识。对于 `ve arkcli`，
 由 `ve` 转换变量，不额外传入 `ARKCLI_CALLER_TYPE`、`ARKCLI_CALLER_NAME`、`ARKCLI_SKILL_NAME`
 或 `ARKCLI_NO_UPDATE_NOTIFIER`。其他产品设置和凭证环境保持原样，输出格式和参数仍由子 CLI 解释。

@@ -3,7 +3,7 @@
 ## TOS Product CLI
 
 Use `ve tosutil` for TOS bucket and object operations. Follow
-[Product CLI routing](../SKILL.md#product-cli-routing) to find and load `volcengine-tosutil`
+[Product CLI routing](product-cli.md) to find and load `volcengine-tosutil`
 through `volcengine-find-skills`, then follow that skill with the `ve` command prefix.
 This is a delegated product CLI, independent of whether native OpenAPI metadata exposes
 a `tos` service. `ve` can install the child on demand; standalone `tosutil` is not required.

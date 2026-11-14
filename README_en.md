@@ -24,9 +24,9 @@ caller metadata rules below.
 
 Every Agent-launched `ve` process must receive `VE_CALLER_TYPE=ai_agent`,
 `VE_CALLER_NAME=<agent-id>`, and `VE_SKILL_NAME=<current-volcengine-skill>` to identify the Agent
-host and the skill owning the operation. Only `VE_CALLER_TYPE=ai_agent` is fixed. The Agent resolves
-the other two values from the actual runtime environment and active skill name for each invocation;
-they must not default to `codex` or `volcengine-cli`. No manual user configuration is needed.
+host and the skill owning the operation. Only `VE_CALLER_TYPE=ai_agent` is fixed. For each invocation
+the Agent writes its own product name and the active skill name, without inspecting environment
+variables; they must not default to `codex` or `volcengine-cli`. No manual user configuration is needed.
 See [caller metadata](./skills/core/volcengine-cli/SKILL.md#agent-caller-metadata-mandatory).
 For `ve arkcli ...`, `ve` translates the caller metadata. The Agent does not duplicate it with
 `ARKCLI_*` caller variables or copy the notifier prefix from standalone Ark CLI examples.
