@@ -245,9 +245,9 @@
       "domain": "服务支持",
       "domain_en": "Service Support",
       "default": false,
-      "description": "Route product transactions (purchase, price enquiry, unsubscribe), prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
-      "short_description": "Route transactions, prepare deployments, and support API integrations",
-      "keywords": ["服务支持", "service support", "billing", "sale", "purchase", "购买", "售卖", "开通", "commonbuy", "price", "询价", "价格", "unsubscribe", "退订", "deployment", "terraform", "iac", "ecs", "vke", "vefaas", "云控制api", "openapi", "sdk", "api"],
+      "description": "Support FORCE conference attendance, route product transactions (purchase, price enquiry, unsubscribe), prepare and deploy applications, manage infrastructure as code, explore OpenAPI specifications, and generate runnable SDK examples.",
+      "short_description": "Support FORCE attendance, transactions, deployments, and API integrations",
+      "keywords": ["服务支持", "service support", "FORCE", "原动力大会", "大会", "论坛", "参会", "billing", "sale", "purchase", "购买", "售卖", "开通", "commonbuy", "price", "询价", "价格", "unsubscribe", "退订", "deployment", "terraform", "iac", "ecs", "vke", "vefaas", "云控制api", "openapi", "sdk", "api"],
       "default_prompts": [
         "Open a Volcengine Ark endpoint / veFaaS app / TLS project / TOS bucket.",
         "How much does this Volcengine product cost for my usage?",
@@ -256,9 +256,17 @@
         "Deploy this application to Volcengine.",
         "Create Terraform for this Volcengine architecture.",
         "Find the request schema for this Volcengine API.",
-        "Generate a runnable SDK example for this API."
+        "Generate a runnable SDK example for this API.",
+        "Recommend FORCE conference forums for my schedule."
       ],
       "skills": [
+        {
+          "name": "volcengine-force-conference",
+          "path": "plugins/volcengine-service-support/skills/volcengine-force-conference",
+          "summary": "Support current Volcengine FORCE conference discovery, personalized forum planning, ticket and subscription queries, forum subscription changes, and post-event summary availability.",
+          "summary_zh": "提供当前火山引擎 FORCE 原动力大会查询、个性化论坛规划、门票与订阅查询、论坛订阅变更及参会总结开放状态查询。",
+          "keywords": ["FORCE", "原动力大会", "大会", "论坛", "议程", "参会", "会场", "展台", "门票", "论坛订阅", "参会总结"]
+        },
         {
           "name": "volcengine-sale",
           "path": "plugins/volcengine-service-support/skills/volcengine-sale",

@@ -42,7 +42,7 @@ For `ve arkcli ...`, `ve` translates the caller metadata. The Agent does not dup
 | `volcengine-containers-middleware` | Containers and Middleware | `volcengine-vefaas` | No |
 | `volcengine-security` | Security | `volcengine-compliance`, `volcengine-cloud-trail` | No |
 | `volcengine-identity-access-control` | Identity and Access Control | `volcengine-landing-zone` | No |
-| `volcengine-service-support` | Service Support | `volcengine-sale`, `volcengine-prepare`, `volcengine-deploy`, `volcengine-iac`, `volcengine-api`, `volcengine-sdk-generator` | No |
+| `volcengine-service-support` | Service Support | `volcengine-force-conference`, `volcengine-sale`, `volcengine-prepare`, `volcengine-deploy`, `volcengine-iac`, `volcengine-api`, `volcengine-sdk-generator` | No |
 <!-- END GENERATED: plugin-catalog -->
 
 The core marketplace entry uses `INSTALLED_BY_DEFAULT`; all optional plugins use `AVAILABLE`.
@@ -70,6 +70,7 @@ are maintained in their plugins; the sync script generates the copies.
 | [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | Recommend compliance baselines, report posture, and author custom Rego compliance rules. |
 | [`volcengine-cloud-trail`](./skills/specialized/security/volcengine-cloud-trail/SKILL.md) | `volcengine-security` | Query CloudTrail audit logs and manage trails and backfill delivery tasks. |
 | [`volcengine-landing-zone`](./skills/specialized/identity-access-control/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | Consult, set up, and manage Volcengine landing zones and account baselines, and deploy solutions or blueprints. |
+| [`volcengine-force-conference`](./skills/specialized/service-support/volcengine-force-conference/SKILL.md) | `volcengine-service-support` | Support current Volcengine FORCE conference discovery, personalized forum planning, ticket and subscription queries, forum subscription changes, and post-event summary availability. |
 | [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | Orchestrate Volcengine product transactions: purchase, price enquiry, and unsubscribe. |
 | [`volcengine-prepare`](./skills/specialized/service-support/volcengine-prepare/SKILL.md) | `volcengine-service-support` | Analyze a repository and recommend ECS, VKE, or veFaaS deployment shapes. |
 | [`volcengine-deploy`](./skills/specialized/service-support/volcengine-deploy/SKILL.md) | `volcengine-service-support` | Deploy a local directory or Git repository to Volcengine. |

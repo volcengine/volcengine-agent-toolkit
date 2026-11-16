@@ -36,7 +36,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 | `volcengine-containers-middleware` | 容器与中间件 | `volcengine-vefaas` | 否 |
 | `volcengine-security` | 安全 | `volcengine-compliance`、`volcengine-cloud-trail` | 否 |
 | `volcengine-identity-access-control` | 身份与访问控制 | `volcengine-landing-zone` | 否 |
-| `volcengine-service-support` | 服务支持 | `volcengine-sale`、`volcengine-prepare`、`volcengine-deploy`、`volcengine-iac`、`volcengine-api`、`volcengine-sdk-generator` | 否 |
+| `volcengine-service-support` | 服务支持 | `volcengine-force-conference`、`volcengine-sale`、`volcengine-prepare`、`volcengine-deploy`、`volcengine-iac`、`volcengine-api`、`volcengine-sdk-generator` | 否 |
 <!-- END GENERATED: plugin-catalog -->
 
 核心插件的 marketplace 策略为 `INSTALLED_BY_DEFAULT`，其他插件均为 `AVAILABLE`。
@@ -63,6 +63,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 | [`volcengine-compliance`](./skills/specialized/security/volcengine-compliance/SKILL.md) | `volcengine-security` | 推荐合规基线、汇总合规态势并编写自定义 Rego 合规规则。 |
 | [`volcengine-cloud-trail`](./skills/specialized/security/volcengine-cloud-trail/SKILL.md) | `volcengine-security` | 查询操作审计日志，并管理跟踪和历史补投任务。 |
 | [`volcengine-landing-zone`](./skills/specialized/identity-access-control/volcengine-landing-zone/SKILL.md) | `volcengine-identity-access-control` | 咨询、搭建和管理火山引擎 Landing Zone 与账号基线，并支持部署方案或蓝图。 |
+| [`volcengine-force-conference`](./skills/specialized/service-support/volcengine-force-conference/SKILL.md) | `volcengine-service-support` | 提供当前火山引擎 FORCE 原动力大会查询、个性化论坛规划、门票与订阅查询、论坛订阅变更及参会总结开放状态查询。 |
 | [`volcengine-sale`](./skills/specialized/service-support/volcengine-sale/SKILL.md) | `volcengine-service-support` | 编排火山商品交易意图：识别开通购买、询价预估与退订三类动作并分流执行。 |
 | [`volcengine-prepare`](./skills/specialized/service-support/volcengine-prepare/SKILL.md) | `volcengine-service-support` | 分析代码仓库并推荐 ECS、VKE 或 veFaaS 部署形态。 |
 | [`volcengine-deploy`](./skills/specialized/service-support/volcengine-deploy/SKILL.md) | `volcengine-service-support` | 将本地目录或 Git 仓库部署到火山引擎。 |
