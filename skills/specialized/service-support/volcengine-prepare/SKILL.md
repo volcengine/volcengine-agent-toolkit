@@ -119,13 +119,13 @@ Do not infer deployability from a Dockerfile, package scripts, or build tooling 
 
 ## 2. Optional cloud identity check
 
-If `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and `VOLCENGINE_REGION` are set, verify identity:
+Verify identity by running the call directly. It is the credential check; do not print or list environment variables (`env`, `printenv`, `echo $VOLCENGINE_*`) to see whether credentials are set:
 
 ```bash
 ve sts GetCallerIdentity
 ```
 
-Do not read `~/.volcengine/config.json`; it may contain secrets. If env vars are absent, keep the recommendation going and tell the user credential checks will happen when executing the chosen path.
+Do not read `~/.volcengine/config.json`; it may contain secrets. If the call fails for lack of credentials, keep the recommendation going and tell the user credential checks will happen when executing the chosen path.
 
 If cloud service availability matters for a near-term choice, run the read-only probe:
 

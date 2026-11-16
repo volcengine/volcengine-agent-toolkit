@@ -22,7 +22,7 @@ This helper signs and sends those. It has two modes:
                                      any other API with the same problem
 
 Credentials come from VOLCENGINE_ACCESS_KEY/VOLCENGINE_SECRET_KEY, else from
-the `ve` config/login cache (see references/extend-apis.md). Signing is inline
+the `ve` config/login cache (see references/extend-api-helper.md). Signing is inline
 on purpose so the script has no third-party imports.
 """
 

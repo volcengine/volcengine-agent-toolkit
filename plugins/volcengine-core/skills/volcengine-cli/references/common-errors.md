@@ -37,9 +37,16 @@ Do not write real account IDs, request IDs, TRNs, personal names, certificate nu
 | `AccountNoPermission` | Product permission blocker | VEENEdge `StartCloudServer`, `StopCloudServer`, `RebootCloudServer` | Do not classify as real-name verification without another source. Check product permission or entitlement. |
 | `ProductUnsubscribed`, `ServiceNotActivated`, `KMS_ServiceNotOpen`, `OperationDenied.ServiceStopped` | Service not enabled or stopped | Multiple service activation checks | Treat as service activation/account service state, not as request-format bugs. |
 
+## Credential Rejected
+
+`InvalidAccessKey`, `InvalidSecretToken`, `SignatureDoesNotMatch`, `InvalidAuthorization`, an expired session token, or any other 401 from `ve sts GetCallerIdentity` means the current credentials are not usable. That is the whole diagnosis:
+
+- Do not inspect the credentials to find out why: no `env` / `printenv`, no `echo` of a `VOLCENGINE_*` value, prefix or length, no reading `~/.volcengine/config.json`, no retry with a variable unset (`env -u ...`).
+- Tell the user the credentials were rejected (quote the error code, never the credential) and follow the login plan in [auth.md](auth.md).
+
 ## Local Safety Policy
 
-These messages come from the user's local safety policy, not from the Volcengine service. No request was sent, so they are not permission, credential, or request-format errors and do not start a feedback invitation. Follow `SKILL.md` §2; never change the policy or its `VOLCENGINE_SAFETY_*` variables on your own to get past them.
+These messages come from the user's local safety policy, not from the Volcengine service. No request was sent, so they are not permission, credential, or request-format errors and do not start a feedback invitation. Follow [safety.md](safety.md); never change the policy or its `VOLCENGINE_SAFETY_*` variables on your own to get past them.
 
 | Message | Meaning | Handling |
 | --- | --- | --- |

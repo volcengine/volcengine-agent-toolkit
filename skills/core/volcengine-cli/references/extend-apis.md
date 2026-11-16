@@ -5,7 +5,7 @@ Use this reference when an OpenAPI is missing from the `ve` command surface (unk
 1. **`ve ... --force`** — for any Action/Version API. This is the default.
 2. **`scripts/call_extend_api.py`** — only for APIs that need URL query parameters *and* a request body in one POST (VMP, Flink GWS), which `ve` cannot express.
 
-Apply the confirmation mode chosen in `SKILL.md` §2 to `ve --force` calls. Extension-helper calls retain the built-in read/write/destructive confirmation rules; do not manually evaluate local policy rules in the skill. The confirmation notes below apply to calls using the built-in rules.
+Apply the confirmation mode chosen in [safety.md](safety.md) to `ve --force` calls. Extension-helper calls retain the built-in read/write/destructive confirmation rules; do not manually evaluate local policy rules in the skill. The confirmation notes here and in the linked files apply to calls using the built-in rules.
 
 Apply [the mandatory Agent caller metadata](../SKILL.md#agent-caller-metadata-mandatory) to every
 `ve --force` invocation and to the Python helper process. The helper's internal `ve` credential
@@ -53,7 +53,7 @@ ve metrics ListWorkspace --version 2024-06-29 --endpoint metrics.cn-beijing.volc
 
 ### Service recipes
 
-These are the service code / version / endpoint / signing-region facts an agent cannot guess. Action names are listed for lookup; parameter notes are in section 3.
+These are the service code / version / endpoint / signing-region facts an agent cannot guess. Action names are listed for lookup; parameter notes are in [extend-api-params.md](extend-api-params.md).
 
 | Service code | Version | `--endpoint` | `--region` | Method | Actions |
 | --- | --- | --- | --- | --- | --- |
@@ -87,144 +87,14 @@ For an Action that is not in this table, `python3 scripts/find_api.py <keyword>`
 
 ## 2. `scripts/call_extend_api.py` — query + body in one request
 
-`ve --force` cannot put some parameters in the URL query string and the rest in a body (`--body` excludes flattened parameters, and the body is JSON only). The helper does exactly that and nothing else.
-
-```bash
-python3 scripts/call_extend_api.py --list                 # registered APIs and their query keys
-python3 scripts/call_extend_api.py --describe QueryMetrics
-```
-
-### Registered APIs
-
-| Service | Version | Endpoint | Body | Actions and URL query keys |
-| --- | --- | --- | --- | --- |
-| `vmp` | `2021-03-03` | `vmp.<region>.volcengineapi.com` | `application/x-www-form-urlencoded` | `QueryMetrics`, `QueryMetricsRange`, `GetLabels`, `GetSeries` → `workspace`; `GetLabelValues` → `workspace`, `label` |
-| `flink` | `2021-06-01` | `open.volcengineapi.com` | JSON | `ListGWSDirectory` → `ProjectId`, `Type`; `GetGWSApplicationDraft`, `DeleteGWSApplication`, `GWSGetEventList`, `StartGWSApplication`, `CancelGWSApplication`, `RestartGWSApplication` → `ProjectId`; `CreateGWSApplicationDraft`, `UpdateGWSApplicationDraft` → `ProjectId` (also kept in the body); `DeployGWSApplicationDraft` → `ProjectId`, `Id`; `ListGWSApplication` → `PageSize`, `PageNum`, `SortField`, `SortOrder` |
-
-Pass every field in one `--params` JSON object; the helper moves the query keys to the URL:
-
-```bash
-python3 scripts/call_extend_api.py \
-  --api QueryMetrics \
-  --params '{"workspace":"vmp-workspace-id","query":"up"}'
-
-python3 scripts/call_extend_api.py \
-  --api CreateGWSApplicationDraft \
-  --params @request.json
-```
-
-Options: `--region` (drives the `vmp.<region>` host and the signing scope), `--host` (override endpoint), `--content-type`, `--output json|pretty`, `--show-headers`, `--profile`. STS tokens come from `VOLCENGINE_SESSION_TOKEN` or the profile; do not put them on the command line.
-
-### Free mode (unregistered API with the same problem)
-
-```bash
-python3 scripts/call_extend_api.py \
-  --api SomeAction --service <svc> --version <YYYY-MM-DD> \
-  --query-keys ProjectId,Type [--body-keys-also ProjectId] \
-  [--method POST] [--host <endpoint>] [--content-type application/x-www-form-urlencoded] \
-  --params '{"ProjectId":"...","Type":"JOB","Other":"..."}'
-```
-
-`--query-keys` is required in free mode; without it the API has no query/body split and belongs to `ve --force` (the helper says so and exits). Without `--host` the endpoint is `VOLCENGINE_ENDPOINT` or `open.volcengineapi.com`. `--body-keys-also` names query keys that must additionally stay in the body.
-
-### Credentials
-
-Resolution order:
-
-1. `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` (+ optional `VOLCENGINE_SESSION_TOKEN`).
-2. The `ve` config file (`VOLCENGINE_CLI_CONFIG_FILE`, default `~/.volcengine/config.json`): the selected profile's `access-key`/`secret-key`, or for a `console-login` profile its unexpired local `ve login` cache (`VOLCENGINE_LOGIN_CACHE_DIRECTORY` overrides the cache dir).
-
-Profile selection follows the conversation-scoped rule in `SKILL.md`: pass `--profile` only when the user explicitly selected one; otherwise the config's current profile, then `VOLCENGINE_PROFILE`, is used. The helper does not refresh SSO, assume roles, or fetch ECS metadata; when nothing usable is found it says so — run `ve login`, `ve configure set`, or export the env credentials. Never print AK/SK/session tokens.
+Only for APIs that need URL query parameters and a request body in one POST (VMP, Flink GWS). Registered APIs, free mode and how the helper finds credentials: [extend-api-helper.md](extend-api-helper.md).
 
 ## 3. Parameter notes
 
-Facts gathered while validating these APIs. Pass them as `--Param` values (or `--body` JSON) with `ve --force`, or inside `--params` for the helper.
-
-### Account verification
-
-- `GetVerifyInfo`: no parameters. Personal real-name = `IsVerified=true` + `IdentityType="individual"`; enterprise = `IsVerified=true` + `IdentityType="enterprise"`.
-
-### CDN
-
-- `DescribeOriginTopStatisticalData`: required `Domain`, `StartTime`, `EndTime` (Unix seconds), `Item` (`url`), `Metric` (`flux`, `pv`, `status_2xx`, `status_3xx`, `status_4xx`, `status_5xx`).
-
-### CodePipeline
-
-- `ListPipelineRunStagesInner`: required `WorkspaceId`, `PipelineId`, `PipelineRunId`. Find them with the public `ve cp` list APIs first.
-
-### DCDN
-
-- `DescribeRealtimeData`, `DescribeOriginRealtimeData`: required `StartTime`, `EndTime` as `"YYYY-MM-DD HH:MM:SS"` within 24 h, `Metrics` array (`all`, `traffic`, `bandwidth`, `request`, `QPS`, `2xx`…`5xx`; edge also `RequestHitRate`, `TrafficHitRate`). Optional `Domains`, `ProjectName`, `IspNameEn`, `RegionNameEn`, `Protocol`, `Type`, `IPVersion`.
-- `DescribeTopIPs`, `DescribeTopReferers`, `DescribeTopUrls`: required `StartTime`, `EndTime`, `Sort` (`traffic`, `bandwidth`, `request`, `QPS`); optional `Limit` (1–100), `ProjectName`, `Domain`, `StatusCode`.
-
-### Domain (`domain_openapi`, lowercase snake_case params)
-
-- `CheckFee`: `domain`. `GetDomain`: `domain` or `instance_no`. `GetAsyncTask`: `task_no`. `GetTemplate`: `tag`.
-- `ListDomains`: optional `domain`, `status`, `verify_status`, `expired_after`, `is_auto_renew`, `domain_name_audit_status`, `order_by`, `asc_or_desc`, `page_number`, `page_size`.
-- `ListTemplates`: optional `registrant_zh`, `registration_type`, `tag`, `status`, `page_number`, `page_size`.
-- `RegisterDomain` (POST body): required `domain`, `template_tag`; optional `period`, `ns_list`, `is_auto_renew`, `package_id`. Billable, creates an async task — in built-in mode, confirm with the user first.
-
-### Flink
-
-- GET: `ListGMSProject` optional `SearchKey`, `PageSize`, `PageNum`; `GetGMSProjectDetail` required `ProjectName`; `ListGMCSResourcePool` (`2022-06-01`) `ProjectId`, optional `Name`, `NameKey`, `PageSize`, `PageNum`; `GetGRSAppById` required `AppIdKey`.
-- POST via `ve --force --body`: `GetGWSApplication` required `Id`, optional `AccountId`; `ListGASLogs` `Application`, `Project`, `StartTime`, `EndTime`, optional `Level`, `Properties.component`, `Properties.podName`, `Cursor`, `PageSize`.
-- GWS via the helper: `ListGWSDirectory` `Type` is `JOB` or `QUERY`; `GetGWSApplicationDraft` `ProjectId`, `Id`; `CreateGWSApplicationDraft` `ProjectId`, `JobName`, `DirectoryId`, optional `JobType`, `EngineVersion`; `UpdateGWSApplicationDraft` `Id`, `ProjectId`, `AccountId`, `UserId`, `JobName`, `JobId`, `DirectoryId`, `DirectoryName`, `SqlText`, optional `DynamicOptions`, `JobType`, `EngineVersion`; `DeployGWSApplicationDraft` `ProjectId`, `Id`, `ResourcePool`, `Queue`, optional `Priority`, `SchedulePolicy`, `ScheduleTimeout`; `Delete/Start/Cancel/RestartGWSApplication` `ProjectId`, `Id` (start/restart also `Type` such as `FROM_NEW`, `FROM_LATEST`); `ListGWSApplication` optional `ProjectId`, `JobName`, `ResourcePool`, `JobType`, `State`, pagination and sort keys; `GWSGetEventList` `ProjectId`, optional `Id`, `Limit`.
-
-### Global Accelerator
-
-- `ListAccelerateAreas`: none. `GetBandwidthPackage`: `BandwidthPackageId`.
-- `ListBandwidthPackages`: `BandwidthType`, `PageNumber`, `PageSize`; optional `AcceleratorId`, `AccountId`, `BandwidthPackageId`, `Domain`, `Isp`, `OrderType`, `State`, `States`, `ProjectName`, `ResourceTagFilter`.
-- `GetAcceleratorDimension`: `AcceleratorType`, `TargetName`, `Filters` (array of `{"Name":..., "Values":[...]}`).
-- `DescribeListenerLogs`: `InputIdType`, `InputId`, `StartTime`, `EndTime`, `Interval`; optional `Metrics`, `RegionType`, `Region`, grouping fields.
-- `Get(Basic)EndpointRelatedAccInstanceInfos`: the endpoint identifier of the matching endpoint type plus `PageNum`/`PageSize`.
-
-### IoT
-
-Identifiers by level: `InstanceId`; `ProductKey`/`ProductID`; `DeviceName`/`DeviceID`/`DeviceSecret`; thing model `ModuleKey`, `Identifier`, `PropertyIdentifier`, `EventIdentifier`, `ServiceIdentifier`; pagination/time `PageNumber`, `PageSize`, `StartTime`, `EndTime`. `CallService` needs device identifiers + service identifier + input params; `SetProperty` needs device identifiers + property values.
-
-### Live
-
-- `DescribeLiveBatchStreamTranscodeData` / `DescribeLiveBatchStreamSessionData`: required `StartTime`, `EndTime` as RFC3339 (`2022-11-10T00:00:00+08:00`); optional `DomainList`, `PageNum`, `PageSize` (+ `OnlineUserType` for session data).
-
-### MCDN
-
-- `DescribeCdnDomainConfig`: prefer `DomainId`; also `DomainName`, `Vendor`, `DomainVersion`, `NormalizeOptions`.
-
-### Metrics
-
-- `ListWorkspace`: `PageNumber`, `PageSize`, `ListGlobal`; optional `Filters`, `ProjectName`. `GetWorkspaceInfo`: `WorkspaceId`.
-- `ListQueryClusters`: `Page` object (`PageNumber`, `PageSize`); optional `Name`, `ProjectName`. `GetQueryCluster`: `Id`.
-- `ListPreagg`: `PageNumber`, `PageSize`, `onlyShowMine`; optional `Filters` such as `{"WorkspaceName":"..."}`.
-- `InfluxQuery`, `MetricsQuery`: workspace identifier, query expression(s), time range.
-
-### Security workflows (`sec_agent`)
-
-`Run*` actions need real input (alert details, PCAP, URL, screenshot, text). An empty call is not a validation.
-
-### Trademark
-
-- GET: `GetApplicant` `ApplicantID`; `GetTrademark` `TrademarkID`; `GetRequirement` `RequirementID`; list APIs take filters plus `PageNumber`, `PageSize` (`ListApplicants` also `ApplicantType`, `ApplicantName`, `Status`, `Country`, `OrderBy`).
-- POST: `SearchTrademarkInfo` `ClassID`, `RegistrationNumber`; `SearchTrademark` at least one of `TrademarkName`, `ApplicantName`, `RegistrationNumber`, optional pagination/class/status filters.
-
-### VEEN
-
-- `StartCloudServer` and the four usage-query Actions are in the CLI metadata: use plain `ve veenedge <Action>` and read `--help --detail`.
-- `StopCloudServer` / `RebootCloudServer` stay force-only and take `cloud_server_id`; in built-in mode, confirm before running.
-
-### VKE
-
-- `ListVirtualNodes`: optional pagination and cluster/virtual-node filters.
-- `CreateVirtualNode`: `Kubeconfig`, `VirtualNodeConfig`. Creates infrastructure; there is no matching virtual-node delete in this list, so plan cleanup through public VKE APIs first.
-
-### VMP (helper)
-
-- `QueryMetrics`: body `query`, optional `time`. `QueryMetricsRange`: body `query`, `start`, `end`, `step`.
-- `GetLabels`, `GetSeries`, `GetLabelValues`: body `match[]` (Prometheus HTTP API name — not `match`/`matches`), optional `start`, `end`.
-- For instant queries on freshly remote-written data, query at or after the sample timestamp; earlier instants correctly return an empty vector.
-- Workspace setup for testing: `ve vmp CreateWorkspace --body '{...,"PublicAccessEnabled":true,...}'`; BasicAuth is set with `Username` + base64 `Password` via `UpdateWorkspace` (do not pass `AuthType: Basic`); remote write goes to `PrometheusWriteEndpoint` + `/api/v1/write` (HTTP 204 on success; `/api/v1/push` is not accepted).
+Per-service parameter notes (account verification, CDN, CodePipeline, DCDN, Domain, Flink, Global Accelerator, IoT, Live, MCDN, Metrics, `sec_agent`, Trademark, VEEN, VKE, VMP): [extend-api-params.md](extend-api-params.md). Read the service's note before calling it.
 
 ## 4. Notes for agents
 
 - Prefer the normal `ve <service> <Action>` when the CLI knows the action; use `--force` only when it does not, and the helper only for the query+body cases above.
-- Do not invent parameters. Use section 3, the user's values, `find_api.py`, or the `volcengine-api` skill; if a required business ID is missing, get it with a read-only list/get call or ask.
+- Do not invent parameters. Use [extend-api-params.md](extend-api-params.md), the user's values, `find_api.py`, or the `volcengine-api` skill; if a required business ID is missing, get it with a read-only list/get call or ask.
 - Many of these services return `AccessDenied` for accounts without the product entitlement; that is an IAM/product state, not a request-shape problem (see `common-errors.md`).

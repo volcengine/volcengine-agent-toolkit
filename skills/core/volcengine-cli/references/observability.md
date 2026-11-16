@@ -2,7 +2,7 @@
 
 ## TLS Uses ve volclog
 
-`ve` has no native `tls` OpenAPI command. TLS (日志服务) runs through the delegated `volclog` CLI as `ve volclog ...`, which requires the `ve` version stated in the SKILL.md Product CLI routing section.
+`ve` has no native `tls` OpenAPI command. TLS (日志服务) runs through the delegated `volclog` CLI as `ve volclog ...`, which requires the minimum `ve` version in [install.md](install.md).
 
 For TLS tasks such as log search, analysis, ingest, export, Project/Topic management, or LogCollector collection, use `volcengine-find-skills` to find `volcengine-tls` (or `volcengine-tls-logcollector` for collection setup and troubleshooting), install it if missing, and follow its `volclog` workflow with the `ve volclog` prefix.
 

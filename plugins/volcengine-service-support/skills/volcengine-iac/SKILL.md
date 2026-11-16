@@ -47,7 +47,7 @@ Resources outside the six legacy modules (CLB/ALB, VKE, CR, databases, caches, o
 
 ## 0. Prerequisites
 
-Required env vars: `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, `VOLCENGINE_REGION`.
+Required env vars: `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, `VOLCENGINE_REGION`. Do not print them or dump the environment (`env`, `printenv`, `echo $VOLCENGINE_*`, with or without a `sed`/`grep` filter) to check that they are set; a missing or rejected credential shows up as an error from `terraform plan`.
 
 Required tools: `terraform >= 1.5`, `jq`, `git`, `python3` (for `gen_tfvars.py`).
 
@@ -280,7 +280,7 @@ If the user wants to adopt resources created via `volcengine-cli` or console, us
 
 ## 11. Safety Rules
 
-- Never read `~/.volcengine/config.json`; it may contain plaintext AK/SK.
+- Never read `~/.volcengine/config.json`; it may contain plaintext AK/SK. Never print credential environment variables either.
 - Never commit `terraform.tfstate*` or `.volcengine/iac-outputs.json`.
 - Never pass `-auto-approve` to `terraform apply` or `terraform destroy`.
 - Run `check_drift.sh` before every apply on shared environments.

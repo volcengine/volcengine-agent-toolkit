@@ -1,6 +1,6 @@
 # Console Login Procedure (`scripts/ve_login_remote.sh`)
 
-This is the full procedure behind the Console Login summary in `SKILL.md` §1. Read it completely before the first `start` of a conversation; the summary in `SKILL.md` is not a substitute.
+This is the full procedure behind the Console Login summary in [auth.md](auth.md). Read it completely before the first `start` of a conversation; that summary is not a substitute.
 
 Apply [the mandatory Agent caller metadata](../SKILL.md#agent-caller-metadata-mandatory) to each
 helper invocation, including `start` and the later `verify`. Prefix the helper process with
@@ -12,11 +12,7 @@ calling workflow's skill name when this shared helper is used by another Volceng
 
 `ve login` is an OAuth 2.0 device-code flow: ve prints a verification URL and a short user code, then polls the server itself until the user approves in a browser on **any** device. **Nothing comes back from the user** — you run `verify` after they say they are done. The code expires after `EXPIRES_IN` seconds (300 today). The script prints a `KEY=value` block, so read the keys — never parse prose.
 
-**Resolve the login region:**
-
-1. If the user named a region in this conversation, use it.
-2. Else if `VOLCENGINE_REGION` is set, use it.
-3. Else default to `cn-beijing`.
+**Login region:** the region the user named in this conversation; otherwise pass `"${VOLCENGINE_REGION:-cn-beijing}"` as the argument and let the shell expand it — do not print environment variables to look it up.
 
 **Default procedure** — commit to this path; do NOT present a menu of login methods:
 
@@ -43,11 +39,9 @@ calling workflow's skill name when this shared helper is used by another Volceng
 
    **This call may not return.** Some sandbox runners do not consider a command finished while a descendant is still alive, so `start` can hang until the runner's own timeout kills it. **A hung or killed `start` is not a failure signal, and not a success signal either** — it tells you nothing about the session. Do **not** retry `start`, do **not** `abort`, and do **not** switch to `nohup` on the strength of it. Go to step 3 and let `url`/`status` decide.
 
-   Detaching makes survival likely, not certain: a runner that tears down the whole cgroup or container on timeout takes ve with it regardless. Step 3 is what tells you which happened.
-
    Pass `[profile]` **only** when the user explicitly fixed a profile earlier in the conversation (never pick one yourself); omit it to use the CLI default resolution.
 
-   `start` exits 4 when `ve` is missing or its `ve login --help` lacks `--no-browser` — install or upgrade (§0) and retry.
+   `start` exits 4 when `ve` is missing or its `ve login --help` lacks `--no-browser` — install or upgrade ([install.md](install.md)) and retry.
 
 3. **Read the block back in a separate tool call** (skip if `start` already returned it):
 
@@ -85,7 +79,7 @@ calling workflow's skill name when this shared helper is used by another Volceng
    scripts/ve_login_remote.sh abort
    ```
 
-   Then switch to the chosen alternative below.
+   Then switch to the chosen alternative in [auth.md](auth.md).
 
 **`start-wait` — only for runtimes that hold a long tool session open.** It prints the same block, stays blocked while ve runs, and finishes by running `verify` itself:
 
@@ -100,21 +94,19 @@ Use it only when the runtime can keep one tool call open for the **entire browse
 **Critical rules — do NOT improvise OAuth:**
 
 - ❌ Do NOT present a menu like "A. URL  B. local browser  C. AK/SK". Commit to the script's flow; let the user interrupt to switch.
-- ❌ Do NOT let the login subprocess die while the user is in the browser. The device code lives only in that process's memory; the URL, code and link all die with it.
+- ❌ Do NOT let the login subprocess die while the user is in the browser, and do NOT run `ve login` without the script. The device code lives only in that process's memory; the URL, code and link all die with it.
 - ❌ Do NOT treat a hung or timed-out `start` as a failure. Call `url` and `status` before concluding anything. Retrying `start` or calling `abort` throws away a link that is already usable.
 - ❌ Do NOT substitute `nohup ... &` for `start`. `nohup` only ignores SIGHUP and leaves ve in the caller's process group, so group cleanup still kills it. The script already uses `setsid`, which is what actually detaches it.
 - ❌ Do NOT hand the user a URL recovered from a stale log or from an earlier attempt. A link is only usable while its own ve process lives — `url` enforces this and refuses to print one whose process has gone.
 - ❌ Do NOT hand out a device link after `EXPIRES_IN` has passed (`status` flags it). `abort` and `start` again.
-- ❌ Do NOT pre-fetch the URL by running `ve login` and exiting, and do NOT run `ve login` without the script. The state dies with the subprocess; the link becomes useless.
 - ❌ Do NOT construct `signin.volcengine.com/...` URLs yourself, including appending `user_code=` by hand — use `LINK` exactly as printed.
-- ❌ Do NOT pass `--lang` to `ve login` yourself or expect Chinese output from the helper: `ve` follows the system locale, so the script pins `--lang en` — its parsing anchors are English. The `LINK`/`URL`/`CODE` you hand to the user are language-neutral.
-- ❌ Do NOT call `ve login` without `--no-browser`: it tries to open a browser on the agent host, which is useless on a headless box and hijacks the user's desktop on a shared one. The script always passes it.
+- ❌ Do NOT pass `--lang` to `ve login` yourself or expect Chinese output from the helper: the script pins `--lang en` because its parsing anchors are English. `LINK`/`URL`/`CODE` are language-neutral.
+- ❌ Do NOT call `ve login` without `--no-browser`: it would open a browser on the agent host. The script always passes it.
 - ❌ Do NOT ask the user to paste anything back. There is no authorization code in this flow (the script rejects `complete` with exit 2). Run `verify` once the user says they approved.
 - ❌ Do NOT spawn parallel `ve login` subprocesses. One at a time, tracked by the helper.
-- ❌ Do NOT restart the login on `verify` exit 13. The login worked; the host's route to `open.volcengineapi.com` is what is broken.
 - ✅ Default to `start` → `url` → hand over link → `verify`. Use `start-wait` only where a single tool call can stay open for the whole round-trip.
 
 > **Switching region mid-flow**: run `scripts/ve_login_remote.sh abort`, then restart from step 2.
-> **No browser on any device** (true offline / CI): skip `ve login`, fall back to AK/SK below.
+> **No browser on any device** (true offline / CI): skip `ve login`, fall back to AK/SK.
 
-If `ve login` fails (network error, non-interactive terminal, `start` exit 4), or the user explicitly asks for a different method, fall back to one of the alternatives below.
+If `ve login` fails (network error, non-interactive terminal, `start` exit 4), or the user explicitly asks for a different method, fall back to one of the alternatives in [auth.md](auth.md).
