@@ -25,6 +25,7 @@ class AttributionInput:
     reason: str
     status: str | None = None
     metadata_path: Path | None = None
+    queried_coupon_ids: tuple[str, ...] = ()
 
     def evidence(self) -> dict[str, Any]:
         return {
@@ -57,8 +58,46 @@ def _coverage_completeness(
     return "partial", "coverage_incomplete"
 
 
-def _csv_evidence(path: Path) -> tuple[Completeness, str, Path | None]:
-    metadata_path = path.with_suffix(".meta.json")
+def _read_metadata(path: Path | None) -> Mapping[str, Any]:
+    if path is None:
+        return {}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return value if isinstance(value, Mapping) else {}
+
+
+def _coupon_scope(metadata: Mapping[str, Any]) -> tuple[str, ...]:
+    if metadata.get("action") != "ListCouponUsageRecords":
+        return ()
+    ids = metadata.get("queried_coupon_ids")
+    values = list(ids) if isinstance(ids, list) else []
+    for query in metadata.get("queries") or []:
+        if isinstance(query, Mapping) and isinstance(query.get("request_body"), Mapping):
+            values.append(query["request_body"].get("CouponID"))
+    return tuple(dict.fromkeys(value for value in values if isinstance(value, str) and value.strip()))
+
+
+def _check_binding(value: Any, actual: Path, csv_path: Path) -> None:
+    if value is None:
+        return
+    if not isinstance(value, str) or not value:
+        raise ValueError("CSV、metadata 和 fields 的来源引用无效")
+    expected = Path(value)
+    if not expected.is_absolute():
+        expected = actual.parent / expected
+    matches = expected.resolve() == actual.resolve()
+    if not matches and not expected.exists() and expected.name == actual.name:
+        matches = actual.parent.resolve() == csv_path.parent.resolve()
+    if not matches:
+        raise ValueError("CSV、metadata 和 fields 来源不一致")
+
+
+def _csv_evidence(
+    path: Path, metadata_path: Path | None = None, fields_path: Path | None = None,
+) -> tuple[Completeness, str, Path | None]:
+    metadata_path = metadata_path or path.with_suffix(".meta.json")
     if not metadata_path.is_file():
         return "unknown", "metadata_missing", None
     try:
@@ -71,6 +110,20 @@ def _csv_evidence(path: Path) -> tuple[Completeness, str, Path | None]:
         return "unknown", "metadata_invalid", metadata_path
     if metadata.get("output_protocol_version") != OUTPUT_PROTOCOL_VERSION:
         return "unknown", "output_protocol_version_missing_or_unsupported", metadata_path
+    declared = metadata.get("artifacts")
+    declared = declared if isinstance(declared, Mapping) else {}
+    _check_binding(declared.get("csv"), path, path)
+    _check_binding(declared.get("metadata"), metadata_path, path)
+    if fields_path is not None or declared.get("fields"):
+        fields_path = fields_path or path.with_suffix(".fields.json")
+        _check_binding(declared.get("fields"), fields_path, path)
+        fields = _read_metadata(fields_path)
+        if not fields:
+            return "unknown", "fields_missing_or_invalid", metadata_path
+        _check_binding(fields.get("source_csv"), path, path)
+        _check_binding(fields.get("source_metadata"), metadata_path, path)
+        if fields.get("source_action") and fields["source_action"] != metadata.get("action"):
+            raise ValueError("fields.source_action 与 metadata.action 不一致")
     completeness, reason = _coverage_completeness(
         metadata["coverage"],
         (
@@ -90,6 +143,12 @@ def _json_evidence(payload: Mapping[str, Any]) -> tuple[Completeness, str, str |
         return "unknown", "machine_evidence_missing", status
     if meta.get("output_protocol_version") != OUTPUT_PROTOCOL_VERSION:
         return "unknown", "output_protocol_version_missing_or_unsupported", status
+    if status in ("partial", "error"):
+        return "partial", f"query_status_{status}", status
+    if status != "success":
+        return "unknown", "query_status_missing_or_invalid", status
+    if isinstance(meta.get("freshness"), Mapping) and meta["freshness"].get("partial_period") is True:
+        return "partial", "coverage_incomplete", status
     coverage = meta.get("coverage")
     if isinstance(coverage, Mapping):
         completeness, reason = _coverage_completeness(
@@ -111,7 +170,7 @@ def _json_evidence(payload: Mapping[str, Any]) -> tuple[Completeness, str, str |
 
 
 def _resolve_result_file(envelope_path: Path, value: Any) -> Path | None:
-    if not isinstance(value, Mapping) or set(value) != {"file"}:
+    if not isinstance(value, Mapping) or "file" not in value:
         return None
     file_value = value.get("file")
     if not isinstance(file_value, str) or not file_value:
@@ -122,11 +181,18 @@ def _resolve_result_file(envelope_path: Path, value: Any) -> Path | None:
     return result_path
 
 
-def load_attribution_input(path: Path, *, input_name: str) -> AttributionInput:
+def load_attribution_input(
+    path: Path, *, input_name: str,
+    metadata_path: Path | None = None, fields_path: Path | None = None,
+) -> AttributionInput:
     if path.suffix.lower() == ".csv":
         with path.open("r", encoding="utf-8", newline="") as file:
             rows = [dict(row) for row in csv.DictReader(file)]
-        completeness, reason, metadata_path = _csv_evidence(path)
+        completeness, reason, metadata_path = _csv_evidence(path, metadata_path, fields_path)
+        metadata = _read_metadata(metadata_path)
+        row_actions = {row.get("_action") for row in rows if row.get("_action")}
+        if metadata.get("action") and row_actions and row_actions != {metadata["action"]}:
+            raise ValueError("CSV _action 与 metadata.action 不一致")
         return AttributionInput(
             input_name=input_name,
             path=path,
@@ -135,6 +201,7 @@ def load_attribution_input(path: Path, *, input_name: str) -> AttributionInput:
             source="csv",
             reason=reason,
             metadata_path=metadata_path,
+            queried_coupon_ids=_coupon_scope(metadata),
         )
 
     payload = json.loads(path.read_text(encoding="utf-8"), parse_float=Decimal)
@@ -147,7 +214,21 @@ def load_attribution_input(path: Path, *, input_name: str) -> AttributionInput:
         completeness, reason, status = _json_evidence(payload)
         result_file = _resolve_result_file(path, payload.get("result"))
         if result_file is not None:
-            loaded = load_attribution_input(result_file, input_name=input_name)
+            pointers = payload["result"]
+            metadata_file = _resolve_result_file(path, {"file": pointers["metadata"]}) if "metadata" in pointers else None
+            fields_file = _resolve_result_file(path, {"file": pointers["fields"]}) if "fields" in pointers else None
+            if result_file.suffix.lower() != ".csv":
+                raise ValueError("归因文件结果必须指向 CSV")
+            loaded = load_attribution_input(
+                result_file, input_name=input_name, metadata_path=metadata_file, fields_path=fields_file,
+            )
+            source_metadata = _read_metadata(loaded.metadata_path)
+            meta = payload["_meta"]
+            if isinstance(meta, Mapping) and meta.get("action") and source_metadata.get("action"):
+                if meta["action"] != source_metadata["action"]:
+                    raise ValueError("查询结果 action 与 metadata.action 不一致")
+            if status == "success" and reason == "coverage_missing":
+                completeness, reason = loaded.completeness, loaded.reason
             return AttributionInput(
                 input_name=input_name,
                 path=loaded.path,
@@ -163,6 +244,7 @@ def load_attribution_input(path: Path, *, input_name: str) -> AttributionInput:
                 reason=(reason if completeness != "complete" else loaded.reason),
                 status=status,
                 metadata_path=loaded.metadata_path,
+                queried_coupon_ids=loaded.queried_coupon_ids,
             )
         rows = payload.get("result")
     elif isinstance(payload, Mapping):
@@ -187,6 +269,11 @@ def load_attribution_input(path: Path, *, input_name: str) -> AttributionInput:
         source="json",
         reason=reason,
         status=status,
+        queried_coupon_ids=(
+            _coupon_scope(payload["_meta"])
+            if isinstance(payload, Mapping) and isinstance(payload.get("_meta"), Mapping)
+            else ()
+        ),
     )
 
 

@@ -26,6 +26,7 @@ from cost_query.utils.arguments import BillingArgumentParser as Parser
 def _queried_coupon_ids(inputs: list[Any]) -> list[str]:
     result: list[str] = []
     for item in inputs:
+        result.extend(item.queried_coupon_ids)
         metadata_path = item.metadata_path
         if metadata_path is None:
             continue

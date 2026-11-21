@@ -443,6 +443,7 @@ def _inline_meta(
         "freshness": dict(context.get("freshness") or {}),
         "warnings": list(context.get("warnings") or []),
         **({"identity_verification": context["identity_verification"]} if "identity_verification" in context else {}),
+        **({"queried_coupon_ids": context["queried_coupon_ids"]} if "queried_coupon_ids" in context else {}),
         **(
             {"analysis_summary": context["analysis_summary"]}
             if "analysis_summary" in context
@@ -541,6 +542,10 @@ def run(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
 
     records = result_records(results)
     context = query_result_context(args.action, results)
+    if args.action == "ListCouponUsageRecords":
+        context["queried_coupon_ids"] = list(dict.fromkeys(
+            result.request_body["CouponID"] for result in results if result.request_body.get("CouponID")
+        ))
     if args.action == "ListFinancialRelation":
         context["identity_verification"] = verify_financial_relation_identity(client, records)
         context["no_financial_relations"] = (
