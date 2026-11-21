@@ -1,2 +1,0 @@
-# Development tests and contract export only; installed Skill uses the standard library.
-pydantic>=2.11,<3

@@ -1,3 +1,0 @@
-_action,_query_id,BillDetailId,BillID,BillPeriod,Currency,InstanceNo,PayableAmount,Product,Project,SplitBillDetailId
-ListSplitBillDetail,2026-08,detail-ecs-project-1,bill-ecs-project,2026-08,CNY,i-ecs-project-1,88.00,ECS,project-alpha,split-ecs-project-1
-ListSplitBillDetail,2026-08,detail-rds-project-1,bill-rds-project,2026-08,CNY,rds-project-1,12.00,RDS,project-alpha,split-rds-project-1
