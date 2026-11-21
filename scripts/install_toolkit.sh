@@ -484,11 +484,38 @@ install_for_doubao_work() {
       [ -d "$user_skills" ] || continue
       IFS="$old_ifs"
       for skill in $CORE_SKILLS; do
-        rm -rf "${user_skills:?}/$skill"
-        cp -R "$toolkit_dir/skills/core/$skill" "$user_skills/$skill" \
-          || die "Cannot copy $skill into $user_skills"
-        [ -f "$user_skills/$skill/SKILL.md" ] || die "$skill is missing from $user_skills after the copy"
+        staging="$(mktemp -d "$user_skills/../.skill-install.XXXXXX")" \
+          || die "Cannot prepare $skill installation in $user_skills"
+        if ! cp -R "$toolkit_dir/skills/core/$skill" "$staging/$skill"; then
+          rm -rf "${staging:?}"
+          die "Cannot copy $skill into $user_skills"
+        fi
+        if [ ! -f "$staging/$skill/SKILL.md" ]; then
+          rm -rf "${staging:?}"
+          die "$skill is missing from the staged copy"
+        fi
+        if [ -e "$user_skills/$skill" ] || [ -L "$user_skills/$skill" ]; then
+          mv "$user_skills/$skill" "$staging/previous" || die "Cannot replace $skill in $user_skills"
+        fi
+        if ! mv "$staging/$skill" "$user_skills/$skill"; then
+          if [ -e "$staging/previous" ] || [ -L "$staging/previous" ]; then
+            mv "$staging/previous" "$user_skills/$skill" || die "Cannot restore $skill from $staging/previous"
+          fi
+          rm -rf "${staging:?}"
+          die "Cannot install $skill into $user_skills"
+        fi
+        rm -rf "${staging:?}"
       done
+      legacy_skill="$user_skills/volcengine-billing-and-cost-management"
+      if [ -e "$legacy_skill" ] || [ -L "$legacy_skill" ]; then
+        backup_root="$user_skills/../.skill-migration-backups"
+        mkdir -p "$backup_root" || die "Cannot prepare the legacy Skill backup"
+        backup="$(mktemp -d "$backup_root/volcengine-billing-and-cost-management.XXXXXX")" \
+          || die "Cannot create the legacy Skill backup"
+        mv "$legacy_skill" "$backup/volcengine-billing-and-cost-management" \
+          || die "Cannot migrate the legacy billing Skill"
+        log "DoubaoWork: previous billing Skill backed up to $backup"
+      fi
       IFS='
 '
       installed_profiles=$((installed_profiles + 1))

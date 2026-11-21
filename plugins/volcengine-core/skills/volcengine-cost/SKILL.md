@@ -1,5 +1,8 @@
 ---
 name: volcengine-cost
+version: 3.0.8
+user-invocable: true
+allowed-tools: Bash, Read, Write
 description: 查询与分析火山引擎账单、费用和当前账户资金状态。适用于账单查询与导出、费用变化分析、账务对账、欠费核实、财务托管关系与付费归属，以及资源包和代金券的状态与抵扣核查。不执行预算、支付、充值、购买或资源变更。
 license: MIT
 compatibility: Python 3.10+; ve CLI for live queries, with --force support for cost-change APIs. Offline queries and analysis use the Python standard library.

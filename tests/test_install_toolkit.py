@@ -14,6 +14,7 @@ import os
 import re
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -368,6 +369,48 @@ class HostRegistrationTest(InstallToolkitHarness):
         for target in installed:
             self.assertTrue((target / "volcengine-find-skills" / "SKILL.md").is_file())
             self.assertFalse((target / "volcengine-cli" / "old.txt").exists())
+
+    def test_doubao_work_upgrade_backs_up_legacy_skill_and_keeps_custom_skills(self) -> None:
+        suffix = Path(".doubaowork/agent_mode/workspace/.user_skills")
+        doubao_root = self.home / ("Library/Application Support/DoubaoWork" if sys.platform == "darwin" else ".config/DoubaoWork")
+        profiles = [doubao_root / name / suffix for name in ("Default", "Profile 2")]
+        for profile in profiles:
+            legacy = profile / "volcengine-billing-and-cost-management"
+            legacy.mkdir(parents=True)
+            (legacy / "SKILL.md").write_text("old billing skill", encoding="utf-8")
+            (legacy / "custom.md").write_text("user notes", encoding="utf-8")
+            custom = profile / "user-custom-skill"
+            custom.mkdir()
+            (custom / "SKILL.md").write_text("keep", encoding="utf-8")
+        result = self.run_installer("--agent", "doubao-work")
+        self.assertEqual(0, result.returncode, result.stderr)
+        for profile in profiles:
+            self.assertTrue((profile / "volcengine-cost/SKILL.md").is_file())
+            self.assertFalse((profile / "volcengine-billing-and-cost-management").exists())
+            self.assertEqual("keep", (profile / "user-custom-skill/SKILL.md").read_text())
+            backups = list((profile.parent / ".skill-migration-backups").glob("*/volcengine-billing-and-cost-management"))
+            self.assertEqual(1, len(backups))
+            self.assertEqual("user notes", (backups[0] / "custom.md").read_text())
+        repeated = self.run_installer("--agent", "doubao-work")
+        self.assertEqual(0, repeated.returncode, repeated.stderr)
+        for profile in profiles:
+            self.assertEqual(1, len(list((profile.parent / ".skill-migration-backups").iterdir())))
+
+    def test_doubao_work_copy_failure_preserves_existing_cost_skills(self) -> None:
+        doubao_root = self.home / ("Library/Application Support/DoubaoWork" if sys.platform == "darwin" else ".config/DoubaoWork")
+        profile = doubao_root / "Default/.doubaowork/agent_mode/workspace/.user_skills"
+        for name in ("volcengine-cost", "volcengine-billing-and-cost-management"):
+            target = profile / name
+            target.mkdir(parents=True)
+            (target / "SKILL.md").write_text("keep old version", encoding="utf-8")
+        self.fake_cli("cp", 'case "$*" in *skills/core/volcengine-cost*) exit 1;; esac\n/bin/cp "$@"')
+        result = self.run_installer("--agent", "doubao-work")
+        self.assertNotEqual(0, result.returncode)
+        self.assertNotIn("VERIFIED=doubao-work:ok", result.stdout)
+        for name in ("volcengine-cost", "volcengine-billing-and-cost-management"):
+            self.assertEqual("keep old version", (profile / name / "SKILL.md").read_text())
+        self.assertFalse((profile.parent / ".skill-migration-backups").exists())
+        self.assertEqual([], list(profile.parent.glob(".skill-install.*")))
 
     def test_doubao_work_without_a_workspace_says_what_to_do(self) -> None:
         result = self.run_installer("--agent", "doubao-work")
