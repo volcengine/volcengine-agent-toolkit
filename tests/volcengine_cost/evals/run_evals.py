@@ -39,6 +39,7 @@ from cost_query.common.cost_rules import (  # noqa: E402
     public_rows,
     require_decimal,
     require_registered_money_metric,
+    resolve_money_currency,
     typed_value,
 )
 
@@ -302,7 +303,8 @@ def direct_compare_periods(
         buckets[key][period] = (total + amount, count + 1)
     rows_out: list[dict[str, str]] = []
     deltas_by_currency: dict[tuple[str, ...], Decimal] = defaultdict(lambda: Decimal("0"))
-    currency_columns = [ref.column for ref in implicit_group_by]
+    currency_ref = resolve_money_currency(resolver, metric_ref)
+    currency_columns = [currency_ref.column] if currency_ref is not None else []
     for key, values in buckets.items():
         prev_total, prev_count = values.get(previous, (Decimal("0"), 0))
         curr_total, curr_count = values.get(current, (Decimal("0"), 0))
@@ -323,7 +325,7 @@ def direct_compare_periods(
         )
         if delta is not None:
             partition = tuple(row[column] for column in currency_columns)
-            deltas_by_currency[partition] += abs(delta)
+            deltas_by_currency[partition] += delta
         rows_out.append(row)
     for row in rows_out:
         if row["delta"] == "":
@@ -718,7 +720,8 @@ def verifier_17_compare_periods(root: Path) -> dict[str, Any]:
     require(metadata["calculation"]["implicit_group_by"][0]["field"] == "Currency", "analysis default currency missing")
     require(rows[0]["ClassifyItem"] == "ECS" and rows[0]["delta"] == "5", f"delta ordering mismatch: {rows}")
     require(rows[0]["delta_rate"] == "0.5", f"delta_rate mismatch: {rows[0]}")
-    require(rows[0]["delta_contribution_rate"] == "0.555556", f"contribution mismatch: {rows[0]}")
+    require(rows[0]["delta_contribution_rate"] == "5", f"contribution mismatch: {rows[0]}")
+    require(rows[1]["delta_contribution_rate"] == "-4", f"negative contribution mismatch: {rows[1]}")
     require(rows[0]["presence"] == "both", "presence missing")
     return {"operation": metadata["operation"], "first_delta": rows[0]["delta"], "claim_scope": metadata["evidence"]["claim_scope"]}
 

@@ -1166,27 +1166,34 @@ def _drill_one_side(
             raise BillingQueryError(ErrorCode.OUTPUT_EXISTS, f"输出文件已存在：{existing[0]}", ExitCode.OUTPUT_FAILED)
     atomic_write_csv(output, columns, rows, overwrite=True)
     nonstandard = sorted({canonical_name(item) for item in by} & NONSTANDARD_DIMENSIONS)
+    claim_scope = metadata.get("claim_scope") or "unknown"
+    freshness = source.metadata.get("freshness")
+    freshness = freshness if isinstance(freshness, Mapping) else {}
+    current_period = freshness.get("partial_period") is True
+    if metadata.get("plan", {}).get("mode") == "observational" and claim_scope not in ("inconclusive", "unknown"):
+        claim_scope = "observational"
+    elif current_period and claim_scope not in ("observational", "inconclusive", "unknown"):
+        claim_scope = "provisional"
+    elif nonstandard and claim_scope == "full_dataset":
+        claim_scope = "attribution_breakdown"
+    warnings = list(metadata.get("warnings") or []) + source.warnings
+    if current_period:
+        warnings.append("查询包含当前账期，数据尚未完结，仅代表本次查询可见范围")
+    if nonstandard:
+        warnings.append("Project/Tag 仅用于分账侧归属展开，不表示与账单明细同名字段语义一致")
     payload = {
         "schema_version": "1.0",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "status": "completed",
         "operation": "drill_down",
         "side": side,
-        "claim_scope": (
-            "observational" if metadata.get("plan", {}).get("mode") == "observational"
-            else "attribution_breakdown" if nonstandard
-            else metadata.get("claim_scope", "full_dataset")
-        ),
+        "claim_scope": claim_scope,
         "inputs": metadata["inputs"],
         "plan": {**dict(metadata.get("plan") or {}), "group_by": list(group_by), "parent_constraints": dict(constraints)},
         "parent": {"row": dict(parent_row), "constraints": dict(constraints)},
         "normalization": {side: _normalized_payload(normalized, output)},
         "result": {"csv": str(output.resolve()), "metadata": str(metadata_output.resolve()), "row_count": len(rows), "columns": columns},
-        "warnings": source.warnings + (
-            ["Project/Tag 仅用于分账侧归属展开，不表示与账单明细同名字段语义一致"]
-            if nonstandard
-            else []
-        ),
+        "warnings": list(dict.fromkeys(warnings)),
     }
     atomic_write_json(metadata_output, payload, overwrite=True)
     return ({

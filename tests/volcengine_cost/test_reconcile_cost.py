@@ -108,6 +108,59 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 
 class ReconcileCostTest(unittest.TestCase):
+    def test_current_period_project_and_nested_drill_inherit_parent_limits(self) -> None:
+        from datetime import date
+        from cost import main as cost_main
+
+        def run(arguments: list[str]) -> dict:
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = cost_main(arguments)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(0, code, payload)
+            return payload
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            period = date.today().strftime("%Y-%m")
+            common = {"Product": "ECS", "Currency": "CNY", "Element": "CPU"}
+            left_rows = [{**common, "InstanceNo": "synthetic-one", "PayableAmount": "100"},
+                         {**common, "InstanceNo": "synthetic-two", "PayableAmount": "40"}]
+            right_rows = [{**common, "InstanceNo": "synthetic-one", "Project": "a", "PayableAmount": "60"},
+                          {**common, "InstanceNo": "synthetic-one", "Project": "b", "PayableAmount": "40"},
+                          {**common, "InstanceNo": "synthetic-two", "Project": "a", "PayableAmount": "40"}]
+            sources = []
+            for action, name, rows in (("ListBillDetail", "left", left_rows),
+                                       ("ListSplitBillDetail", "right", right_rows)):
+                (root / f"{action}.json").write_text(json.dumps({"Result": {
+                    "List": rows, "Total": len(rows), "Limit": 300, "Offset": 0}}))
+                body = {"BillPeriod": period, "GroupPeriod": 2}
+                if action == "ListBillDetail":
+                    body["GroupTerm"] = 0
+                output = root / f"{name}.csv"
+                run(["query", "--action", action, "--body", json.dumps(body), "--pagination", "full",
+                     "--fixture-dir", str(root), "--out", str(output)])
+                sources.extend([output, output.with_suffix(".meta.json"), output.with_suffix(".fields.json")])
+            before = {path: path.read_bytes() for path in sources}
+            parent, child, grandchild = root / "parent.csv", root / "project.csv", root / "instances.csv"
+            parent_result = run(["reconcile", "run", "--left", str(root / "left.csv"),
+                                 "--right", str(root / "right.csv"), "--group-by", "Product", "--out", str(parent)])
+            child_result = run(["reconcile", "drill-down", "--from", str(parent), "--row", "Product=ECS",
+                                "--row", "Currency=CNY", "--by", "Project", "--side", "right", "--out", str(child)])
+            grandchild_result = run(["reconcile", "drill-down", "--from", str(child), "--row", "Product=ECS",
+                                     "--row", "Currency=CNY", "--row", "Project=a", "--by", "InstanceNo",
+                                     "--side", "right", "--out", str(grandchild)])
+            parent_warnings = json.loads(parent.with_suffix(".meta.json").read_text())["warnings"]
+            for path, payload in ((child, child_result), (grandchild, grandchild_result)):
+                metadata = json.loads(path.with_suffix(".meta.json").read_text())
+                self.assertEqual("provisional", payload["_meta"]["claim_scope"])
+                self.assertEqual("provisional", metadata["claim_scope"])
+                self.assertTrue(set(parent_warnings) <= set(metadata["warnings"]))
+                self.assertEqual("matched", payload["_meta"]["conservation"]["status"])
+                self.assertIn("当前", payload["message"])
+            self.assertEqual("provisional", parent_result["_meta"]["claim_scope"])
+            self.assertEqual(before, {path: path.read_bytes() for path in sources})
+
     def _run(self, arguments: list[str]) -> tuple[int, dict, dict]:
         stdout = io.StringIO()
         stderr = io.StringIO()
