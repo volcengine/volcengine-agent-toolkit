@@ -21,10 +21,10 @@
       ],
       "skills": [
         {
-          "name": "volcengine-billing-and-cost-management",
-          "path": "skills/core/volcengine-billing-and-cost-management",
-          "summary": "Analyze cloud cost changes and attribute anomalies to products, charge items, usage, price, and amount components.",
-          "summary_zh": "分析云费用波动，定位产品、计费项及用量、单价和金额构成的归因。",
+          "name": "volcengine-cost",
+          "path": "skills/core/volcengine-cost",
+          "summary": "Query and analyze bills, cost changes and account balances; reconcile charges and verify payment ownership, packages and coupons.",
+          "summary_zh": "查询与分析账单、费用变化和账户资金状态，完成账务对账、财务托管与付费归属、资源包及代金券抵扣核查。",
           "keywords": [
             "billing",
             "cost",
@@ -32,7 +32,24 @@
             "RCA",
             "费用归因",
             "费用异常",
-            "账单波动"
+            "账单波动",
+            "账单查询",
+            "账单导出",
+            "分账",
+            "对账",
+            "余额",
+            "欠费",
+            "财务托管",
+            "付费归属",
+            "资源包",
+            "代金券",
+            "抵扣",
+            "balance",
+            "arrears",
+            "reconciliation",
+            "financial relations",
+            "resource package",
+            "coupon"
           ]
         },
         {

@@ -1,0 +1,18 @@
+{
+  "ResponseMetadata": {"Error": null, "RequestId": "synthetic-discount-overview-2026-09"},
+  "Result": {
+    "List": [
+      {
+        "BillPeriod": "2026-09",
+        "Product": "ECS",
+        "ProductZh": "云服务器",
+        "PayableAmount": "150.000000",
+        "UnpaidAmount": "150.000000",
+        "Currency": "CNY"
+      }
+    ],
+    "Total": 1,
+    "Limit": 300,
+    "Offset": 0
+  }
+}

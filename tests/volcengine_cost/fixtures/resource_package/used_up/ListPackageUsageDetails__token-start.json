@@ -1,0 +1,31 @@
+{
+  "ResponseMetadata": {"Error": null, "RequestId": "synthetic-usage-page-1"},
+  "Result": {
+    "List": [
+      {
+        "UserName": "redacted-user",
+        "Product": "TOS",
+        "ProductName": "对象存储",
+        "ConfigurationName": "TOS 外网流量包 5TB",
+        "ConfigurationCode": "tos_traffic_5tb",
+        "InstanceNo": "tos-pack-001",
+        "InstanceName": "TOS 流量包 5TB",
+        "PackageType": "Diminishing",
+        "BeforeAmount": "5.0",
+        "DeductionAmount": "4.8",
+        "AfterAmount": "0.2",
+        "Unit": "TB",
+        "BeginTime": "2026-08-01T00:00:00Z",
+        "EndTime": "2026-09-01T00:00:00Z",
+        "DeductionTime": "2026-09-01T01:00:00Z",
+        "DeductionInstanceNo": "bucket-photo",
+        "DeductionUseAmount": "4.8",
+        "DeductionInstanceUnit": "TB",
+        "DeductionProduct": "TOS",
+        "DeductionElementCode": "traffic_out",
+        "DeductionRegionCode": "cn-beijing"
+      }
+    ],
+    "NextToken": "u2"
+  }
+}

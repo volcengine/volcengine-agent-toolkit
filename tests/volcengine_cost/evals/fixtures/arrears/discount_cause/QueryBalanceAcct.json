@@ -1,0 +1,18 @@
+{
+  "ResponseMetadata": {
+    "Action": "QueryBalanceAcct",
+    "Region": "cn-beijing",
+    "RequestId": "synthetic-discount-cause-balance",
+    "Service": "billing",
+    "Version": "2022-01-01"
+  },
+  "Result": {
+    "AccountID": 2100000000,
+    "ArrearsBalance": "150.000000",
+    "AvailableBalance": "-150.000000",
+    "CashBalance": "0.000000",
+    "CreditLimit": "0.000000",
+    "Currency": "CNY",
+    "FreezeAmount": "0.000000"
+  }
+}

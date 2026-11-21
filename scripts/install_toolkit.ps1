@@ -50,7 +50,7 @@ $CoreSkills = @(
     'volcengine-knowledge-search',
     'volcengine-find-skills',
     'volcengine-feedback',
-    'volcengine-billing-and-cost-management'
+    'volcengine-cost'
 )
 $ManifestName = 'toolkit-manifest.json'
 $ArchiveName = 'volcengine-agent-toolkit.zip'

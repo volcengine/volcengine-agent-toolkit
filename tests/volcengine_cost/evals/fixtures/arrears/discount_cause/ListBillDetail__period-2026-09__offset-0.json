@@ -1,0 +1,24 @@
+{
+  "ResponseMetadata": {"Error": null, "RequestId": "synthetic-discount-detail-2026-09"},
+  "Result": {
+    "List": [
+      {
+        "BillPeriod": "2026-09",
+        "Product": "ECS",
+        "ProductZh": "云服务器",
+        "ConfigName": "ecs.g3.large",
+        "Count": "10.000000",
+        "Unit": "台月",
+        "OriginalBillAmount": "200.000000",
+        "PreferentialBillAmount": "50.000000",
+        "DiscountBillAmount": "150.000000",
+        "PayableAmount": "150.000000",
+        "Currency": "CNY"
+      }
+    ],
+    "Total": 1,
+    "Limit": 300,
+    "Offset": 0,
+    "Warning": ""
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "Metadata": {"RequestId": "synthetic-coupon-usage-page-2", "Action": "ListCouponUsageRecords", "Version": "2022-01-01", "Service": "billing", "HTTPCode": 200},
+  "Limit": 1,
+  "List": [
+    {
+      "AccountID": 2100000000,
+      "UserAccountID": 2100000001,
+      "CouponID": "cpn-tos-expired",
+      "ProductCode": "TOS",
+      "ProductName": "对象存储",
+      "ChangeAmount": 20.00,
+      "CreatedTime": "2026-09-05T01:00:00+08:00",
+      "PayType": "post",
+      "SubBusinessID": "bill-detail-sep",
+      "ChangeType": 3,
+      "BillingCycle": "2026-09"
+    }
+  ],
+  "Offset": 1,
+  "Total": 2
+}

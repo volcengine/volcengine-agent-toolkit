@@ -1,0 +1,277 @@
+{
+  "schema_version": "1.1",
+  "generated_at": "2026-10-15T10:17:53.809161+00:00",
+  "tool_version": "3.0.1",
+  "source_action": "ListSplitBillDetail",
+  "source_csv": "project-right-split-detail.csv",
+  "source_metadata": "project-right-split-detail.meta.json",
+  "field_count": 11,
+  "unknown_field_count": 0,
+  "unknown_fields": [],
+  "fields": [
+    {
+      "field": "_action",
+      "contract_known": true,
+      "label": "来源 Action",
+      "aliases": [
+        "接口",
+        "来源接口",
+        "Action"
+      ],
+      "role": "provenance",
+      "type": "string",
+      "description": "产生该行数据的 Billing Action。",
+      "aggregations": [],
+      "currency_field": null,
+      "notes": []
+    },
+    {
+      "field": "_query_id",
+      "contract_known": true,
+      "label": "子查询 ID",
+      "aliases": [
+        "查询分片",
+        "子查询",
+        "账期分片"
+      ],
+      "role": "provenance",
+      "type": "string",
+      "description": "多账期或分片查询的来源标识。",
+      "aggregations": [],
+      "currency_field": null,
+      "notes": []
+    },
+    {
+      "field": "BillDetailId",
+      "contract_known": true,
+      "label": "账单明细号",
+      "aliases": [
+        "账单明细号"
+      ],
+      "role": "identifier",
+      "type": "string",
+      "description": "账单明细号",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": [],
+      "grain_availability": {
+        "role": "detail_identifier",
+        "required_request": {
+          "GroupPeriod": 2
+        },
+        "available_request_values": {
+          "GroupPeriod": [
+            2
+          ]
+        },
+        "available_when": "GroupPeriod=2（明细）时 账单明细 ID 才具有逐条明细语义。",
+        "unavailable_meaning": "GroupPeriod=0/1 或省略时，账单明细 ID 可能为空或不返回；这表示服务端汇总粒度未保留该字段，不表示业务数据不存在。",
+        "planning_instruction": "用户明确需要 BillDetailId 时，首次查询前先用 available_request_values 检查候选请求；候选值已合法则保持原值，只有不合法时才应用 required_request 作为修复补丁。",
+        "status": "available",
+        "actual_requests": [
+          {
+            "GroupPeriod": 2
+          }
+        ]
+      }
+    },
+    {
+      "field": "BillID",
+      "contract_known": true,
+      "label": "BillID",
+      "aliases": [],
+      "role": "identifier",
+      "type": "string",
+      "description": "预付费账单为订单号，否则为账单号，仅在GroupPeriod为2时有意义",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": [],
+      "grain_availability": {
+        "role": "detail_identifier",
+        "required_request": {
+          "GroupPeriod": 2
+        },
+        "available_request_values": {
+          "GroupPeriod": [
+            2
+          ]
+        },
+        "available_when": "GroupPeriod=2（明细）时 账单/订单 ID 才具有逐条明细语义。",
+        "unavailable_meaning": "GroupPeriod=0/1 或省略时，账单/订单 ID 可能为空或不返回；这表示服务端汇总粒度未保留该字段，不表示业务数据不存在。",
+        "planning_instruction": "用户明确需要 BillID 时，首次查询前先用 available_request_values 检查候选请求；候选值已合法则保持原值，只有不合法时才应用 required_request 作为修复补丁。",
+        "status": "available",
+        "actual_requests": [
+          {
+            "GroupPeriod": 2
+          }
+        ]
+      }
+    },
+    {
+      "field": "BillPeriod",
+      "contract_known": true,
+      "label": "账期",
+      "aliases": [
+        "账期",
+        "账单月份",
+        "账单月"
+      ],
+      "role": "dimension",
+      "type": "period",
+      "description": "指定原始账务账期。",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": [
+        "单次接口请求只查询一个账期。"
+      ]
+    },
+    {
+      "field": "Currency",
+      "contract_known": true,
+      "label": "币种",
+      "aliases": [
+        "币种",
+        "计价币种"
+      ],
+      "role": "currency",
+      "type": "string",
+      "description": "原币种或账单币种；金额聚合时必须按币种隔离。",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": []
+    },
+    {
+      "field": "InstanceNo",
+      "contract_known": true,
+      "label": "实例 ID",
+      "aliases": [
+        "实例 ID",
+        "实例",
+        "实例ID",
+        "资源实例"
+      ],
+      "role": "dimension",
+      "type": "string",
+      "description": "账单对应的实例 ID。",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": []
+    },
+    {
+      "field": "PayableAmount",
+      "contract_known": true,
+      "label": "应付金额",
+      "aliases": [
+        "应付金额",
+        "应付费用",
+        "应付",
+        "费用",
+        "金额"
+      ],
+      "role": "metric",
+      "type": "decimal",
+      "description": "应付金额；解释或对账时需同时确认账期和结算类型。",
+      "aggregations": [
+        "sum",
+        "avg",
+        "count"
+      ],
+      "currency_field": "Currency",
+      "unit_field": null,
+      "notes": [
+        "解释或对账时同时确认账期和结算类型。",
+        "金额计算使用 Decimal；不要经过 float。"
+      ]
+    },
+    {
+      "field": "Product",
+      "contract_known": true,
+      "label": "产品编码",
+      "aliases": [
+        "产品",
+        "商品",
+        "产品编码",
+        "商品编码"
+      ],
+      "role": "dimension",
+      "type": "string",
+      "description": "使用的产品或服务编码。",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": []
+    },
+    {
+      "field": "Project",
+      "contract_known": true,
+      "label": "项目编码",
+      "aliases": [
+        "项目",
+        "项目编码"
+      ],
+      "role": "dimension",
+      "type": "string",
+      "description": "按项目筛选；是否生效取决于目标 Action 和服务端粒度。",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": []
+    },
+    {
+      "field": "SplitBillDetailId",
+      "contract_known": true,
+      "label": "分账账单明细ID",
+      "aliases": [
+        "分账账单明细ID"
+      ],
+      "role": "identifier",
+      "type": "string",
+      "description": "分账账单明细ID",
+      "aggregations": [
+        "count"
+      ],
+      "currency_field": null,
+      "unit_field": null,
+      "notes": [],
+      "grain_availability": {
+        "role": "detail_identifier",
+        "required_request": {
+          "GroupPeriod": 2
+        },
+        "available_request_values": {
+          "GroupPeriod": [
+            2
+          ]
+        },
+        "available_when": "GroupPeriod=2（明细）时 分账账单明细 ID 才具有逐条明细语义。",
+        "unavailable_meaning": "GroupPeriod=0/1 或省略时，分账账单明细 ID 可能为空或不返回；这表示服务端汇总粒度未保留该字段，不表示业务数据不存在。",
+        "planning_instruction": "用户明确需要 SplitBillDetailId 时，首次查询前先用 available_request_values 检查候选请求；候选值已合法则保持原值，只有不合法时才应用 required_request 作为修复补丁。",
+        "status": "available",
+        "actual_requests": [
+          {
+            "GroupPeriod": 2
+          }
+        ]
+      }
+    }
+  ]
+}

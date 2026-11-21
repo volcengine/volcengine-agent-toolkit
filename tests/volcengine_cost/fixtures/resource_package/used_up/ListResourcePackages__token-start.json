@@ -1,0 +1,34 @@
+{
+  "ResponseMetadata": {"Error": null, "RequestId": "synthetic-packages-page-1"},
+  "Result": {
+    "List": [
+      {
+        "OwnerID": "redacted-owner",
+        "UserName": "redacted-user",
+        "PackageType": "Diminishing",
+        "InstanceNo": "tos-pack-001",
+        "InstanceName": "TOS 流量包 5TB",
+        "Product": "TOS",
+        "ProductName": "对象存储",
+        "TotalAmount": "5.0",
+        "AvailableAmount": "0",
+        "Unit": "TB",
+        "EffectiveTime": "2026-07-01T00:00:00Z",
+        "ExpiryTime": "2026-12-31T23:59:59Z",
+        "BillTime": "2026-07-01T00:00:00Z",
+        "Status": "UsedUp",
+        "ConfigurationCode": "tos_traffic_5tb",
+        "ConfigurationName": "TOS 外网流量包 5TB",
+        "Specification": "5",
+        "SpecificationUnit": "TB",
+        "RegionCode": "cn-beijing",
+        "ZoneCode": "",
+        "SpecCalculateFactor": "1",
+        "ResetPeriod": "",
+        "ResetByNaturalMonth": "",
+        "SubjectNo": "redacted-subject"
+      }
+    ],
+    "NextToken": "p2"
+  }
+}

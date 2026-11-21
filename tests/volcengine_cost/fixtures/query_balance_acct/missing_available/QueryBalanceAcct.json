@@ -1,0 +1,17 @@
+{
+  "ResponseMetadata": {
+    "Action": "QueryBalanceAcct",
+    "Region": "cn-beijing",
+    "RequestId": "synthetic-missing-available",
+    "Service": "billing",
+    "Version": "2022-01-01"
+  },
+  "Result": {
+    "AccountID": 2100000000,
+    "ArrearsBalance": "20.000000",
+    "CashBalance": "0.000000",
+    "CreditLimit": "0.000000",
+    "Currency": "CNY",
+    "FreezeAmount": "0.000000"
+  }
+}

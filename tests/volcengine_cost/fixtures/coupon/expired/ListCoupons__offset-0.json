@@ -1,0 +1,40 @@
+{
+  "Metadata": {"RequestId": "synthetic-coupon-page-1", "Action": "ListCoupons", "Version": "2022-01-01", "Service": "billing", "HTTPCode": 200},
+  "Limit": 1,
+  "List": [
+    {
+      "AccountID": 2100000000,
+      "AcquireTime": "2026-06-01T00:00:00+08:00",
+      "AmountLimit": 0.0,
+      "AssignedOwnerIDList": [],
+      "BeginTime": "2026-06-01T00:00:00+08:00",
+      "CouponID": "cpn-tos-expired",
+      "CouponName": "TOS 按量代金券",
+      "ExpiredTime": "2026-08-31T23:59:59+08:00",
+      "OrderTypeLimit": "1,6,3,4,9",
+      "PayTypeLimit": "post",
+      "ProductLimitList": [
+        {
+          "BillingMethod": "",
+          "ChargeItemCode": "",
+          "ChargeItemType": 0,
+          "ConfigurationCode": "",
+          "ConfigurationName": "",
+          "ConfigurationType": 1,
+          "ProductCode": "TOS",
+          "ProductName": "对象存储",
+          "TimeLimitLower": -1,
+          "TimeLimitUpper": -1
+        }
+      ],
+      "RemainingAmount": 200.0,
+      "Remark": "",
+      "Status": 3,
+      "TotalAmount": 500.0,
+      "UsageLimit": 2,
+      "VoidReason": ""
+    }
+  ],
+  "Offset": 0,
+  "Total": 2
+}

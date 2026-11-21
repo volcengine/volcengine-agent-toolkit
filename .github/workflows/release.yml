@@ -30,6 +30,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install Skill test dependencies
+        run: python3 -m pip install -r tests/volcengine_cost/requirements.txt
+
       - name: Validate tag and repository
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -42,6 +45,8 @@ jobs:
           python3 scripts/sync_plugins.py --check
           python3 scripts/validate_codex_plugin_layout.py
           python3 -m unittest discover -s tests -v
+          python3 skills/core/volcengine-cost/scripts/export_contracts.py --check
+          python3 tests/volcengine_cost/evals/run_evals.py
 
       - name: Build core Skill and toolkit release
         env:

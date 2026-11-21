@@ -1,0 +1,112 @@
+{
+  "output_protocol_version": "1.0",
+  "schema_version": "1.0",
+  "generated_at": "2026-10-15T10:17:53.810327+00:00",
+  "action": "ListSplitBillDetail",
+  "backend": "fixture",
+  "columns": [
+    "_action",
+    "_query_id",
+    "BillDetailId",
+    "BillID",
+    "BillPeriod",
+    "Currency",
+    "InstanceNo",
+    "PayableAmount",
+    "Product",
+    "Project",
+    "SplitBillDetailId"
+  ],
+  "row_count": 2,
+  "coverage": {
+    "pages_fetched": 1,
+    "rows_collected": 2,
+    "expected_total": 2,
+    "is_complete": true,
+    "is_provisional": false,
+    "consistency": "stable",
+    "requested_scope": "full",
+    "requested_scope_fulfilled": true,
+    "queries": [
+      {
+        "query_id": "2026-08",
+        "action": "ListSplitBillDetail",
+        "pages_fetched": 1,
+        "rows_collected": 2,
+        "items_collected": 2,
+        "expected_total": 2,
+        "first_observed_total": 2,
+        "total_stability": "stable",
+        "is_complete": true,
+        "is_provisional": false,
+        "provisional_reason": null,
+        "stop_reason": null,
+        "last_observed_total": 2,
+        "initial_total_boundary_reached": false,
+        "requested_scope": "full",
+        "page_fetched": true,
+        "retries": 0,
+        "warnings": [],
+        "error": null
+      }
+    ],
+    "provisional_queries": [],
+    "failed_queries": []
+  },
+  "freshness": {
+    "partial_period": false,
+    "notes": [
+      "分账账单通常比账单明细延迟约 2 天，项目和标签最晚还可能延迟约 12 小时。"
+    ]
+  },
+  "warnings": [],
+  "derived_fields": [],
+  "required_response_fields": [
+    "Product",
+    "Project",
+    "PayableAmount",
+    "Currency"
+  ],
+  "queries": [
+    {
+      "query_id": "2026-08",
+      "request_body": {
+        "Product": [
+          "ECS",
+          "RDS"
+        ],
+        "Offset": 0,
+        "Limit": 300,
+        "BillPeriod": "2026-08",
+        "GroupPeriod": 2,
+        "NeedRecordNum": 1
+      },
+      "coverage": {
+        "query_id": "2026-08",
+        "action": "ListSplitBillDetail",
+        "pages_fetched": 1,
+        "rows_collected": 2,
+        "items_collected": 2,
+        "expected_total": 2,
+        "first_observed_total": 2,
+        "total_stability": "stable",
+        "is_complete": true,
+        "is_provisional": false,
+        "provisional_reason": null,
+        "stop_reason": null,
+        "last_observed_total": 2,
+        "initial_total_boundary_reached": false,
+        "requested_scope": "full",
+        "page_fetched": true,
+        "retries": 0,
+        "warnings": [],
+        "error": null
+      }
+    }
+  ],
+  "artifacts": {
+    "csv": "project-right-split-detail.csv",
+    "fields": "project-right-split-detail.fields.json",
+    "metadata": "project-right-split-detail.meta.json"
+  }
+}

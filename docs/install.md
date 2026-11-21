@@ -70,7 +70,7 @@ VERIFIED=<agent>:ok
 
 退出码为 0 且 `VERIFIED` 里每一项都是 `:ok`，安装就完成了，不需要再运行别的命令验证。向用户汇报：
 
-1. 装好了 6 个核心 skill：`volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`、`volcengine-feedback`、`volcengine-billing-and-cost-management`。
+1. 装好了 6 个核心 skill：`volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`、`volcengine-feedback`、`volcengine-cost`。
 2. 来源：`SOURCE=github` 是 GitHub，`SOURCE=cdn` 是火山引擎 CDN；从 CDN 安装时带上 `VERSION`。
 3. 何时生效：Claude Code 在当前会话执行 `/reload-plugins` 或新开会话；豆包新开任务；其他宿主新开会话。Codex 新会话启动时会提示审核这个 plugin 带的 hooks，提前告诉用户按提示选择即可，不信任 hooks 也不影响 skill 加载。
 

@@ -1,0 +1,45 @@
+{
+  "ResponseMetadata": {
+    "Error": null,
+    "RequestId": "synthetic-unpaid-composition"
+  },
+  "Result": {
+    "List": [
+      {
+        "BillPeriod": "2026-09",
+        "Product": "ECS",
+        "ProductZh": "云服务器",
+        "PayableAmount": "20.000000",
+        "UnpaidAmount": "12.340000",
+        "Currency": "CNY"
+      },
+      {
+        "BillPeriod": "2026-09",
+        "Product": "CDN",
+        "ProductZh": "内容分发网络",
+        "PayableAmount": "1.000001",
+        "UnpaidAmount": "1.000001",
+        "Currency": "CNY"
+      },
+      {
+        "BillPeriod": "2026-09",
+        "Product": "TOS",
+        "ProductZh": "对象存储",
+        "PayableAmount": "5.000000",
+        "UnpaidAmount": "0.000000",
+        "Currency": "CNY"
+      },
+      {
+        "BillPeriod": "2026-09",
+        "Product": "WAF",
+        "ProductZh": "Web 应用防火墙",
+        "PayableAmount": "2.500000",
+        "UnpaidAmount": "2.500000",
+        "Currency": "USD"
+      }
+    ],
+    "Total": 4,
+    "Limit": 300,
+    "Offset": 0
+  }
+}

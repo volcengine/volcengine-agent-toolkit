@@ -1,0 +1,2 @@
+_action,_query_id,BillDetailId,BillID,BillPeriod,Currency,InstanceNo,PayableAmount,Product,Project
+ListBillDetail,2026-08,detail-ecs-project-1,bill-ecs-project,2026-08,CNY,i-ecs-project-1,88.00,ECS,legacy-project

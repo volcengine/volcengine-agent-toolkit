@@ -55,7 +55,7 @@ DEFAULT_GITHUB_URL="https://github.com/volcengine/volcengine-agent-toolkit"
 GITHUB_REPOSITORY="volcengine/volcengine-agent-toolkit"
 MARKETPLACE="volcengine-skills"
 CORE_PLUGIN="volcengine-core@volcengine-skills"
-CORE_SKILLS="volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback volcengine-billing-and-cost-management"
+CORE_SKILLS="volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback volcengine-cost"
 MANIFEST_NAME="toolkit-manifest.json"
 ARCHIVE_NAME="volcengine-agent-toolkit.zip"
 

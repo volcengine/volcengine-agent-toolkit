@@ -1,0 +1,24 @@
+{
+  "ResponseMetadata": {"Error": null, "RequestId": "synthetic-packages-page-2"},
+  "Result": {
+    "List": [
+      {
+        "PackageType": "Diminishing",
+        "InstanceNo": "tos-pack-other",
+        "InstanceName": "TOS 容量包",
+        "Product": "TOS",
+        "ProductName": "对象存储",
+        "TotalAmount": "10",
+        "AvailableAmount": "8",
+        "Unit": "TB",
+        "EffectiveTime": "2026-07-01T00:00:00Z",
+        "ExpiryTime": "2026-12-31T23:59:59Z",
+        "Status": "Effective",
+        "ConfigurationCode": "tos_storage_10tb",
+        "ConfigurationName": "TOS 存储容量包 10TB",
+        "RegionCode": "cn-beijing"
+      }
+    ],
+    "NextToken": "0"
+  }
+}
