@@ -423,9 +423,9 @@ def _validate_common(action: str, body: Mapping[str, Any]) -> None:
             GroupTerm=group_term,
         )
     if action == "ListBillDetail" and body.get("Project"):
-        if body.get("GroupPeriod", 2) != 2 or body.get("GroupTerm") not in (None, 0):
+        if body.get("GroupPeriod", 0) != 2 or body.get("GroupTerm") not in (None, 0):
             raise _invalid("ListBillDetail.Project 只在计费项明细粒度生效", field="Project")
-    if action == "ListSplitBillDetail" and body.get("Project") and body.get("GroupPeriod", 2) != 2:
+    if action == "ListSplitBillDetail" and body.get("Project") and body.get("GroupPeriod", 0) != 2:
         raise _invalid("ListSplitBillDetail.Project 只在明细粒度生效", field="Project")
     if body.get("SplitDimension"):
         try:

@@ -135,37 +135,35 @@ def _field_filtered_response_properties(
 ) -> tuple[dict[str, Any], list[str]]:
     properties: dict[str, Any] = {}
     missing = {_normalize(query): query for query in field_queries}
-    for element in elements:
-        if not element.children:
-            if any(_matches(element, query) for query in field_queries):
-                properties[element.name] = _element_json_schema(element)
-                missing.pop(_normalize(element.name), None)
-            continue
-        matched_children = [
-            child
-            for child in element.children
-            if any(_matches(child, query) for query in field_queries)
+
+    def select(element: ApiElementSpec, path: str) -> dict[str, Any] | None:
+        matches = [
+            query for query in field_queries
+            if _normalize(query) == _normalize(path)
+            or ("." not in query and _matches(element, query))
         ]
-        if not matched_children:
-            continue
-        missing = {
-            key: value
-            for key, value in missing.items()
-            if all(not _matches(child, value) for child in matched_children)
-        }
-        item_schema = {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {
-                child.name: _element_json_schema(child)
-                for child in matched_children
-            },
-        }
-        properties[element.name] = (
-            {"type": "array", "items": item_schema}
-            if element.is_array
-            else item_schema
-        )
+        if matches:
+            for query in matches:
+                missing.pop(_normalize(query), None)
+            for child in element.children:
+                select(child, f"{path}.{child.name}")
+            return _element_json_schema(element)
+        children = {}
+        for child in element.children:
+            selected = select(child, f"{path}.{child.name}")
+            if selected is not None:
+                children[child.name] = selected
+        if not children:
+            return None
+        schema = _element_json_schema(element)
+        body = schema["items"] if element.is_array else schema
+        body["properties"] = children
+        return schema
+
+    for element in elements:
+        selected = select(element, element.name)
+        if selected is not None:
+            properties[element.name] = selected
     return properties, list(missing.values())
 
 

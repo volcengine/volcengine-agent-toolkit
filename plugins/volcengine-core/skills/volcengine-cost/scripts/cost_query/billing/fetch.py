@@ -91,6 +91,13 @@ class FetchConfig:
                 "page_offset 不能小于 0",
                 ExitCode.INVALID_ARGUMENT,
             )
+        if self.pagination == "page" and self.page_size > self.max_rows:
+            raise BillingQueryError(
+                ErrorCode.INVALID_ARGUMENT,
+                "单页请求的 page_size 超过 max_rows；请提高 max_rows 或显式调整请求页大小",
+                ExitCode.INVALID_ARGUMENT,
+                {"page_size": self.page_size, "max_rows": self.max_rows},
+            )
 
 
 @dataclass
@@ -114,6 +121,8 @@ class QueryResult:
     error: dict[str, Any] | None = None
     requested_scope: str = "full"
     page_fetched: bool = False
+    next_token: str | None = None
+    has_more: bool | None = None
 
     def coverage(self) -> dict[str, Any]:
         return {
@@ -137,6 +146,11 @@ class QueryResult:
             "initial_total_boundary_reached": self.initial_total_boundary_reached,
             "requested_scope": self.requested_scope,
             "page_fetched": self.page_fetched,
+            **(
+                {"next_token": self.next_token, "has_more": self.has_more}
+                if self.action in TOKEN_PAGED_ACTIONS
+                else {}
+            ),
             "retries": self.retries,
             "warnings": list(dict.fromkeys(self.warnings)),
             **(
@@ -382,7 +396,9 @@ def _collect_token_query(
             result.warnings.append("查询因 max_rows 截断")
             break
         body = dict(normalized)
-        body["MaxResults"] = str(min(config.page_size, remaining))
+        body["MaxResults"] = str(
+            config.page_size if config.pagination == "page" else min(config.page_size, remaining)
+        )
         body["NextToken"] = token
         try:
             response, retries = _query_with_retry(client, action, body, config, sleeper)
@@ -410,9 +426,23 @@ def _collect_token_query(
             rows.extend(page_rows[:remaining])
         result.items_collected += len(page_rows)
 
+        if len(page_rows) > remaining:
+            result.stop_reason = "max_rows"
+            result.error = _error_dict(BillingQueryError(
+                ErrorCode.PAGINATION_INCOMPLETE,
+                "返回行数超过 max_rows，仅交付部分数据；请提高上限并重查当前页",
+                ExitCode.PARTIAL_RESULT,
+                {"max_rows": config.max_rows, "rows_received": len(page_rows),
+                 "rows_retained": len(rows), "repeat_current_page": True},
+            ))
+            result.warnings.append("查询因 max_rows 截断，当前页未完整交付")
+            break
+
         raw_next_token = payload.get("NextToken")
         next_token = "" if raw_next_token is None else str(raw_next_token)
         terminal = next_token in ("", "0") or not page_rows
+        result.next_token = "" if terminal else next_token
+        result.has_more = not terminal
         if config.pagination == "page":
             result.is_complete = terminal and token in ("", "0")
             break
@@ -528,7 +558,7 @@ def collect_query(
             result.warnings.append("查询因 max_rows 截断")
             break
         body = dict(normalized)
-        request_limit = min(config.page_size, remaining)
+        request_limit = config.page_size if config.pagination == "page" else min(config.page_size, remaining)
         body["Limit"] = request_limit
         body["Offset"] = offset
         if "NeedRecordNum" in ACTION_SCHEMAS[action].request_params_by_name:
@@ -594,11 +624,20 @@ def collect_query(
                 break
             digests.add(digest)
             rows.extend(page_rows)
-            if len(rows) > config.max_rows:
-                del rows[config.max_rows :]
-                result.warnings.append("查询因 max_rows 截断")
-                break
         items_collected += page_items
+        if len(rows) > config.max_rows:
+            received = len(rows)
+            del rows[config.max_rows :]
+            result.stop_reason = "max_rows"
+            result.error = _error_dict(BillingQueryError(
+                ErrorCode.PAGINATION_INCOMPLETE,
+                "返回行数超过 max_rows，仅交付部分数据；请提高上限并重查当前页",
+                ExitCode.PARTIAL_RESULT,
+                {"max_rows": config.max_rows, "rows_received": received,
+                 "rows_retained": len(rows), "repeat_current_page": True},
+            ))
+            result.warnings.append("查询因 max_rows 截断，当前页未完整交付")
+            break
         if config.pagination == "page":
             result.is_complete = (
                 expected_total is not None

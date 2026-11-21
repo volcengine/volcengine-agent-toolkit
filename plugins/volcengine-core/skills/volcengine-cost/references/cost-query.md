@@ -93,9 +93,14 @@ python3 scripts/cost.py query --action <Action> --body '<JSON business request b
 ```
 
 长 body 使用 `--body-file`；`--page-size` 设置每页大小，不是 full 的总条数上限。
+单页模式按指定页大小请求，不自动缩页；页大小超过 `--max-rows` 时，查询前报参数冲突。
+接口返回后展开的行数仍可能超过上限，此时只交付上限内的数据，并返回 `partial`、退出码 6
+和范围缺口。需提高上限重查当前页，不能把裁切结果视为完整请求页。
 Limit/Offset 分页通过 `--page-offset` 定位页，full 从 Offset=0 开始；支持 NeedRecordNum
 的 Action 按契约开启总数查询。NextToken 分页在 body 提供 token，full 从空 token 开始，
 不传 `--page-offset`。body 与 CLI 中同时提供的页大小或偏移须一致，翻页检查由执行器负责。
+单页响应的续页游标见 `coverage.queries[].next_token`，`has_more` 表示是否还有下一页。
+inline 输出在 `_meta.coverage`，文件输出在对应 metadata 的 `coverage` 中读取。
 
 支持 BillPeriod 或 AmortizedMonth 的 Action 可重复传 `--period YYYY-MM`，成功账期进入
 同一结果并保留各账期证据。其他时间字段按 Action 请求契约直接传入 body，不套用账期替换。

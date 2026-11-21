@@ -86,8 +86,10 @@ def query_contract() -> dict[str, Any]:
             },
             "page": {
                 "use_when": ["预览", "抽样", "排障", "用户指定页"],
-                "behavior": "只获取指定 Offset 或 NextToken 的一页，保留 Agent 的页范围意图。",
+                "behavior": "只获取指定 Offset 或 NextToken 的一页，按指定页大小请求，不自动缩页。",
                 "public_status": "success",
+                "preflight_constraint": "page_size 超过 max_rows 时查询前返回 INVALID_ARGUMENT。",
+                "truncated_response": "返回展开行数超过 max_rows 时交付 partial/exit 6，requested_scope_fulfilled=false；提高上限重查当前页。",
                 "message_requirement": "明确结果只覆盖请求页，不代表完整数据范围。",
                 "complete_dataset_claim": False,
             },
@@ -97,6 +99,7 @@ def query_contract() -> dict[str, Any]:
                 "full_start": "空 NextToken",
                 "complete_when": ["response NextToken is empty", "response NextToken is 0", "response List is empty"],
                 "guards": ["repeated token", "non-advancing token", "repeated page", "max_pages", "max_rows"],
+                "page_response": "coverage.queries[].next_token/has_more 保留续页信息；页内裁切时两者为 null，不能跳过未交付行继续。",
             },
             "full": {
                 "use_when": ["完整 CSV", "准确汇总", "完整性证明"],
