@@ -121,7 +121,13 @@ Windows PowerShell:
 | `trae-cli` | Trae CLI | Core plugin |
 | `gemini` | Gemini CLI | Each core skill |
 | `doubao-work` | Doubao (Work mode) | Core skills copied to the Doubao user skill directory |
-| `trae`, `trae-cn`, `cursor`, `opencode`, ... | Trae IDE, Cursor, OpenCode, and other hosts the skills CLI supports | `npx skills add` |
+| `workbuddy` | WorkBuddy | Core skills copied to the WorkBuddy user skill directory |
+| `trae`, `trae-cn`, `cursor`, `qoder`, `qoder-cn`, `opencode`, ... | Trae IDE, Cursor, Qoder, OpenCode, and other hosts the skills CLI supports | `npx skills add` |
+| `other` | Any agent not listed above | `npx skills add` into the shared directory and every host it detects |
+
+When `claude`, `codex`, `gemini`, or `trae-cli` cannot find its own command line (a desktop-only
+install, for example), the script installs through `npx skills add` instead. GitHub is the preferred
+source; the CDN is used when GitHub is unreachable or an install from GitHub fails.
 
 Without `--agent` the script only prepares the source and prints the install commands for each host.
 `--source cdn` skips the GitHub probe, `--dir` changes the local directory, and `--dry-run` prints

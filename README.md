@@ -110,7 +110,12 @@ Windows PowerShell：
 | `trae-cli` | Trae CLI | 核心 plugin |
 | `gemini` | Gemini CLI | 逐个安装核心 skill |
 | `doubao-work` | 豆包（工作模式） | 复制核心 skill 到豆包的用户 skill 目录 |
-| `trae`、`trae-cn`、`cursor`、`opencode` 等 | Trae IDE、Cursor、OpenCode 及 skills CLI 支持的其他宿主 | `npx skills add` |
+| `workbuddy` | WorkBuddy | 复制核心 skill 到 WorkBuddy 的用户 skill 目录 |
+| `trae`、`trae-cn`、`cursor`、`qoder`、`qoder-cn`、`opencode` 等 | Trae IDE、Cursor、Qoder、OpenCode 及 skills CLI 支持的其他宿主 | `npx skills add` |
+| `other` | 不在上面的 Agent | `npx skills add` 装到通用目录和检测到的各宿主目录 |
+
+`claude`、`codex`、`gemini`、`trae-cli` 找不到自身命令行时（例如只装了桌面端），脚本自动改用
+`npx skills add` 安装。下载源优先 GitHub；GitHub 不通或从 GitHub 安装失败时改走 CDN。
 
 不带 `--agent` 时脚本只准备下载源并打印各宿主的安装命令。`--source cdn` 跳过 GitHub 探测，
 `--dir` 更换本地目录，`--dry-run` 只打印将使用的来源和版本。升级时重新运行同一条命令。

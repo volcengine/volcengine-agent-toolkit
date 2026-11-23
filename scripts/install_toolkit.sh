@@ -2,10 +2,10 @@
 # Volcengine Agent Toolkit installer: GitHub first, CDN when GitHub is unreachable.
 #
 # When GitHub answers, the hosts install straight from the repository, exactly
-# as the README describes. When it does not, this script downloads the toolkit
-# package published on the Volcengine CDN, verifies its SHA-256 against the
-# release manifest, unpacks it to a persistent local directory, and installs
-# from that directory instead.
+# as the README describes. When it does not, or when an install from GitHub
+# fails part-way, this script downloads the toolkit package published on the
+# Volcengine CDN, verifies its SHA-256 against the release manifest, unpacks it
+# to a persistent local directory, and installs from that directory instead.
 #
 #   curl -fsSL https://cloudcache.volccdn.com/ve/skills/install.sh | sh
 #   curl -fsSL https://cloudcache.volccdn.com/ve/skills/install.sh | sh -s -- --agent claude
@@ -19,16 +19,21 @@
 #                            claude and codex get the core plugin from the
 #                            marketplace, and so does trae-cli (Trae CLI);
 #                            gemini uses `gemini skills install`; doubao-work
-#                            copies the core skills into the DoubaoWork user
-#                            skill directory; any other name (cursor, opencode,
-#                            trae, trae-cn, ...) is passed to
-#                            `npx skills add --agent`. Without --agent the
-#                            script only prints the commands to run.
+#                            and workbuddy get the core skills copied into
+#                            their user skill directory; any other name
+#                            (cursor, qoder, opencode, trae, trae-cn, ...) is
+#                            passed to `npx skills add --agent`, and `other`,
+#                            or a name the skills CLI does not know, installs
+#                            for every host it detects. A host whose own
+#                            command is not on PATH is installed through the
+#                            skills CLI too. Without --agent the script only
+#                            prints the commands to run.
 #   --source <auto|github|cdn>
 #                            auto (default) probes GitHub; github and cdn skip
 #                            the probe.
 #   --dir <dir>              Local toolkit directory for the CDN path.
-#   --version <ver>          Download this version instead of the CDN "latest".
+#   --version <ver>          Install this released version. Released versions
+#                            exist only on the CDN, so this selects the CDN.
 #   --dry-run                Print the resolved SOURCE/VERSION/TOOLKIT_URL/TOOLKIT_DIR
 #                            and exit without changing anything.
 #
@@ -49,6 +54,11 @@
 # it, and Codex keeps it as the marketplace root. Rerun this script to upgrade.
 
 set -eu
+
+# Everything runs inside main(), called on the last line. With `curl | sh` the
+# shell reads this script from stdin as it goes; a child process that also
+# reads stdin would otherwise swallow the rest of the script.
+main() {
 
 DEFAULT_BASE_URL="https://cloudcache.volccdn.com/ve/skills"
 DEFAULT_GITHUB_URL="https://github.com/volcengine/volcengine-agent-toolkit"
@@ -72,6 +82,9 @@ verified=""
 
 log() { printf '%s\n' "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
+# A failure that another download source cannot fix: a missing tool, a host
+# directory that does not exist. Exit 4 tells the retry loop not to try the CDN.
+die_local() { log "ERROR: $*"; exit 4; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
 usage() {
@@ -81,12 +94,13 @@ Usage: install_toolkit.sh [--agent <name>[,<name>]] [--source <auto|github|cdn>]
 
   --agent <names>    Install the core skills for these hosts, comma separated:
                      claude, codex, trae-cli (core plugin), gemini (gemini skills
-                     install), doubao-work (DoubaoWork user skills), or any agent
-                     name the skills CLI accepts (cursor, opencode, trae, trae-cn, ...)
+                     install), doubao-work, workbuddy (copied into the host's user
+                     skill directory), any agent name the skills CLI accepts
+                     (cursor, qoder, opencode, trae, trae-cn, ...), or other
   --source <mode>    auto probes GitHub (default); github or cdn skips the probe
   --dir <dir>        Local toolkit directory for the CDN path (env VOLCENGINE_TOOLKIT_DIR,
                      default ~/.volcengine/agent-toolkit)
-  --version <ver>    Download this version instead of the CDN "latest"
+  --version <ver>    Install this released version; selects the CDN source
   --dry-run          Print SOURCE/VERSION/TOOLKIT_URL/TOOLKIT_DIR and exit
 
 Env: VOLCENGINE_TOOLKIT_BASE_URL (default https://cloudcache.volccdn.com/ve/skills),
@@ -135,6 +149,12 @@ if [ -z "$toolkit_dir" ]; then
 fi
 toolkit_dir="$(printf '%s' "$toolkit_dir" | sed 's:/*$::')"
 [ -n "$toolkit_dir" ] || die "The toolkit directory cannot be the filesystem root"
+# Hosts keep this path. A relative one would break as soon as the working
+# directory changes, and "a/b" also reads like a GitHub owner/repo.
+case "$toolkit_dir" in
+  /*) : ;;
+  *) toolkit_dir="$(pwd)/$toolkit_dir" ;;
+esac
 
 cleanup() {
   if [ -n "$tmp_dir" ] && [ -d "$tmp_dir" ]; then
@@ -144,7 +164,9 @@ cleanup() {
     rm -rf "$staging_dir"
   fi
 }
-trap cleanup EXIT INT TERM HUP
+trap cleanup EXIT
+# Without the exit, the script would carry on after cleanup removed its files.
+trap 'cleanup; exit 130' INT TERM HUP
 
 # ---------------------------------------------------------------------------
 # Transport: HTTP(S) via curl or wget; a local directory when the base URL has
@@ -187,6 +209,7 @@ normalize_version() {
   v="$(printf '%s' "$1" | tr -d '[:space:]')"
   v="${v#v}"
   case "$v" in
+    *[!0-9A-Za-z.+-]*) return 1 ;;
     [0-9]*.[0-9]*.[0-9]*) printf '%s' "$v" ;;
     *) return 1 ;;
   esac
@@ -239,29 +262,19 @@ is_toolkit_dir() {
 }
 
 # ---------------------------------------------------------------------------
-# Source selection
+# Download sources
 # ---------------------------------------------------------------------------
-# DoubaoWork is installed by copying from the local toolkit directory, so it
-# always needs the CDN package, whether or not GitHub answers.
-case ",$agent," in
-  *,doubao-work,*|*,doubaowork,*)
-    [ "$source_mode" != "auto" ] || source_mode="cdn" ;;
-esac
-
-if [ "$source_mode" = "auto" ]; then
-  if github_reachable; then
-    source_mode="github"
-  else
-    log "GitHub is not reachable from this host; using the Volcengine CDN."
-    source_mode="cdn"
-  fi
-fi
-
+# GitHub is preferred. The CDN package is used when GitHub does not answer, and
+# again when an install from GitHub fails part-way: the probe only shows that
+# the GitHub website loads, while the hosts go on to clone the repository.
+tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t volcengine-toolkit)"
 install_source="$GITHUB_REPOSITORY"
 toolkit_version=""
 toolkit_url=""
+expected=""
+cdn_ready=0
 
-if [ "$source_mode" = "cdn" ]; then
+resolve_cdn_manifest() {
   if [ -n "$version" ]; then
     wanted="$(normalize_version "$version")" || die "Invalid version '$version' (expected e.g. 1.3.4)"
     manifest_url="$base_url/v$wanted/$MANIFEST_NAME"
@@ -269,7 +282,6 @@ if [ "$source_mode" = "cdn" ]; then
     manifest_url="$base_url/latest/$MANIFEST_NAME"
   fi
 
-  tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t volcengine-toolkit)"
   manifest_path="$tmp_dir/$MANIFEST_NAME"
   fetch_to_file "$manifest_url" "$manifest_path" \
     || die "Cannot read $manifest_url. Check the network, or pass --version <ver>."
@@ -290,21 +302,11 @@ if [ "$source_mode" = "cdn" ]; then
     *) toolkit_url="$base_url/v$toolkit_version/$toolkit_url" ;;
   esac
   install_source="$toolkit_dir"
-fi
+}
 
-if [ "$dry_run" -eq 1 ]; then
-  printf 'SOURCE=%s\n' "$source_mode"
-  printf 'VERSION=%s\n' "$toolkit_version"
-  printf 'TOOLKIT_URL=%s\n' "$toolkit_url"
-  printf 'TOOLKIT_DIR=%s\n' "$toolkit_dir"
-  printf 'INSTALL_SOURCE=%s\n' "$install_source"
-  exit 0
-fi
-
-# ---------------------------------------------------------------------------
-# CDN path: download, verify, unpack next to the target, then swap.
-# ---------------------------------------------------------------------------
-if [ "$source_mode" = "cdn" ]; then
+# Download, verify, unpack next to the target, then swap.
+ensure_cdn_toolkit() {
+  [ "$cdn_ready" -eq 0 ] || return 0
   installed_version=""
   if is_toolkit_dir "$toolkit_dir" && [ -f "$toolkit_dir/package.json" ]; then
     installed_version="$(json_string "$toolkit_dir/package.json" version)"
@@ -313,6 +315,11 @@ if [ "$source_mode" = "cdn" ]; then
   if [ "$installed_version" = "$toolkit_version" ]; then
     log "Volcengine Agent Toolkit v$toolkit_version is already in $toolkit_dir."
   else
+    # A clone of the repository has the same layout as an unpacked package.
+    # Replacing it would delete its history and any uncommitted work.
+    if [ -e "$toolkit_dir/.git" ]; then
+      die "$toolkit_dir is a Git checkout, not an installed package. Pass --dir <dir> to use another location."
+    fi
     if [ -e "$toolkit_dir" ] && ! is_toolkit_dir "$toolkit_dir"; then
       # Never replace a directory this installer did not create.
       if [ ! -d "$toolkit_dir" ] || [ -n "$(ls -A "$toolkit_dir" 2>/dev/null)" ]; then
@@ -353,16 +360,85 @@ if [ "$source_mode" = "cdn" ]; then
     [ -z "$previous_dir" ] || rm -rf "$previous_dir"
     log "Volcengine Agent Toolkit v$toolkit_version unpacked to $toolkit_dir"
   fi
+  cdn_ready=1
+}
+
+if [ -n "$version" ]; then
+  case "$source_mode" in
+    github) die "--version selects a released package, which only the CDN has. Drop --source github, or drop --version." ;;
+    auto) source_mode="cdn" ;;
+  esac
 fi
+
+source_forced=1
+if [ "$source_mode" = "auto" ]; then
+  source_forced=0
+  if github_reachable; then
+    source_mode="github"
+  else
+    log "GitHub is not reachable from this host; using the Volcengine CDN."
+    source_mode="cdn"
+  fi
+fi
+
+if [ "$source_mode" = "cdn" ]; then
+  resolve_cdn_manifest
+fi
+
+if [ "$dry_run" -eq 1 ]; then
+  printf 'SOURCE=%s\n' "$source_mode"
+  printf 'VERSION=%s\n' "$toolkit_version"
+  printf 'TOOLKIT_URL=%s\n' "$toolkit_url"
+  printf 'TOOLKIT_DIR=%s\n' "$toolkit_dir"
+  printf 'INSTALL_SOURCE=%s\n' "$install_source"
+  exit 0
+fi
+
+if [ "$source_mode" = "cdn" ]; then
+  ensure_cdn_toolkit
+fi
+
+# Hosts that are installed by copying files need the core skills on disk. From
+# the CDN that is the toolkit directory; from GitHub it is the default branch's
+# source archive, unpacked into the temporary directory.
+core_skills_dir() {
+  if [ "$source_mode" = "cdn" ]; then
+    printf '%s' "$toolkit_dir/skills/core"
+    return 0
+  fi
+  github_src="$tmp_dir/github-src"
+  if [ ! -d "$github_src/skills/core" ]; then
+    have tar || die "need tar to unpack the GitHub source archive"
+    rm -rf "$github_src"
+    mkdir -p "$github_src"
+    github_archive="$tmp_dir/github-src.tar.gz"
+    log "Downloading the toolkit source from GitHub ..."
+    if have curl; then
+      curl -fsSL --retry 2 --connect-timeout 10 --max-time 300 -o "$github_archive" "$github_url/archive/HEAD.tar.gz" \
+        || die "Download failed: $github_url/archive/HEAD.tar.gz"
+    elif have wget; then
+      wget -q --timeout=30 --tries=3 -O "$github_archive" "$github_url/archive/HEAD.tar.gz" \
+        || die "Download failed: $github_url/archive/HEAD.tar.gz"
+    else
+      die "need curl or wget to download $github_url/archive/HEAD.tar.gz"
+    fi
+    tar -xzf "$github_archive" -C "$github_src" --strip-components 1 \
+      || die "Cannot unpack the GitHub source archive"
+    [ -d "$github_src/skills/core" ] || die "The GitHub source archive has no skills/core directory"
+  fi
+  printf '%s' "$github_src/skills/core"
+}
 
 # ---------------------------------------------------------------------------
 # Host registration
 # ---------------------------------------------------------------------------
 # Each host is asked afterwards whether it can see what was installed, so the
-# caller gets a verified result from this one command.
+# caller gets a verified result from this one command. Results go to a file per
+# host because each host is installed in a subshell (see the loop below).
 record_verified() {
   # $1 = agent name, $2 = ok or the reason it failed
-  verified="${verified:+$verified,}$1:$2"
+  printf '%s:%s' "$1" "$2" > "$verify_file"
+  [ "$2" = "ok" ] || exit 3
 }
 
 # Succeeds when every core skill name appears in the text on stdin.
@@ -376,59 +452,150 @@ lists_core_skills() {
   done
 }
 
+# Copy the core skills into a host's own skill directory.
+copy_core_skills() {
+  # $1 = destination directory
+  core_dir="$(core_skills_dir)" || exit 1
+  for skill in $CORE_SKILLS; do
+    [ -f "$core_dir/$skill/SKILL.md" ] || die "$skill is missing from the downloaded source"
+  done
+  for skill in $CORE_SKILLS; do
+    # Copy beside the target, then replace: a failed copy keeps the old skill.
+    staged_skill="${1:?}/.$skill.install.$$"
+    rm -rf "$staged_skill"
+    cp -R "$core_dir/$skill" "$staged_skill" || { rm -rf "$staged_skill"; die_local "Cannot copy $skill into $1"; }
+    rm -rf "${1:?}/$skill"
+    mv "$staged_skill" "$1/$skill" || die_local "Cannot move $skill into $1"
+    [ -f "$1/$skill/SKILL.md" ] || die "$skill is missing from $1 after the copy"
+  done
+}
+
+install_with_skills_cli() {
+  # $1 = agent name for the skills CLI, or "" to let it install for every host
+  #      it detects plus the shared ~/.agents/skills directory
+  # $2 = name to report in VERIFIED
+  have npx || die_local "'npx' is not on PATH. Install Node.js, then rerun with --agent $2."
+  skills_agent="$1"
+  if [ -n "$skills_agent" ]; then
+    skills_status=0
+    # shellcheck disable=SC2086
+    skills_output="$(npx --yes skills add "$install_source" --global --yes --copy --full-depth \
+      --skill $CORE_SKILLS --agent "$skills_agent" 2>&1 </dev/null)" || skills_status=$?
+    # The skills CLI prints a long report. It is shown only on failure, so
+    # that the result lines at the end stay visible in a host's tool output.
+    case "$skills_output" in
+      *"Invalid agents"*)
+        # A name the skills CLI does not know is not a failed install: fall
+        # back to installing for every host it detects.
+        log "The skills CLI does not know the agent '$skills_agent'; installing for every host it detects instead."
+        skills_agent="" ;;
+      *)
+        if [ "$skills_status" -ne 0 ]; then
+          log "$skills_output"
+          die "npx skills add failed for agent $skills_agent"
+        fi ;;
+    esac
+  fi
+  if [ -z "$skills_agent" ]; then
+    # shellcheck disable=SC2086
+    if ! skills_output="$(npx --yes skills add "$install_source" --global --yes --copy --full-depth \
+      --skill $CORE_SKILLS 2>&1 </dev/null)"; then
+      log "$skills_output"
+      die "npx skills add failed"
+    fi
+    skills_listing="$(npx --yes skills list --global 2>/dev/null </dev/null)"
+  else
+    skills_listing="$(npx --yes skills list --global --agent "$skills_agent" 2>/dev/null </dev/null)"
+  fi
+  log "$2: core skills installed through the skills CLI. Start a new session to load them."
+  if printf '%s' "$skills_listing" | lists_core_skills; then
+    record_verified "$2" ok
+  else
+    record_verified "$2" skills-not-listed
+  fi
+}
+
+# A host whose own CLI is not on PATH is still served: desktop builds often
+# ship without the command, and the host reads the same user skill directory.
 install_for_claude() {
-  have claude || die "'claude' is not on PATH. Install Claude Code, then rerun with --agent claude."
+  if ! have claude; then
+    log "'claude' is not on PATH; installing the core skills for Claude Code through the skills CLI."
+    install_with_skills_cli claude-code claude
+    return 0
+  fi
   # Adding an already known marketplace repoints it at this source.
-  claude plugin marketplace add "$install_source" >&2 \
+  claude plugin marketplace add "$install_source" >&2 </dev/null \
     || die "claude plugin marketplace add failed for $install_source"
-  claude plugin install "$CORE_PLUGIN" >&2 \
+  claude plugin install "$CORE_PLUGIN" >&2 </dev/null \
     || die "claude plugin install $CORE_PLUGIN failed"
-  if claude plugin list 2>/dev/null | grep -q "$CORE_PLUGIN"; then
+  log "Claude Code: $CORE_PLUGIN installed. Run /reload-plugins in an open session, or start a new one."
+  if claude plugin list 2>/dev/null </dev/null | grep -q "$CORE_PLUGIN"; then
     record_verified claude ok
   else
     record_verified claude plugin-not-listed
   fi
-  log "Claude Code: $CORE_PLUGIN installed. Run /reload-plugins in an open session, or start a new one."
 }
 
 install_for_codex() {
-  have codex || die "'codex' is not on PATH. Install Codex, then rerun with --agent codex."
+  if ! have codex; then
+    log "'codex' is not on PATH; installing the core skills for Codex through the skills CLI."
+    install_with_skills_cli codex codex
+    return 0
+  fi
   # Codex refuses to add a marketplace name that is bound to another source, so
   # drop the old binding and add this one.
-  if ! codex plugin marketplace add "$install_source" >&2; then
-    codex plugin marketplace remove "$MARKETPLACE" >&2 || true
-    codex plugin marketplace add "$install_source" >&2 \
+  if ! codex plugin marketplace add "$install_source" >&2 </dev/null; then
+    codex plugin marketplace remove "$MARKETPLACE" >&2 </dev/null || true
+    codex plugin marketplace add "$install_source" >&2 </dev/null \
       || die "codex plugin marketplace add failed for $install_source"
   fi
   # Codex copies the plugin into its own cache, so this also refreshes an upgrade.
-  codex plugin add "$CORE_PLUGIN" >&2 \
+  codex plugin add "$CORE_PLUGIN" >&2 </dev/null \
     || die "codex plugin add $CORE_PLUGIN failed"
-  if codex plugin list 2>/dev/null | grep "$CORE_PLUGIN" | grep -q "installed"; then
+  log "Codex: $CORE_PLUGIN installed. Start a new session to load it."
+  if codex plugin list 2>/dev/null </dev/null | grep "$CORE_PLUGIN" | grep -v "not installed" | grep -q "installed"; then
     record_verified codex ok
   else
     record_verified codex plugin-not-listed
   fi
-  log "Codex: $CORE_PLUGIN installed. Start a new session to load it."
 }
 
 install_for_gemini() {
-  have gemini || die "'gemini' is not on PATH. Install Gemini CLI, then rerun with --agent gemini."
+  if ! have gemini; then
+    log "'gemini' is not on PATH; installing the core skills for Gemini CLI through the skills CLI."
+    install_with_skills_cli gemini-cli gemini
+    return 0
+  fi
   for skill in $CORE_SKILLS; do
     if [ "$source_mode" = "cdn" ]; then
       # --path only applies to Git sources, so point at the skill directory.
-      gemini skills install "$toolkit_dir/skills/core/$skill" --consent >&2 \
+      gemini skills install "$toolkit_dir/skills/core/$skill" --consent >&2 </dev/null \
         || die "gemini skills install failed for $skill"
     else
-      gemini skills install "$github_url" --path "skills/core/$skill" --consent >&2 \
+      gemini skills install "$github_url" --path "skills/core/$skill" --consent >&2 </dev/null \
         || die "gemini skills install failed for $skill"
     fi
   done
-  if gemini skills list 2>&1 | lists_core_skills; then
+  log "Gemini CLI: core skills installed. Restart Gemini CLI to load them."
+  if gemini skills list 2>&1 </dev/null | lists_core_skills; then
     record_verified gemini ok
   else
     record_verified gemini skills-not-listed
   fi
-  log "Gemini CLI: core skills installed. Restart Gemini CLI to load them."
+}
+
+# Run a command under a pseudo-terminal and discard its output. Trae CLI
+# silently refuses to uninstall a plugin or remove a marketplace when it has no
+# terminal, which is the normal case when an agent runs this script.
+with_tty() {
+  if have script; then
+    # BSD and macOS: script [-q] file command...
+    script -q /dev/null "$@" >/dev/null 2>&1 </dev/null && return 0
+    # util-linux: script -qec "command" file. The arguments passed here never
+    # contain spaces, so joining them is safe.
+    script -qec "$*" /dev/null >/dev/null 2>&1 </dev/null && return 0
+  fi
+  "$@" >/dev/null 2>&1 </dev/null
 }
 
 install_for_trae_cli() {
@@ -439,99 +606,138 @@ install_for_trae_cli() {
       break
     fi
   done
-  [ -n "$trae_bin" ] || die "Trae CLI (coco, traecli, or trae-agent) is not on PATH. Install it, then rerun with --agent trae-cli."
-  # Trae CLI names a marketplace after its directory unless told otherwise, and
-  # keeps an existing name bound to its old source, so rebind it explicitly.
-  "$trae_bin" plugin marketplace remove "$MARKETPLACE" >/dev/null 2>&1 || true
-  if [ "$source_mode" = "cdn" ]; then
-    "$trae_bin" plugin marketplace add "$install_source" --name "$MARKETPLACE" --type local >&2 \
-      || die "$trae_bin plugin marketplace add failed for $install_source"
-  else
-    "$trae_bin" plugin marketplace add "$install_source" --name "$MARKETPLACE" --type github >&2 \
-      || die "$trae_bin plugin marketplace add failed for $install_source"
+  if [ -z "$trae_bin" ]; then
+    log "Trae CLI (coco, traecli, or trae-agent) is not on PATH; installing the core skills for Trae through the skills CLI."
+    install_with_skills_cli trae trae-cli
+    return 0
   fi
-  "$trae_bin" plugin install "$CORE_PLUGIN" --type marketplace --yes >&2 \
+  # Trae CLI names a marketplace after its directory unless told otherwise, and
+  # keeps an existing name bound to its old source. It will not remove a
+  # marketplace that still has a plugin installed from it, so drop the plugin
+  # first, then the marketplace, then add this source.
+  with_tty "$trae_bin" plugin uninstall volcengine-core || true
+  with_tty "$trae_bin" plugin marketplace remove "$MARKETPLACE" || true
+  trae_type="github"
+  [ "$source_mode" != "cdn" ] || trae_type="local"
+  "$trae_bin" plugin marketplace add "$install_source" --name "$MARKETPLACE" --type "$trae_type" >&2 </dev/null \
+    || die "$trae_bin plugin marketplace add failed for $install_source. If the marketplace is still bound to another source, run '$trae_bin plugin uninstall volcengine-core' and '$trae_bin plugin marketplace remove $MARKETPLACE' in a terminal, then rerun."
+  "$trae_bin" plugin install "$CORE_PLUGIN" --type marketplace --yes >&2 </dev/null \
     || die "$trae_bin plugin install $CORE_PLUGIN failed"
-  if "$trae_bin" plugin list 2>/dev/null | grep -q "volcengine-core"; then
+  log "Trae CLI: $CORE_PLUGIN installed. Start a new session to load it."
+  if "$trae_bin" plugin list 2>/dev/null </dev/null | grep -q "volcengine-core"; then
     record_verified trae-cli ok
   else
     record_verified trae-cli plugin-not-listed
   fi
-  log "Trae CLI: $CORE_PLUGIN installed. Start a new session to load it."
 }
 
-# DoubaoWork keeps user skills inside each browser profile, a location no
-# installer CLI knows about, so the core skills are copied there directly.
+# Doubao keeps user skills inside each browser profile, a location no installer
+# CLI knows about, so the core skills are copied there directly. The standalone
+# DoubaoWork app and the work mode built into the Doubao app use different
+# application directories and dot-directories; both are searched.
 doubao_work_roots() {
   case "$(uname -s)" in
-    Darwin) printf '%s\n' "${HOME:?HOME is not set}/Library/Application Support/DoubaoWork" ;;
+    Darwin)
+      printf '%s\n' "${HOME:?HOME is not set}/Library/Application Support/DoubaoWork"
+      printf '%s\n' "$HOME/Library/Application Support/Doubao" ;;
     MINGW*|MSYS*|CYGWIN*)
-      [ -z "${LOCALAPPDATA:-}" ] || printf '%s\n' "$LOCALAPPDATA/DoubaoWork/User Data"
-      [ -z "${APPDATA:-}" ] || printf '%s\n' "$APPDATA/DoubaoWork" ;;
-    *) printf '%s\n' "${XDG_CONFIG_HOME:-${HOME:?HOME is not set}/.config}/DoubaoWork" ;;
+      for app in DoubaoWork Doubao; do
+        [ -z "${LOCALAPPDATA:-}" ] || printf '%s\n' "$LOCALAPPDATA/$app/User Data"
+        [ -z "${APPDATA:-}" ] || printf '%s\n' "$APPDATA/$app"
+      done ;;
+    *)
+      printf '%s\n' "${XDG_CONFIG_HOME:-${HOME:?HOME is not set}/.config}/DoubaoWork"
+      printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/Doubao" ;;
   esac
 }
 
 install_for_doubao_work() {
-  [ "$source_mode" = "cdn" ] || die "--agent doubao-work installs from the local toolkit directory; rerun without --source github."
   installed_profiles=0
   doubao_roots="$(doubao_work_roots)"
   old_ifs="$IFS"
   IFS='
 '
   for root in $doubao_roots; do
-    for user_skills in "$root"/*/.doubaowork/agent_mode/workspace/.user_skills; do
+    for user_skills in "$root"/*/.doubaowork/agent_mode/workspace/.user_skills \
+      "$root"/*/.doubao/agent_mode/workspace/.user_skills; do
       [ -d "$user_skills" ] || continue
       IFS="$old_ifs"
-      for skill in $CORE_SKILLS; do
-        rm -rf "${user_skills:?}/$skill"
-        cp -R "$toolkit_dir/skills/core/$skill" "$user_skills/$skill" \
-          || die "Cannot copy $skill into $user_skills"
-        [ -f "$user_skills/$skill/SKILL.md" ] || die "$skill is missing from $user_skills after the copy"
-      done
+      copy_core_skills "$user_skills"
       IFS='
 '
       installed_profiles=$((installed_profiles + 1))
-      log "DoubaoWork: core skills copied to $user_skills"
+      log "Doubao: core skills copied to $user_skills"
     done
   done
   IFS="$old_ifs"
   [ "$installed_profiles" -gt 0 ] \
-    || die "No DoubaoWork user skill directory found. Open DoubaoWork once so it creates its workspace, then rerun."
+    || die_local "No Doubao user skill directory found. Start one task in Doubao work mode so it creates its workspace, then rerun."
+  log "Doubao: open a new task, or restart the app, to load the skills."
   record_verified doubao-work ok
-  log "DoubaoWork: restart the app or open a new task to load the skills."
 }
 
-install_with_skills_cli() {
-  # $1 = agent name understood by the skills CLI
-  have npx || die "'npx' is not on PATH. Install Node.js, then rerun with --agent $1."
-  # shellcheck disable=SC2086
-  npx --yes skills add "$install_source" --global --yes --copy --full-depth \
-    --skill $CORE_SKILLS --agent "$1" >&2 \
-    || die "npx skills add failed for agent $1"
-  if npx --yes skills list --global --agent "$1" 2>/dev/null | lists_core_skills; then
-    record_verified "$1" ok
-  else
-    record_verified "$1" skills-not-listed
-  fi
-  log "$1: core skills installed through the skills CLI. Start a new session to load them."
+# WorkBuddy reads user skills from ~/.workbuddy/skills, which the skills CLI
+# does not know, so the core skills are copied there directly.
+install_for_workbuddy() {
+  workbuddy_home="${HOME:?HOME is not set}/.workbuddy"
+  [ -d "$workbuddy_home" ] \
+    || die_local "No WorkBuddy directory found at $workbuddy_home. Open WorkBuddy once so it creates it, then rerun."
+  mkdir -p "$workbuddy_home/skills" || die_local "Cannot create $workbuddy_home/skills"
+  copy_core_skills "$workbuddy_home/skills"
+  log "WorkBuddy: core skills copied to $workbuddy_home/skills. Start a new task to load them."
+  record_verified workbuddy ok
 }
 
-old_ifs="$IFS"
-IFS=,
-# shellcheck disable=SC2086
-set -- $agent
-IFS="$old_ifs"
-for name in "$@"; do
-  case "$name" in
-    "") : ;;
+install_one() {
+  case "$1" in
     claude|claude-code) install_for_claude ;;
     codex) install_for_codex ;;
     gemini|gemini-cli) install_for_gemini ;;
     trae-cli|coco) install_for_trae_cli ;;
     doubao-work|doubaowork) install_for_doubao_work ;;
-    *) install_with_skills_cli "$name" ;;
+    workbuddy) install_for_workbuddy ;;
+    other) install_with_skills_cli "" other ;;
+    *) install_with_skills_cli "$1" "$1" ;;
   esac
+}
+
+# Each host is installed in a subshell so that a failure can be retried from
+# the CDN instead of ending the run. Exit 3 means the commands succeeded but
+# the host does not list the install.
+old_ifs="$IFS"
+IFS=,
+# shellcheck disable=SC2086
+set -- $agent
+IFS="$old_ifs"
+host_index=0
+for name in "$@"; do
+  [ -n "$name" ] || continue
+  host_index=$((host_index + 1))
+  verify_file="$tmp_dir/verified.$host_index"
+  status=0
+  ( install_one "$name" ) || status=$?
+  if [ "$status" -ne 0 ] && [ "$status" -ne 4 ] && [ "$source_mode" = "github" ] && [ "$source_forced" -eq 0 ]; then
+    log "Installing for $name from GitHub did not complete; retrying from the Volcengine CDN."
+    resolve_cdn_manifest
+    ensure_cdn_toolkit
+    source_mode="cdn"
+    rm -f "$verify_file"
+    status=0
+    ( install_one "$name" ) || status=$?
+  fi
+  case "$status" in
+    0|3) : ;;
+    *) exit 1 ;;
+  esac
+done
+
+# Report the hosts in the order they were given.
+verified=""
+slot=0
+while [ "$slot" -lt "$host_index" ]; do
+  slot=$((slot + 1))
+  [ -f "$tmp_dir/verified.$slot" ] || continue
+  verified="${verified:+$verified,}$(cat "$tmp_dir/verified.$slot")"
 done
 
 printf 'SOURCE=%s\n' "$source_mode"
@@ -570,3 +776,7 @@ for entry in $(printf '%s' "$verified" | tr ',' ' '); do
     *) die "Installed, but ${entry%%:*} does not list the core skills (${entry#*:}). Check that host's own install state." ;;
   esac
 done
+
+}
+
+main "$@"
