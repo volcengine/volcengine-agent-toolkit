@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "volcengine": {
+      "type": "http",
+      "url": "https://ve.mcp.volcbiz.com/mcp?mode=confirm"
+    }
+  }
+}

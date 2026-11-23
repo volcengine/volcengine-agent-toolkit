@@ -130,6 +130,15 @@ hosts continue to read the marketplace from it.
 
 The sections below are the per-host commands for direct GitHub access.
 
+### Remote MCP
+
+The `volcengine-core` plugin bundles a remote MCP server named `volcengine` (`https://ve.mcp.volcbiz.com/mcp?mode=confirm`).
+It provides API lookup and calls (`search_api`, `get_api_parameters`, `call_api`), script orchestration in a hosted sandbox (`run_script`), and public documentation search (`search_docs`, `fetch_docs`).
+
+- Installing the plugin in Claude Code, Codex, or Cursor registers the server automatically. On first use, complete the Volcengine account OAuth sign-in when the host prompts you (in Claude Code, start it from `/mcp`). Calls are signed as the authorized account, not with a `ve` profile.
+- Confirm mode: the server-side safety policy holds protected operations (for example `CreateVpc`) without sending them. The agent explains the target and impact, and retries the unchanged call once only after you approve. Operations rejected by a deny rule cannot be approved.
+- The generic skills CLI, Gemini CLI, and OpenCode install skills only and do not include this MCP server.
+
 ### Discover and install on demand
 
 `volcengine-find-skills` embeds the single catalog for all core skills and every optional
