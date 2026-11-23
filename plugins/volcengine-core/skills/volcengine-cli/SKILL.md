@@ -104,8 +104,6 @@ sed -n '/^## Product CLI routing/,/^## References/p' <path-of-this-SKILL.md>
 
 ## Product CLI routing
 
-Cloud OpenAPI steps: when the `volcengine` MCP server bundled with `volcengine-core` is connected and has a tool for the step, call it instead of `ve <service> <Action>`; otherwise use `ve`. The Mandatory rules below apply to MCP calls too.
-
 | Task | Entry point | Read before use |
 | --- | --- | --- |
 | Cloud resource OpenAPIs | `ve <service> <Action>` | [locate-api.md](references/locate-api.md), [execute-api.md](references/execute-api.md) |
