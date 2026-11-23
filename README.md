@@ -120,10 +120,12 @@ Windows PowerShell：
 
 ### 远程 MCP
 
-`volcengine-core` 插件同时内置名为 `volcengine` 的远程 MCP 服务，地址为
-`https://ve.mcp.volcbiz.com/mcp?mode=confirm`（确认模式）。通过 Claude Code 或 Codex 的插件方式安装后，
-宿主会自动注册该服务；首次调用时按宿主提示完成火山引擎账号 OAuth 授权（Claude Code 中可在 `/mcp` 里发起）。
-通用 skills CLI、Gemini CLI 和 OpenCode 只安装 skill，不包含该 MCP。
+`volcengine-core` 插件内置名为 `volcengine` 的远程 MCP 服务（`https://ve.mcp.volcbiz.com/mcp?mode=confirm`），
+提供 API 检索与调用（`search_api`、`get_api_parameters`、`call_api`）、托管沙箱脚本编排（`run_script`）和公开文档检索（`search_docs`、`fetch_docs`）。
+
+- 通过 Claude Code、Codex 或 Cursor 的插件方式安装后自动注册；首次使用按宿主提示完成火山引擎账号 OAuth 授权（Claude Code 中可在 `/mcp` 里发起）。调用以授权账号的身份签名，不使用 `ve` 的 profile。
+- 确认模式：服务端安全策略会拦截受保护的操作（例如 `CreateVpc`），请求不会发出；Agent 向你说明目标和影响，得到确认后才原样重试一次。被 deny 规则拒绝的操作无法通过确认放行。
+- 通用 skills CLI、Gemini CLI 和 OpenCode 只安装 skill，不包含该 MCP。
 
 ### 按需发现与安装
 

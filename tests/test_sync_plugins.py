@@ -60,6 +60,23 @@ class SyncCatalogSafetyTest(unittest.TestCase):
         )
         self.assert_rejected(catalog)
 
+    def test_plugin_mcp_config_is_pinned_for_codex_and_cursor_only(self) -> None:
+        outputs = SYNC.generated_json(self.catalog, "0.0.0")
+        for plugin in self.catalog["plugins"]:
+            root = SYNC.PLUGINS_ROOT / plugin["name"]
+            expected = "./.mcp.json" if (root / ".mcp.json").is_file() else None
+            with self.subTest(plugin=plugin["name"]):
+                for host in (".codex-plugin", ".cursor-plugin"):
+                    manifest = outputs[root / host / "plugin.json"]
+                    self.assertEqual(manifest.get("mcpServers"), expected)
+                claude = outputs[root / ".claude-plugin" / "plugin.json"]
+                self.assertNotIn("mcpServers", claude)
+        core = SYNC.PLUGINS_ROOT / "volcengine-core"
+        self.assertEqual(
+            outputs[core / ".codex-plugin" / "plugin.json"]["mcpServers"],
+            "./.mcp.json",
+        )
+
     def test_only_volcengine_core_may_be_default(self) -> None:
         catalog = copy.deepcopy(self.catalog)
         catalog["plugins"][0]["default"] = False

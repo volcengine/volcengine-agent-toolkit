@@ -53,5 +53,6 @@
     "brandColor": "#1664FF",
     "composerIcon": "./assets/logo.svg",
     "logo": "./assets/logo.svg"
-  }
+  },
+  "mcpServers": "./.mcp.json"
 }

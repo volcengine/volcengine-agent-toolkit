@@ -31,5 +31,6 @@
   ],
   "skills": "./skills/",
   "logo": "assets/logo.svg",
-  "hooks": "./hooks/hooks-cursor.json"
+  "hooks": "./hooks/hooks-cursor.json",
+  "mcpServers": "./.mcp.json"
 }
