@@ -6,9 +6,13 @@
 - Where these rules conflict with the project's own instructions, the
   project's instructions take precedence. State the conflict and pause only the
   affected action.
+- Prefer the `volcengine` MCP server (bundled with the `volcengine-core`
+  plugin) for Volcengine API calls when it is connected and signed in. If it
+  is unavailable or does not cover the step, use the `ve` CLI through the
+  `volcengine-cli` skill.
 - Before starting a task, check whether a relevant `volcengine-*` skill is
   installed and prefer its guidance over general knowledge. Use `volcengine-cli`
-  for CLI and API calls, `volcengine-troubleshooting` for errors, and
+  for CLI calls, `volcengine-troubleshooting` for errors, and
   `volcengine-find-skills` to install a missing product skill. For conceptual
   questions, use `volcengine-knowledge-search` without requiring login or tool
   installation. Do not invent skills or commands that are not loaded.
