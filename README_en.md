@@ -130,6 +130,14 @@ hosts continue to read the marketplace from it.
 
 The sections below are the per-host commands for direct GitHub access.
 
+### Remote MCP
+
+The `volcengine-core` plugin also bundles a remote MCP server named `volcengine` at
+`https://ve.mcp.volcbiz.com/mcp?mode=confirm` (confirm mode). Installing the plugin in Claude Code or Codex
+registers the server automatically; on first use, complete the Volcengine account OAuth sign-in when the host
+prompts you (in Claude Code, start it from `/mcp`). The generic skills CLI, Gemini CLI, and OpenCode install skills
+only and do not include this MCP server.
+
 ### Discover and install on demand
 
 `volcengine-find-skills` embeds the single catalog for all core skills and every optional

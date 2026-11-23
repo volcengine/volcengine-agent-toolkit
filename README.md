@@ -118,6 +118,13 @@ Windows PowerShell：
 
 下面各小节是直接访问 GitHub 时的分宿主命令。
 
+### 远程 MCP
+
+`volcengine-core` 插件同时内置名为 `volcengine` 的远程 MCP 服务，地址为
+`https://ve.mcp.volcbiz.com/mcp?mode=confirm`（确认模式）。通过 Claude Code 或 Codex 的插件方式安装后，
+宿主会自动注册该服务；首次调用时按宿主提示完成火山引擎账号 OAuth 授权（Claude Code 中可在 `/mcp` 里发起）。
+通用 skills CLI、Gemini CLI 和 OpenCode 只安装 skill，不包含该 MCP。
+
 ### 按需发现与安装
 
 `volcengine-find-skills` 内置唯一 catalog，覆盖全部 core skill 和所有可选 plugin skill：
