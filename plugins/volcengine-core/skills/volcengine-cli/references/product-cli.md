@@ -13,7 +13,7 @@ compatibility alias. The existing TOS skill is named `volcengine-tosutil` (not `
 | --- | --- | --- |
 | General cloud resource OpenAPIs | `ve <service> <Action>` | Native API workflow in [SKILL.md](../SKILL.md) |
 | TOS buckets, objects and transfers | `ve tosutil <command>` | Use `volcengine-find-skills` to find `volcengine-tosutil`, install it if missing, and read its instructions |
-| Ark models, inference, generation, Endpoints, fine-tuning, plans and usage | `ve arkcli <command>` | Download and read the relevant [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills) as below |
+| Ark (火山方舟) models, model prices, API Keys, inference, generation, Endpoints, fine-tuning, plans and usage | `ve arkcli <command>` | Use `volcengine-find-skills` to find `volcengine-ark`, install it if missing, and read its instructions |
 | TLS (日志服务) log search, analysis, ingest, export, Project/Topic and LogCollector collection | `ve volclog <command>` | Use `volcengine-find-skills` to find `volcengine-tls` (or `volcengine-tls-logcollector` for collection), install it if missing, and read its instructions |
 
 For TOS, follow the finder's `list` → select exact `volcengine-tosutil` → install if missing →
@@ -26,23 +26,22 @@ for LogCollector collection. Those skills write native `volclog ...` examples; r
 service or suggests `--force`, the `ve` build is older than the version requirement above, so
 upgrade `ve` instead of adding `--force`.
 
-For Ark, select the task skill from the official repository above and install it with
-`arkcli-shared` and the dependencies its instructions require. These upstream `arkcli-*` names
-are not entries in the local Volcengine finder catalog; install from the Ark repository directly.
-For example, model discovery on Codex:
+For Ark, follow the same finder flow with exact `volcengine-ark`. That one skill bundles the
+official Ark CLI guides for model lookup, pricing, API Keys, endpoints, inference, generation,
+usage and the rest; read its `SKILL.md`, then the guide it selects for the task. The guides write
+native `arkcli ...` examples; run them as `ve arkcli ...`. Do not install the upstream `arkcli-*`
+skills or a standalone arkcli for this. Ark knowledge questions (concepts, usage, billing rules)
+are answered by `volcengine-knowledge-search` instead.
 
-```bash
-npx --yes skills add https://github.com/volcengine/ark-cli \
-  --skill arkcli-shared arkcli-auth arkcli-models --agent codex --yes --copy --full-depth
-npx --yes skills list --agent codex --json
-```
+For live model availability or pricing, a missing skill in the selected distribution is an
+installation failure. Report which source lacks the skill and use a matching toolkit release
+or checkout if available. If Ark reports an expired session, resume the live query after Ark
+login. Public prices or model lists cannot establish what this account can use.
 
-Use the actual host's `--agent` and task skill names. Installation is project-scoped by default;
-add `--global` to both commands only for an intended user-level install. Verify the names and
-read the installed `arkcli-shared/SKILL.md`, the task skill, and its selected references before
-execution. If the host cannot load newly installed skills, start a new conversation carrying
-the original task and completed context, as the finder instructs. Keep product instructions in
-those skills; this skill only routes to them.
+A skill installed by the finder is a directory of files. If the host does not load it into the
+current conversation, read its `SKILL.md` and references by path from the install location and
+continue the task; start a new conversation only when the files cannot be read. Keep product
+instructions in those skills; this skill only routes to them.
 
 `arkcli`, `tosutil` and `volclog` are transparent delegated CLIs: replace only the executable prefix in
 their examples, keeping all later arguments unchanged. They retain their own authentication,

@@ -9,8 +9,8 @@ description: >-
   mentioning "火山引擎" or "火山" (e.g., "火山引擎上有哪些 ECS"、"查一下我火山的云服务器"、
   "火山引擎创建一个 VPC"、"火山的 Redis 实例列一下"). Also trigger when the user encounters
   errors from `ve` commands and needs troubleshooting help. Also use for TOS bucket/object operations,
-  tosutil (sometimes written tosutils), Ark CLI / arkcli model discovery, inference, generation,
-  endpoints, fine-tuning, plans, or usage, and TLS (日志服务) / volclog log search, analysis, ingest,
+  tosutil (sometimes written tosutils), Ark (方舟) / arkcli models, prices, API Keys, inference,
+  generation, endpoints, plans, or usage, and TLS (日志服务) / volclog log search, analysis, ingest,
   export, or LogCollector collection, through `ve tosutil`, `ve arkcli` and `ve volclog`.
 license: MIT
 metadata:
@@ -108,7 +108,7 @@ sed -n '/^## Product CLI routing/,/^## References/p' <path-of-this-SKILL.md>
 | --- | --- | --- |
 | Cloud resource OpenAPIs | `ve <service> <Action>` | [locate-api.md](references/locate-api.md), [execute-api.md](references/execute-api.md) |
 | TOS buckets, objects and transfers | `ve tosutil <command>` | [product-cli.md](references/product-cli.md), then skill `volcengine-tosutil` |
-| Ark models, inference, generation, endpoints, fine-tuning, plans, usage | `ve arkcli <command>` | [product-cli.md](references/product-cli.md), then the official Ark skills |
+| Ark (火山方舟) models, model prices, API Keys, inference, generation, endpoints, fine-tuning, plans, usage | `ve arkcli <command>` | [product-cli.md](references/product-cli.md), then skill `volcengine-ark` |
 | TLS (日志服务) search, analysis, ingest, export, LogCollector | `ve volclog <command>` | [product-cli.md](references/product-cli.md), then `volcengine-tls` / `volcengine-tls-logcollector` |
 
 - Prefer the `ve` proxy even when a standalone `tosutil`, `arkcli` or `volclog` is installed. `ve` installs a missing child on first use.

@@ -42,8 +42,10 @@ covers the request. Treat plugin ownership as catalog classification only; insta
    never as the installation target.
 6. Install through the `skills` CLI and verify the resulting installed state. Never report success
    from process exit alone.
-7. If the host cannot load a newly installed skill into the current thread, tell the user to start
-   a new thread and restate the original task plus completed context.
+7. Read the `SKILL.md` of each newly installed skill from the entry file the installer prints, then
+   continue the original task in the same conversation. A host that loads skills only at startup
+   does not block this: the skill is a directory of files. Ask the user to start a new thread only
+   when those files cannot be read.
 
 ## List and select skills
 
@@ -77,8 +79,8 @@ Do not install, log in, collect extra diagnostics, or restart the main conversat
 
 Invoke this finder when a Volcengine task is already in progress and the available skills lack the
 required product coverage, tool integration, or workflow. Treat that gap as a discovery request:
-list the complete catalog, select and install the matching skill, then continue when the host can
-load it. Carry forward the original goal, relevant evidence, and completed work so discovery does
+list the complete catalog, select and install the matching skill, read its entry file, then
+continue. Carry forward the original goal, relevant evidence, and completed work so discovery does
 not restart the task from scratch.
 
 ## Install selected skills
@@ -92,8 +94,10 @@ python3 scripts/find_skills.py install volcengine-iac --agent codex
 
 The script uses `npx skills add --skill` with `--full-depth` to discover skills nested under product
 categories and plugin directories. It accepts only exact skill names, installs those skills directly, and verifies
-every selected name with `skills list`. Omit `--agent` only when host auto-detection is intended.
-Passing a plugin name is an error, even when every skill in that plugin is needed.
+every selected name with `skills list`. On success it prints the entry file (`SKILL.md` path) of
+each installed skill, or `entry_files` with `--json`; read those files next. Omit `--agent` only
+when host auto-detection is intended. Passing a plugin name is an error, even when every skill in
+that plugin is needed.
 
 Use `--scope global` for user-level installation or `--scope project` for the current project. The
 default is global. `--source` may point at a reviewed local checkout or another repository source;
@@ -119,4 +123,5 @@ python3 scripts/find_skills.py status --agent codex
 ```
 
 Do not equate "skill installed" with "skill loaded in this thread". Use the status only to verify
-installation; start a new thread when the host cannot dynamically load the newly installed skill.
+installation. When the host has not loaded a newly installed skill, read its `SKILL.md` by path
+and continue; start a new thread only when the files cannot be read.

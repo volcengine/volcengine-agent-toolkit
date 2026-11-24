@@ -1,0 +1,114 @@
+---
+name: arkcli-api-explorer
+version: 1.1.1
+description: Inspect or invoke locally registered ArkCLI actions when product commands cannot cover a task. Use for registry errors or exact raw payloads. Not for public API catalogs or OpenAPI schemas.
+metadata:
+  requires:
+    bins: ["arkcli"]
+  cliHelp: "arkcli api --help"
+---
+
+# arkcli api（Raw API Explorer）
+
+**CRITICAL — 开始前 MUST 先用 Read 工具读取 [`../arkcli-shared/GUIDE.md`](../arkcli-shared/GUIDE.md)，其中包含认证、配置覆盖排查与命令选择顺序**
+**CRITICAL — 只有在现有产品命令和业务 skill 确实不覆盖时，才允许进入本 skill；禁止把 `arkcli api` 当默认入口。**
+**CRITICAL — 任何 `arkcli api ...` 调用前，MUST 先用 Read 工具读取 [`references/arkcli-api.md`](references/arkcli-api.md)，禁止盲目猜参数与输出结构。**
+
+## 使用原则
+
+- `unknown action` 先查本地 `api --list`，使用完整注册名，不凭近似业务名猜 Action；`MissingParameter` 按当前契约里的字段名与大小写补齐，不轮流试 `Id/ID/KeyID`。
+- 查询 API Key 时，先读 [Auth 的 API Key 查询与交付](../arkcli-auth/references/api-key-query.md)：list 只定位元数据，授权导出才用真实 `Id` 调 `apikey.get_raw`，不默认回显明文或轮换。
+- 安装态未必有仓库源码：优先读同版本 Skill/reference 与已注册目录；能访问源码时再查 req/resp JSON tag。没有确定的契约来源就说明缺口并停止，不能虚构本地 `internal/apis` 文件已被检查。
+
+- 先产品命令：`arkcli <domain> <verb>` 或 `arkcli +<shortcut>`
+- 再 skill / reference：确认是否已有稳定入口与正确参数
+- 最后才 `arkcli api`：仅用于低频、专业或高风险的底层 Action 验证与兜底
+
+不要因为某个 Action 存在，就反推出新的顶层 skill 或 `cmd/` 命令；只有升级为稳定产品能力时，才考虑补 `shortcuts/`。
+
+## 适用场景
+
+- 现有产品命令确实无法覆盖需求（且该需求不值得做成标准命令或 `+shortcut`）
+- 需要验证某个已注册 Action 的输入输出契约（例如排障、回归验证、确认 transport 可达）
+- 需要确认 registry 中是否已存在某个 Action（用于开发或排查 “注册缺失”）
+
+## 唤起信号（When To Trigger）
+
+- 用户明确提到：`action` / `operation` / `registry` / “已注册 Action” / “契约验证”
+- 用户给出：`arkcli api ... --params ...` 并需要你补全/排错
+- 用户遇到：`unknown action` / 需要确认某个 Action 是否存在
+- 开发场景：在 `internal/apis/<domain>/` 新增 operation 后，要快速验证能否 `--list` 与可调用
+
+## 反唤起信号（When NOT To Trigger）
+
+- 用户要公开 API 契约目录、接口标识、OpenAPI schema 或必填请求字段：转 `arkcli-docs` 的 `docs apis list/spec`。`api --list` 只列二进制本地注册的 Action，不是公开 API 目录，也不提供完整 OpenAPI schema。
+- 用户目标是：对话（`+chat`）、生成（`+gen`）、部署（`+deploy`）、用量（`usage`）、查模型（`models`）等已有稳定产品路径
+- 用户只是鉴权失败/未登录/环境 profile 混乱（应先走 `auth/config`，不要把问题导向 `api`）
+- 用户只是想“找一个命令怎么用”（优先 `arkcli <domain> --help` + 对应 skill/reference）
+
+## Agent 快速执行顺序
+
+1. 先判断用户目标是否已有产品入口：`arkcli <domain> --help`，并优先转对应业务 skill
+2. 如果只是认证/配置问题，不要误判为需要 `api`：
+   - 认证失败先转 [`../arkcli-auth/GUIDE.md`](../arkcli-auth/GUIDE.md)
+   - profile/base-url/region 覆盖混乱先转 [`../arkcli-config/GUIDE.md`](../arkcli-config/GUIDE.md)
+3. 枚举已注册 Action（无参等价于 list）：
+   - `arkcli api --list`
+   - `arkcli api`
+4. 定位契约与必填字段（禁止猜 JSON）：
+   - 查同版本 reference/官方契约；仓库可用时再查 `internal/apis/<domain>/` 对应 req/resp 结构体，安装态没有源码时不得声称已检查
+   - 同一 Action 因 `MissingParameter` / `InvalidParameter` 连续失败两次，且错误没有给出确定值时，停止更换相近字段名试错；回到注册 operation、req/resp tag 或官方契约确认。禁止循环枚举 `Scene` / `Type` / `BizType` 等猜测字段。
+5. 先用叶子命令的 Client Preview 核对最终 descriptor 和 payload：
+   - `arkcli api <registered-action> --params '{...}' --dry-run`
+   - Preview 是纯本地行为，不登录、不请求后端、不证明权限、配额或资源存在
+6. 只读优先；写操作在 Preview 后仍必须二次确认，然后去掉 `--dry-run` 执行：
+   - `arkcli api <registered-action> --params '{...}'`
+   - payload 自身的 `"DryRun":true` 是后端字段；未加 CLI `--dry-run` 时仍会发出真实网络请求
+7. 输出尽量稳定、减少噪声：
+   - 优先用全局 `--transform '<gjson path>'` 提取关键字段
+   - 只有排障需要时才开 `--debug`（会输出请求/响应调试信息到 stderr）
+
+## Guard Checklist（必须执行）
+
+| 检查点 | 目的 | 做法 |
+|--------|------|------|
+| 产品命令覆盖判断 | 防止误用 `api` | 先 `arkcli <domain> --help` 并对照对应 skill |
+| 认证闸门 | 防止把鉴权问题误判为缺能力 | 先 `arkcli auth status`；失败转 `arkcli-auth` |
+| 契约事实源 | 防止猜参数 | 从同版本 reference、官方契约或可访问的 req/resp JSON tag 生成 `--params`；缺确定契约就停止 |
+| Client Preview | 防止 raw Action 直接执行 | invoke 模式先加本地 `--dry-run`，核对 `steps[0].protocol/target/payload` |
+| 风险确认 | 防止写操作误触发 | 涉及创建/删除/修改/影响费用前，要求用户明确确认 |
+| 噪声控制 | 防止整坨输出污染上下游 | 默认引导 `--transform` 提取关键字段；`--debug` 仅排障打开 |
+
+## 示例
+
+```bash
+arkcli api --list
+arkcli api model.list_foundation_models --params '{"PageSize":10,"PageNumber":1}' --dry-run
+arkcli api model.list_foundation_models --params '{"PageSize":10,"PageNumber":1}'
+
+# 只提取 items 里的 name（示例 path，按实际输出结构调整）
+arkcli api model.list_foundation_models --params '{"PageSize":10,"PageNumber":1}' --transform 'Result.Items.#.Name'
+```
+
+## 常见错误与处理
+
+| 现象 | 常见原因 | 处理方式 |
+|------|----------|----------|
+| `unknown action "..."` | Action 未注册或拼写错误 | 先 `arkcli api --list`；再在 `internal/apis/` 中确认是否已注册 |
+| `invalid --params JSON: ...` | JSON 不合法（引号/转义/单引号包裹不当） | 确保 `--params` 是合法 JSON；必要时把 JSON 放到文件再用 shell 展开传入 |
+| `api list mode has no request to preview` | 对 `api --list` 使用了 `--dry-run` | list 本身已经是纯本地枚举；移除 `--dry-run` |
+| 输出字段和预期不一致 | 直接猜测了契约 | 先读 [`references/arkcli-api.md`](references/arkcli-api.md) 并查看 `internal/apis/<domain>/` 的 req/resp |
+
+## 开发约束
+
+- 如果 Action 未注册：补 `internal/apis/<domain>/` 的 operation 注册与 req/resp 契约
+- 不要直接因为 Action 缺失就新增 `cmd/<action>`；`api` 是兜底入口
+- 只有当它升级为稳定产品能力时，才在 `shortcuts/` 中补业务命令（并配套 skill/reference/test）
+
+## 参考
+
+- [arkcli-shared](../arkcli-shared/GUIDE.md) -- 认证、配置覆盖排查与共享安全规则
+- [arkcli-auth](../arkcli-auth/GUIDE.md) -- 认证失败时的回退入口
+- [arkcli-config](../arkcli-config/GUIDE.md) -- profile / base-url / region 排障入口
+- [`references/arkcli-api.md`](references/arkcli-api.md) -- api explorer 的命令语义、参数与排错
+- [`references/evals.md`](references/evals.md) -- 最小评估用例（唤起/反唤起/排错）

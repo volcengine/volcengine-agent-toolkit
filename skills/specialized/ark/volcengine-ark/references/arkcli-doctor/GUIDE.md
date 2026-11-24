@@ -1,0 +1,302 @@
+---
+name: arkcli-doctor
+version: 1.0.1
+description: "arkcli doctor 统一入口，覆盖 CLI 健康、account、error、infer-endpoint、model、metrics、report 与 Ark 图片/视频来源特征验证。用户给 1-20 个媒体 URL 并问是否由 Ark/Seedance/Seedream 生成时，走 doctor +verify-origin：整批只披露并确认一次费用，确认前不发 Create/Get 业务请求，最终完整转交服务端 JSON，禁止解释 IsOfficial。其余错误码（包括 ServerOverloaded、ModelNotOpen）、模型名、ep-xxx、失败/慢/超时/限流、健康度、P99/Cache、内容审核、DNS/TCP/TLS/时钟等按正文诊断路由。来源验证不判断内容真假、版权归属、法律认证或内容安全。安装/登录/profile/API Key 归 arkcli-shared/auth；纯用量明细归 arkcli-usage；部署、Endpoint CRUD、模型元信息归对应 skill。"
+metadata:
+  requires:
+    bins: ["arkcli"]
+  cliHelp: "arkcli doctor --help"
+---
+
+# arkcli Doctor（诊断总入口）
+
+**CRITICAL — 开始前 MUST 先用 Read 工具读取 [`../arkcli-shared/GUIDE.md`](../arkcli-shared/GUIDE.md)（认证闸门、命令选择顺序、输出与安全规则）。**
+
+## 它解决什么
+
+`arkcli doctor` 是 Ark CLI 唯一的对外诊断收口。所有诊断与修复建议都从 `arkcli doctor [<scope>] [<id>]` 出，诊断命令默认只读；修复动作按命令输出的建议和对应 reference 执行。Agent 拿到用户的报错 / 资源 ID / 含糊问题后，先用本 skill 决定走哪条路径，再 delegate 到对应 scope reference 或错误码 reference。
+
+> 边界：**安装、版本、登录、profile、AK/SK 认证**类问题归 [`arkcli-shared`](../arkcli-shared/GUIDE.md) / [`arkcli-auth`](../arkcli-auth/GUIDE.md)；这里只覆盖 `arkcli doctor` 命令家族（业务侧诊断）。
+
+## 八个 Domain（一个 skill 收口）
+
+本 skill 一次性覆盖八个平行 domain。每个 domain 一份 reference，按用户场景路由：
+
+| Domain                | 命令                                | Reference                                                                                       | 解决什么                                                                  |
+|-----------------------|-------------------------------------|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| **CLI 健康**（默认）  | `arkcli doctor`                     | [`references/scope-cli.md`](references/scope-cli.md)                                            | 本地二进制版本 / 网络联通 / 时钟偏差 / 当前 profile 认证——onboarding 首查 |
+| **account**           | `arkcli doctor account`             | [`references/scope-account.md`](references/scope-account.md)                                    | identity / realname / balance / IAM Ark 系统预置策略 / VMP 三段 / TOS 开通  |
+| **错误码**            | `arkcli doctor error <code>`        | [`references/error-codes.md`](references/error-codes.md)                                       | 单错误码翻译成结构化诊断 + 修复（含生视频 5 个 subtype + 通用 Ark/公共码） |
+| **infer-endpoint**    | `arkcli doctor infer-endpoint <id>` | [`references/scope-infer-endpoint.md`](references/scope-infer-endpoint.md)                     | 单接入点状态 / 用量 / 错误率 / 配额压力                                  |
+| **model**             | `arkcli doctor model <name>`        | [`references/scope-model.md`](references/scope-model.md)                                       | 跨接入点的模型整体诊断（用量 / 配额 / top endpoint / 模态自适应指标）     |
+| **metrics**           | `arkcli doctor metrics <id>`        | [`references/scope-metrics.md`](references/scope-metrics.md)                                   | 36 条具名 PromQL 查询（指标值直出，不打健康判定，给 LLM/SRE 拿数）        |
+| **report**            | `arkcli doctor report`              | [`references/scope-report.md`](references/scope-report.md)                                     | seedance 2.x 效果问题上报（badcase → 方舟排障平台）                       |
+| **verify-origin**     | `arkcli doctor +verify-origin ...`  | [`references/verify-origin.md`](references/verify-origin.md)                                   | 对 1-20 个图片/视频 URL 创建来源特征验证任务并轮询官方结果                |
+
+## 命令家族
+
+```
+arkcli doctor                                  # CLI 健康（默认 scope，install/connect/config）
+arkcli doctor account                          # 账号级诊断（→ references/scope-account.md）
+arkcli doctor infer-endpoint <ep-id>           # 单接入点诊断（→ references/scope-infer-endpoint.md）
+arkcli doctor model <model-name>               # 模型维度诊断（→ references/scope-model.md）
+arkcli doctor metrics <query-id>               # 具名 PromQL 查询（→ references/scope-metrics.md）
+arkcli doctor error <error-code>               # 错误码查表（只读，→ references/error-codes.md）
+arkcli doctor report --task-id ... --feedback ...   # seedance 2.x 效果问题上报（→ references/scope-report.md）
+arkcli doctor +verify-origin <url> [url...]     # 1-20 个媒体来源特征验证（→ references/verify-origin.md）
+```
+
+> 普通诊断命令是扁平 verb；`+verify-origin` 是显式的任务型 workflow。`--window <duration>`（默认 24h）控制 VMP 时间窗；结构化输出优先使用 `--format json`。修复建议由诊断结果和 reference 给出，不要给 doctor 命令拼接未注册的参数。
+
+## 来源验证优先路由
+
+用户要验证一个或多个图片/视频是否包含 Ark、Seedance、Seedream 生成来源特征时：
+
+1. 先读取 [`references/verify-origin.md`](references/verify-origin.md)；
+2. 一次命令传入全部 URL，最多 20 个，禁止为每个 URL 各启动一个进程；
+3. 第一次调用不带 `--yes`，获取整批费用披露；这一步不获取 invoker，也不发 Create/Get 业务请求；
+4. 完整展示披露，并在披露之后等待用户明确确认；
+5. 用户确认后，对**同一批参数只加一次 `--yes`**，该确认覆盖整批所有 URL；
+6. CLI 内部完成 Create、20 QPS pacing、每 5 秒 Get 轮询；Agent 不写 shell 循环；
+7. 最终 stdout JSON 必须成为回复的全部内容，不加解释、摘要、翻译、代码围栏或前后缀。
+
+该路由不用于判断媒体内容真假、假新闻、版权归属、法律认证、内容安全、画质或播放质量。`IsOfficial=True/False/Null` 只能按服务端原值转交，Agent 不得自行下结论。
+
+## 核心范式：从用户消息到答案
+
+用户给了具体 Ark 错误码、但没有模型名或 `ep-xxx` 时，**先执行一次只读** `arkcli doctor error <code> --format json`，再按返回的 `category`、`subtype`、`root_cause` 和对应 reference 解释；不能仅凭报错文案或记忆直接给确定性根因。`ModelNotOpen` 的查表含义是当前账号未开通该模型，不能无证据扩写成 Key 失效、模型名拼错或网络故障。`ServerOverloaded` 是服务资源紧张，不能改写成账号配额耗尽；流量突增/冷启动是通用可能原因，不是对该 Request ID 的取证。用户没给具体资源 ID、单次 Trace 时，保留未知并请求所需证据，不编造该资源的健康度或本次请求原因。
+
+聚合 `doctor model` / `doctor infer-endpoint` / `doctor metrics` 只能描述指定时间窗的总体分布，**不能证明用户某一次请求采用了非流式、未限制输出、默认高思考档或重试**，也不能从 TPOT/Token 均值反推出那次端到端时延的唯一原因。需要单次根因时核对对应请求配置和 Trace，或在相同输入上分别实测档位；没有这些证据就把配置方案写成待验证建议，而不是“已定位的根因”。
+
+> [!IMPORTANT]
+> **诊断意图优先于上报意图**：先检查用户是否要求“检查 / 诊断 / 排查 / 分析原因 / 为什么 / 看健康 / 看指标”等诊断动作。只要存在任一诊断意图，即使同时说“并上报”，也必须先走 `doctor model` 或 `doctor infer-endpoint`；诊断返回 `report_suggestion` 且确认是效果类后，再询问用户，用户同意才进入 report（Path A）。只有用户明确要求“直接上报 / 提交 badcase / 反馈到方舟”，**且没有任何诊断诉求**，上下文又确认是 **Seedance 2.x + 效果类问题**，才可跳过诊断进入 [`scope-report.md`](references/scope-report.md) 的 Path B。用户只是描述“字幕错 / 角色漂移 / 闪烁”等效果问题、但没有说要上报时，同样不得直接跑 report。
+
+> [!WARNING]
+> **第一步 MUST 做：扫一遍用户消息里有没有资源 ID（模型名 like `doubao-*`/`seed-*` 或 `ep-xxx`）**。除上方已经满足全部门槛、且不含诊断意图的纯上报 Path B 外，**只要有资源 ID，就 MUST 走 `doctor <scope> <id>`**，不管同时有没有错误码。资源 ID 在场时直接 `doctor error <code>` 是**错误路径**——会丢掉错误率分布、top endpoint、配额压力等关键诊断信号。
+>
+> 反例自检（如果你打算这么干，停下来）：
+> - ❌ 用户说「我的 doubao-seedance-1-0-pro 一直报 ContentRiskBlocked」 → 你跑 `arkcli doctor error ContentRiskBlocked`
+> - ✅ 正解：跑 `arkcli doctor model doubao-seedance-1-0-pro`，再按返回的错误码分布加载 [`error-codes.md`](references/error-codes.md) 的 subtype 段
+>
+> - ❌ 用户说「ep-xxx 报 ModelAccessDenied」 → 你跑 `arkcli doctor error ModelAccessDenied`
+> - ✅ 正解：跑 `arkcli doctor infer-endpoint ep-xxx`，再加载 `error-codes.md` 的 model_access_denied 段
+
+```
+ 用户消息（自然语言 / 错误 JSON / "看看 ep-xxx" / 错误码 / request_id）
+        │
+        ▼
+ ① 抽取关键值：error_code / error_message / resource_id (ep-xxx / model-name) / request_id
+        │
+        ▼
+ ② 按下表决定 Path（**有 resource_id 一律 Path 1 / Path 3**，不要降级到 Path 2）
+        │
+        ▼
+ ③ 跑相应 doctor 命令 + 加载对应 reference
+        │
+        ▼
+ ④ 摘 findings + recommended_fixes 给用户（不复述完整 JSON）
+        │
+        ▼
+ ⑤ 修复命令一律先给用户看、等确认；不要替用户执行写操作
+```
+
+## 路径决策表
+
+|              | **有错误码**                                                                 | **无错误码**                                                                 |
+|--------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| **有资源 ID**| **Path 1（最理想）**：跑 `doctor <scope> <id>` + 加载 [`error-codes.md`](references/error-codes.md) 对应 subtype | **Path 3**：跑 `doctor <scope> <id>` 看整体（状态/用量/错误率/配额）         |
+| **无资源 ID**| **Path 2**：直接 `doctor error <code>` 查表 → 加载 [`error-codes.md`](references/error-codes.md)；不跑 scope | **Path 4/5**：只有 request_id 或啥都没有 → 追问用户要资源 ID 或具体错误信息 |
+
+> 暂不支持 request_id 反查能力（涉及鉴权与平台内部数据）。Path 4/5 不要瞎猜，直接追问。
+
+## 回答证据分级
+
+只有 `request_id` / `x-request-id` / `LogID` 时，明确说明当前 doctor 不能反查单条
+日志或 trace；请求用户补充错误码/完整错误 JSON、资源 ID，或发生时间与症状。
+不要把 Request ID 传给 `doctor error` 当错误码，也不要把资源聚合诊断称为该请求的
+调用链。只有 ID 且无法补充时，保留它供工单/支持排查，不承诺控制台必有跨服务日志权限。
+
+先区分证据来源：`doctor error` 是本地错误码目录，返回的 `root_cause` 是通用解释，
+不是对该账号或某个 Request ID 的日志取证。资源诊断和 metrics 的聚合值必须带上实际
+资源、时间窗口与可用状态；空数组、缺失字段、查询失败不能改写成“零错误”或“健康”。
+建议修复不等于已经修复；没有执行并验证的动作只能列为下一步。
+
+最终回答必须把内容分为以下三类，不能把相关性或建议写成已证实根因：
+
+- **证据**：只引用本轮 doctor stdout 中的字段、数值、状态和错误码，并注明来源字段。
+- **推断**：基于证据给出的原因判断，显式使用“推断”“可能”或“符合某种模式”等措辞；不要把相关性写成已确认因果。
+- **未知**：doctor 未覆盖或当前数据无法证明的事项，明确说明缺少什么证据以及可行的下一步。仅有 `request_id` 时属于这一类，不能声称已查到该请求的日志或 trace。
+
+> [!IMPORTANT]
+> **Path 1 vs Path 2 不要走错**：只要用户消息里既给了**错误码**又给了**资源 ID**（模型名 / `ep-xxx`），**MUST** 走 Path 1（先 `doctor <scope> <id>` 拿到该资源在该错误码上的真实分布 / 占比 / top endpoint，再加载 `error-codes.md` 对应 subtype 解读修复）。**不要**直接 `doctor error <code>` 当成 Path 2 处理——那会丢失模型上下文（错误率分布、top endpoint、配额压力等关键诊断信号）。
+>
+> Path 1 触发条件示例：
+> - 「我的 doubao-seedance-1-0-pro 一直报 ContentRiskBlocked」 → `doctor model doubao-seedance-1-0-pro`，**不是** `doctor error ContentRiskBlocked`
+> - 「ep-xxx 报 ModelAccessDenied」 → `doctor infer-endpoint ep-xxx`，**不是** `doctor error ModelAccessDenied`
+> - 只有用户**只给错误码 / 错误 JSON**、没给资源 ID 时（Path 2），才直接查表。
+
+> [!NOTE]
+> **不要为 `doctor model` / `doctor infer-endpoint` 做兜底前置调用**：这两条命令内部已经先跑 `model.exists` / `endpoint.exists`，覆盖了"模型/接入点是否存在"。**不要**在调用前先跑 `arkcli models list` / `arkcli infer endpoint list` / `arkcli auth status` 等做存在性 / 身份兜底——doctor 命令失败时会自己报清楚原因（404 / VMP precheck / 鉴权），按它的输出处理即可，多余兜底徒增 token 消耗。
+
+## 路由到 scope reference
+
+按 scope 找 reference：
+
+| scope                 | reference                                                                                       | 触发的用户语义                                                              |
+|-----------------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| 默认（CLI 健康）      | [`references/scope-cli.md`](references/scope-cli.md)                                            | 刚装 arkcli 能用吗 / 突然跑不通 / 网络联通 / 时钟偏差 / 当前 profile 认证    |
+| `account`             | [`references/scope-account.md`](references/scope-account.md)                                    | 没权限 / 账号被冻结 / 子账号没 Ark 权限 / VMP 跨服务授权 / 实名 / 余额 / TOS |
+| `infer-endpoint`      | [`references/scope-infer-endpoint.md`](references/scope-infer-endpoint.md)                     | `ep-xxx` 报 429 / 慢 / 状态异常 / 报某错误码 / 想看用量与配额压力           |
+| `model`               | [`references/scope-model.md`](references/scope-model.md)                                       | 跨接入点看模型整体；模型级配额压力；按模态自适应的延迟与生成时长指标          |
+
+## 路由到错误码 reference
+
+所有错误码诊断细则集中在一个文件：[`references/error-codes.md`](references/error-codes.md)。`arkcli doctor error <code>` 返回的 JSON 里 `reference` 字段统一指向该文件，`subtype` 字段告诉你跳到哪个小节。
+
+### 完整 subtype 路由
+
+| 业务领域       | subtype                  | 跳节                                                                                                  |
+|----------------|--------------------------|------------------------------------------------------------------------------------------------------|
+| 方舟错误码     | `input_real_face`        | [`error-codes.md` §1.1.1](references/error-codes.md#111-input_real_face)                              |
+| 方舟错误码     | `input_copyright`        | [`error-codes.md` §1.1.2](references/error-codes.md#112-input_copyright)                              |
+| 方舟错误码     | `input_content_safety`   | [`error-codes.md` §1.1.3](references/error-codes.md#113-input_content_safety)                         |
+| 方舟错误码     | `output_video_copyright` | [`error-codes.md` §1.1.4](references/error-codes.md#114-output_video_copyright)                       |
+| 方舟错误码     | `output_video_safety`    | [`error-codes.md` §1.1.5](references/error-codes.md#115-output_video_safety)                          |
+| 方舟错误码     | `model_access_denied`    | [`error-codes.md` §1.2](references/error-codes.md#12-modelaccessdenied)                               |
+| 方舟错误码     | `rate_limit_exceeded`    | [`error-codes.md` §1.3](references/error-codes.md#13-ratelimitexceeded)                               |
+
+> 其余 Volc 原生码已在 `error-codes.md` 各 section 索引表里覆盖（含 HTTP / 释义 / 处理方式）。`error-codes.md` 顶部目录是首要导航入口。
+>
+> doctor 的**前置依赖闸门**（VMP / TLS / TOS 跨服务授权）不是 API 错误码，由 `arkcli doctor account` 输出 + [`arkcli-shared`](../arkcli-shared/GUIDE.md) / [`arkcli-auth`](../arkcli-auth/GUIDE.md) 联合处理。
+>
+> 新错误码贡献流程：[`CONTRIBUTING.md`](CONTRIBUTING.md)。
+
+## doctor 输出 schema（按需消费）
+
+doctor 命令家族输出**两套** JSON schema——按命令分。
+
+### A. 各 scope 命令（`arkcli doctor` / `account` / `infer-endpoint` / `model`）
+
+`arkcli doctor <scope> <id> --format json` 返回一份结构化 JSON。**不要做严格 schema 校验**——字段会随版本增减（如 TTFT/TPOT/replicas 等指标），按字段名按需取；这不表示支持 `request_id` 反查。
+
+**注意**：默认 CLI scope（`arkcli doctor` 无参）的 schema 是**扁平三段**（`installation` / `connectivity` / `configuration`），跟业务 scope 的通用字段（`checks[]` / `findings[]`）不对齐——CLI 段项目固定且少，直接看字段即可。业务 scope 遵循下表：
+
+| 顶层字段                     | 含义                                                                          |
+|------------------------------|------------------------------------------------------------------------------|
+| `scope`                      | `cli` / `account` / `model` / `infer-endpoint`                                |
+| `subject`                    | 资源 ID（model name / endpoint id），CLI 与 account 留空                      |
+| `window`                     | VMP 时间窗（如 `24h`）                                                        |
+| `checks[]`                   | 各 check 项的 raw 结果：`{ id, status: pass/warn/fail/skip, value, message }` |
+| `findings[]`                 | 聚合后的问题清单：`{ severity, error_code?, root_cause, evidence }`           |
+| `recommended_fixes[]`        | 修复建议：`{ id, kind: skill/url/command, target, reversibility }`            |
+| `error.blocking_dependency?` | 前置依赖未通过（如 VMP 三段授权失败），命令终止 + 引导 fix                    |
+
+### B. `arkcli doctor error <code>` 单错误码查表
+
+这条命令是**只读查表**——不需登录、不消耗推理 token——把一个错误码翻译成结构化诊断。返回字段：
+
+| 字段              | 含义                                                                                            |
+|-------------------|------------------------------------------------------------------------------------------------|
+| `category`        | 顶层类别（如 `policy` / `permission` / `quota` / `infrastructure`）                              |
+| `subtype`         | 类别下的子类型（如 `input_real_face` / `model_access_denied` / `rate_limit_exceeded`）            |
+| `code`            | 命中的火山真实错误码（原值回显，用于确认输入原码）                                                |
+| `root_cause`      | 根因，用户友好的一句话                                                                           |
+| `hint`            | 修复指引（可跑的命令，或需用户做的动作）                                                          |
+| `rules`           | 触发信号候选；**多个 = 复合错误码，需消歧**（按 reference 里的判定步骤择一）                       |
+| `needs_backend`   | 依赖但尚未上线的能力（如 `deface`）——**不要假装能自动修**                                        |
+| `skill`           | 固定 `arkcli-doctor`（就是本 skill）                                                              |
+| `reference`       | 统一是 `error-codes`（指向 [`references/error-codes.md`](references/error-codes.md)）；用 `subtype` / `code` 定位具体小节 |
+
+**给用户看时**：按“证据 / 推断 / 未知”分层，摘 `findings` + `recommended_fixes`（scope 命令）或 `root_cause` + reference 段里的修复方案（error 命令），**不要复述完整 JSON**；建议执行需用户二次确认。
+
+### 聚合 vs 原始时序
+
+doctor 默认输出的是**聚合统计值**（如 `error_rate`、`ttft.p99`、`tpm_peak`）——一个数概括一段时间，足够判断"健康吗 / 配额够吗"。
+
+底层数据来自 VMP 的 Prometheus 时序流，但 `doctor model` / `doctor infer-endpoint` 当前只返回聚合统计，不提供切换为原始时序的参数。聚合**会平均掉突发与抖动**，回答不了“是不是某一刻爆发的 / 是稳定高还是脉冲撞顶”；需要原始时序时，转到 [`references/scope-metrics.md`](references/scope-metrics.md) 核对现有具名查询或 raw 查询能力，不要编造参数。
+
+| 用户问什么                          | 用哪种            |
+|------------------------------------|-------------------|
+| "现在怎么样 / 健康吗"              | 聚合（默认）      |
+| "什么时候开始 / 持续多久 / 突发还是稳态" | 原始时序        |
+
+详细决策规则与每类指标的时序分析方法见 [`references/scope-infer-endpoint.md`](references/scope-infer-endpoint.md) 的"聚合统计 vs 原始时序"段。
+
+## 安全与边界
+
+- **只读优先**：`arkcli doctor` 默认只读体检，不消耗推理 token、不改任何资源。
+- **来源验证是显式例外**：`doctor +verify-origin` 会创建远端异步任务，Volc 新建批次可能收费；整批只确认一次，确认前禁止获取 invoker 或发任何请求。
+- **修复建议不等于自动执行**：doctor 诊断结果和 reference 只负责给出修复路径；真正执行其它命令前必须先展示影响，写操作继续遵守对应命令的确认门。
+- **越权边界**：控制面调用使用当前身份的 AK/SK 或 SSO 派生 STS 签名；不读平台内部数据（k8s / 调度器等），不跨账号横比。
+- **不替用户烧 token**：诊断本身不烧 token，但修复方案如果是重新 `+gen` / `+chat`，先把命令给用户看、等确认。
+- **不假装能修没上线的能力**：`needs_backend` 字段非空（如 `deface`）时如实告诉用户该能力尚未上线，给可行替代。
+
+## VMP 前置检测与 `--auto-bind`
+
+`arkcli doctor metrics` / `model` / `infer-endpoint` 三条命令都依赖 VMP（托管 Prometheus）数据，调命令前会按顺序自动检测三件事：
+
+1. **VMP 订阅**（`GetSubscription`）—— 账号是否已开通 VMP；
+2. **跨服务授权 SLR**（IAM `CheckServiceLinkedRole`，`ServiceName=ark`）—— 是否已为 ark 建过服务关联角色；
+3. **Telemetry 绑定**（Ark `ListTelemetryConfigs`）—— 是否已把某个 VMP workspace 绑到 ark observability。
+
+任何一步没通过，命令直接报 `*output.ExitError` 并附 `LinkOpenMgmtCloudProduct` 跳转链接（云产品开通页 + cloudProduct 抽屉），不会替用户开通订阅或建 SLR——这两步必须在控制台勾「同意条款」。
+
+只有"前两步通过、第三步缺绑"这一种情形可以让 CLI 自动收尾：
+
+```bash
+# 默认行为：未绑定时直接报错并提示加 --auto-bind
+arkcli doctor metrics request.qpm
+
+# 自动建 ark_default workspace（vmp.standard.15d / 防误删）+ 调
+# CreateTelemetryConfig 绑到 ark observability
+arkcli doctor metrics request.qpm --auto-bind
+arkcli doctor model <model-name>          --auto-bind
+arkcli doctor infer-endpoint <endpoint-id> --auto-bind
+```
+
+行为细节：
+- 账号下已有任意 workspace → 复用第一个；没有 → 建 `ark_default`；
+- `metrics` 子命令显式传 `--workspace-id <uuid>` 时跳过 precheck，尊重多账号 / 联调场景。
+
+什么时候建议加 `--auto-bind`：
+- agent 自动化路径（确认账号已订阅 + 已建 SLR），让命令幂等地把 telemetry 绑好；
+- 用户已在控制台勾过条款、只差最后一步建 + 绑 workspace。
+
+什么时候**不**加：
+- 账号还没订阅 VMP / 没建 SLR——加了也没用，CLI 仍只会给跳转链接；先去控制台。
+
+## 配额压力阈值（默认）
+
+doctor 对 RPM/TPM 配额压力的阈值是写死的（用户后续可配置）：
+
+| 占比      | severity | 表现                                |
+|-----------|----------|-------------------------------------|
+| `≥95%`    | fail     | 已经/即将限流，立即提配额           |
+| `≥80%`    | warn     | 高压，建议提配额或调流量分布         |
+| `≥50%`    | info     | 健康但有空间                         |
+| `<50%`    | pass     | 充裕                                 |
+
+错误率默认阈值 `5%` 以上 warn，具体 scope 的 reference 可在自己的细则里覆盖。
+
+## 何时 _不_ 用本 skill
+
+- 用户问 arkcli 怎么装 / 怎么登录 / profile 怎么切 → [`arkcli-shared`](../arkcli-shared/GUIDE.md) / [`arkcli-auth`](../arkcli-auth/GUIDE.md)
+- 用户想**部署**新 endpoint → [`arkcli-deploy`](../arkcli-deploy/GUIDE.md)（不是诊断）
+- 用户想**列/启停/更新** endpoint → [`arkcli-infer-endpoint`](../arkcli-infer-endpoint/GUIDE.md)
+- 用户想看**用量明细**（不带『为什么/异常』判断） → [`arkcli-usage`](../arkcli-usage/GUIDE.md)
+- 用户想看**模型基础元信息**（参数 / 价格 / 支持参数） → [`arkcli-models`](../arkcli-models/GUIDE.md)
+
+## 参考
+
+- [`references/scope-cli.md`](references/scope-cli.md) — CLI 健康检查（默认 scope）细则
+- [`references/scope-account.md`](references/scope-account.md) — 账号级诊断细则（identity / compliance / permissions / ecosystem）
+- [`references/error-codes.md`](references/error-codes.md) — 错误码总册（生视频 + 通用 Ark + 公共码）
+- [`references/scope-infer-endpoint.md`](references/scope-infer-endpoint.md) — 单接入点诊断细则
+- [`references/scope-model.md`](references/scope-model.md) — 单模型诊断细则
+- [`references/scope-report.md`](references/scope-report.md) — seedance 2.x 效果问题上报（badcase report）
+- [`references/verify-origin.md`](references/verify-origin.md) — 1-20 个图片/视频来源特征验证、整批费用确认与严格结果转交
+- [`references/evals.md`](references/evals.md) — 来源验证 trigger、一次整批确认、恢复与严格转交回归
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — 加错误码 / scope check / fixer 的贡献入口
+- [arkcli-shared](../arkcli-shared/GUIDE.md) — 认证 / 命令选择 / 安全规则
+- [arkcli-infer-endpoint](../arkcli-infer-endpoint/GUIDE.md) — endpoint CRUD（doctor 不重复实现）
+- [arkcli-models](../arkcli-models/GUIDE.md) — 公共基础模型查询

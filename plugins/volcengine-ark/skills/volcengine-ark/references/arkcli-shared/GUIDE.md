@@ -1,0 +1,236 @@
+---
+name: arkcli-shared
+version: 2.2.4
+description: "arkcli 共享执行协议：首次配置入口、业务命令执行前的认证闸门、命令路由与选择顺序、输出/安全/二次确认规则。深度细节（身份解析、AK-SK 边界、API Key 恢复、实名闸门、profile 默认与漂移、临时数据面执行上下文、版本检查与显式升级、全局 flags、故障分流）按需在 references/ 加载。当用户第一次使用 arkcli、遇到未登录/鉴权失败、询问版本是否最新或要求升级 arkcli、需要判断该走产品命令还是 raw api、或任何 arkcli-* skill 需要公共上下文时触发。"
+metadata:
+  requires:
+    bins: ["arkcli"]
+  cliHelp: "arkcli --help"
+---
+
+# arkcli 共享规则
+
+本 skill 是 `arkcli` 的统一执行协议**入口**。所有 `arkcli-*` skill 在执行前都应先读取本文件。
+
+> **分层约定**：本文正文只放"几乎每个任务都命中"的规则。稀有路径 / 查表类细节下沉到 reference，命中对应场景时再读：
+>
+> | 场景 | 读哪个 |
+> |---|---|
+> | "我的 / my xxx" 自指资源过滤 | [`../arkcli-auth/references/identity-resolution.md`](../arkcli-auth/references/identity-resolution.md) |
+> | AK/SK 态能调什么 / 数据面 API Key 报错恢复 | [`../arkcli-auth/references/auth-modes.md`](../arkcli-auth/references/auth-modes.md) |
+> | 开通 / 部署 / 精调前的实名检查 | [`../arkcli-auth/references/realname-gate.md`](../arkcli-auth/references/realname-gate.md) |
+> | `+chat`/`+gen`/`+deploy` 的默认资源与漂移 nudge | [`references/profile-defaults.md`](references/profile-defaults.md) |
+> | 临时传入 Profile / API Key / Base URL / Endpoint / 模型名 | [`references/execution-context.md`](references/execution-context.md) |
+> | 版本是否最新 / 刷新版本信息 / 显式升级 arkcli | [`references/update.md`](references/update.md) |
+> | 全局 flags 速查 | [`references/global-flags.md`](references/global-flags.md) |
+> | 报错不知归类 / 故障分流 | [`references/troubleshooting.md`](references/troubleshooting.md) |
+
+## 事实与交付闸门
+
+- 每个最终事实必须对应实际返回、已读取的文档正文或已查看的输入/产物。未看图片时使用“参考图”等中性称呼，不能从文件名、自己填写的 display_name 或生成 prompt 推断物体、颜色和人物；输入参数表达期望，不证明产物已经满足要求。
+- 查询覆盖范围与返回状态分开报告：截断、分页未完成或只取部分行时，只能描述已核对部分，不能宣称“全部启用/全部没有”。接口或页面行为必须来自真实契约、官方正文或实际界面，不发明“点击即可复制”等步骤。
+- 生成/创建成功以真实终态和返回的产物/资源 ID 为准；本地文件保存、附件提交和最终答复分别验收。已经完成的部分应保留并交付，未完成项准确列出，不能因最后一步失败把全部说成未执行，也不能把中间成功包装为整体完成。
+
+### 排障交付：先给证据范围，再给修复分支
+
+用户询问调用失败、Key 是否有问题或客户端为何不能用时，最终答复按下面三项组织；有明确原请求证据时直接给对应修复，缺证据时也交付已完成的检查：
+
+1. **已验证**：列出本次检查的账号/资源、时间、协议与实际结果，仅披露必要的非敏感标识。原请求与本机对照分开；只查状态就写“状态已核对”，只有真实业务调用成功才能写“该次调用成功”。
+2. **仍未知**：点明尚未取得的原客户端 URL、模型、时间或错误，说明它使哪条结论仍不能成立。检查没有复现用户问题时，收口为“本次对照成功，原请求原因尚未定位”，不要把下一步排查对象写成已经确认的根因。
+3. **下一步**：按现有证据给最短的条件分支，使用脱敏后的原请求信息即可核对；没有新请求的成本授权时不追加推理测试。确有原请求与契约或受控复现支持根因时，引用这条证据并给出修复，不机械重复“未知”。
+
+| 实际拿到的证据 | 可交付结论 | 尚不能推出 |
+| --- | --- | --- |
+| Endpoint Running、Key Active | 查询时的管理状态 | 用户的具体请求成功、历史从未失败 |
+| Key LastAccessTime | 接口返回的最近访问时间 | 那次请求成功、之后持续正常、历史故障是临时异常 |
+| 本机一组协议/模型/Key 调用成功 | 这组条件下这一次调用成功 | 平台所有链路正常、用户客户端配置一定错 |
+| unknown field 错误，原 URL/SDK 调用未提供 | 该请求有字段不兼容信号；按 Chat/Responses 契约给条件修复 | 仅凭字段名锁定用户实际协议、排除模型/SDK/网关差异 |
+
+上述范围核对在发送最终答复时执行，包含开头摘要和结尾；不能正文写“尚未定位”，标题却写“排查完成，根因是本地配置”。
+
+## 配置与首次使用
+
+- 首次使用或怀疑配置归因（`--profile` / `ARK_PROFILE` / 全局 flags / `.env` 谁覆盖谁）不对时，先看 [`../arkcli-config/GUIDE.md`](../arkcli-config/GUIDE.md)
+- profile 类写操作（create / use / set-default / keys / models / delete / rename）走 [`../arkcli-profile/GUIDE.md`](../arkcli-profile/GUIDE.md)
+- 看可用资源（endpoint / plan 模型 ID）走 [`../arkcli-resources/GUIDE.md`](../arkcli-resources/GUIDE.md)
+- 首次远端调用前，先看 [`../arkcli-auth/GUIDE.md`](../arkcli-auth/GUIDE.md)
+- `arkcli` 是产品 CLI，不是 OpenAPI Action 浏览器；不要从 Action 名反推命令设计
+- 安装: `npm i @volcengine/ark-cli -g`（公开版）
+- 版本检查与显式升级按需读取 [`references/update.md`](references/update.md)；`update.mode` 的读取、写入与 automatic gate 仍走 [`../arkcli-config/GUIDE.md`](../arkcli-config/GUIDE.md)
+
+## 调用归因协议
+
+当 AI Agent 通过任意 `arkcli-*` 业务 skill 执行 `arkcli` 命令时，必须使用下面的单命令环境变量前缀。它既标记调用来源和 owning skill，也冻结本次 Skill workflow 的 CLI 版本：不做隐式 registry 更新检查、不打印更新提示、不在任一子命令结束后调度 automatic apply。人类直接在终端调用 `arkcli` 时不要手动补这些变量。
+
+```bash
+ARKCLI_NO_UPDATE_NOTIFIER=1 \
+ARKCLI_CALLER_TYPE=ai_agent \
+ARKCLI_CALLER_NAME=<agent-id> \
+ARKCLI_SKILL_NAME=<current-arkcli-skill> \
+arkcli <command> ...
+```
+
+约定：
+
+- `ARKCLI_CALLER_NAME` 使用稳定 Agent ID，例如 `codex` / `claude-code` / `opencode` / `openclaw` / `trae` / `cursor`；无法可靠判断时用 `unknown_agent`
+- `ARKCLI_SKILL_NAME` 填当前业务 skill 名，例如 `arkcli-gen` / `arkcli-chat` / `arkcli-models` / `arkcli-deploy`
+- 一般业务 workflow 不要把 `arkcli-shared` 填进 `ARKCLI_SKILL_NAME`，归因必须落到实际 owning skill；仅当本 skill 直接处理版本检查或显式升级时，它就是 owning skill，使用 `ARKCLI_SKILL_NAME=arkcli-shared`
+- `ARKCLI_NO_UPDATE_NOTIFIER=1` 的兼容变量名虽然只写了 notifier，但契约覆盖全部**隐式**更新活动：缓存读取/刷新、提示和 automatic 调度；它不阻止用户明确要求的 `arkcli update` / `arkcli update --check`
+- Skill 内每一条 `arkcli` 子命令都必须带完整前缀，不能只给第一条加；这样多命令 workflow 从开始到结束都使用同一已安装版本
+- 只给当前命令加前缀，不要 `export` 到整个 shell 会话，避免串到后续无关命令
+
+## 统一 CLI 与 Profile
+
+当前 `arkcli` 的产品身份在编译时固定；Profile 只选择该产品内的身份与消耗切面，不能切换产品：
+
+```bash
+arkcli profile create --type platform --set-default          # 新建火山 profile（旧 config init/switch 已 deprecated）
+arkcli profile use <name>                                    # 切换默认 profile
+```
+
+
+切换 profile 会联动切换登录身份、API Key、控制面路由等上下文。详细命令树看 [`../arkcli-profile/GUIDE.md`](../arkcli-profile/GUIDE.md)。不能从 Profile 的名称或 `tenant` 字段推断、切换当前编译产品。
+
+只查当前身份/Profile 时，普通 CLI 使用 `arkcli auth status` / `arkcli auth whoami`；默认模型与路由使用 `arkcli resources list --modality <text|image|video>` 并按 Resources Skill 验证。`profile show/list/keys list` 可能同步远端 Key 并回写本地库存或默认 Key，不能作为常规 Chat/Gen 准入或“不改配置/Key”请求的无副作用查询。显式 Profile 管理任务保留这些命令，但先说明同步影响；不改用 deprecated `config show/list` 绕过限制。此边界同样约束业务 Skill/reference 的旧建议。
+只读核对身份与默认资源时，每次 Bash 调用只执行一条 `arkcli auth status`、`auth whoami` 或 `resources list --modality ... --format json`；直接检查该命令的原始 JSON 与执行状态。不要用 `; echo`、管道截断或重定向包装核对命令，避免宿主拒绝或丢失事实来源。若命令被拒绝，报告未完成的核对，不把拒绝推断为账号或资源状态。
+
+## 命令路由与执行顺序
+
+优先按**用户目标**判断，而不是按命令名思考：
+
+### 先判断执行面：控制面 vs 数据面
+
+同一个 `arkcli` 里，不同命令使用不同凭证和执行面。**显式传入不属于该命令的 `--api-key` / `--base-url` 会 fail-fast**，不要把它们当通用凭证：
+
+| 功能 | 执行面 | 凭证 / 路由 | 硬约束 |
+|---|---|---|---|
+| 模型目录、Endpoint、自定义模型、Dataset、精调训练、用量/账单等管理 | **控制面**（OpenTOP / BFF） | SSO 派生的 STS（`arkcli auth status` / `auth login`）；可用 `--env` | 不消费数据面 `--api-key` / `--base-url`；`.env` 的 `ARK_API_KEY` 只服务推理，不能用于训练创建或 TOS 上传 |
+| `+chat` / `+gen` / `+understand` / Managed Agent session/files / raw `arkruntime` | **数据面** | Profile API Key、套餐席位 Key，或显式 `--api-key`（需要时配 `--base-url`） | 只做推理/会话调用，不改控制面资源；Plan Key 与 Platform paygo Key 不能互借 |
+
+> **精调是控制面，不是 Agent Plan 模型调用。** `arkcli train finetune *` / `arkcli dataset *` 走 SSO/STS；
+> `train finetune create` 明确拒绝 `--api-key`。训练数据用 `--train-file` / `--validation-file` 由 CLI 自动上传到
+> Ark 托管 TOS，不要把本地路径直接当后端数据地址。SFT/LoRA/DPO/RL 都不要转 `+chat` / `+gen`。
+
+| 用户目标 | 路径 | 关键点 |
+|---|---|---|
+| 试用模型 / 快速验证效果 | `auth` → `resources` / `models`（可选）→ [`+chat`](../arkcli-chat/GUIDE.md) / [`+gen`](../arkcli-gen/GUIDE.md) | Plan lane 用模型名；Platform lane 用 Endpoint |
+| 专项多模态理解（转写/抽取/字幕/框目标…） | `auth` → [`+understand`](../arkcli-understand/GUIDE.md) | 有明确产出形态时走 understand，不是 chat |
+| 语音合成 / TTS / 配音 / 朗读 | [`arkcli-gen`](../arkcli-gen/GUIDE.md) 的 `+gen --modality audio` | 火山 Agent Plan 个人版/企业版的 seed-tts-2.0；原生 ASR 使用 `+understand asr/asr-align --audio-protocol ws-bidirectional|ws-unidirectional` |
+| 正式接入 / 稳定调用 | `auth` → `models` → [`infer endpoint list`](../arkcli-infer-endpoint/GUIDE.md) → 没有就 [`+deploy`](../arkcli-deploy/GUIDE.md) | 核心资源是 Endpoint，不是 +chat/+gen |
+| 模型精调 / SFT / LoRA / DPO / RL / 训练任务 / `mcj-*` | `auth` → [`arkcli-train-finetune`](../arkcli-train-finetune/GUIDE.md) | **控制面 SSO/STS**；不是 `+chat`/`+gen`，也不走 Agent Plan 数据面；数据走 TOS 或 `--train-file` 自动上传 |
+| 排查存量调用 / 看消耗 | `auth` → [`usage`](../arkcli-usage/GUIDE.md) | — |
+| 本地 AI Agent 集成 | `+connect` | — |
+| 明确查官方文档 / 读取文档 URL / 业务 Skill 缺少产品知识 | `docs` | 搜索后读取正文；不替代资源操作、鉴权、诊断和 CLI help |
+
+**易混动词路由**（避免选错 skill）：
+
+- **列 / 绑 / 分 / 轮换席位 APIKey** → [`arkcli-plans`](../arkcli-plans/GUIDE.md)；**用 / 消耗 / 还剩多少额度** → [`arkcli-usage`](../arkcli-usage/GUIDE.md)
+- profile **写操作**（create/use/set-default/keys）→ [`arkcli-profile`](../arkcli-profile/GUIDE.md)；配置**排障 / 老 yaml** → [`arkcli-config`](../arkcli-config/GUIDE.md)
+- 开放式带图**对话** → `+chat`；**生成**图/视频 → `+gen`；有产出形态的**理解** → `+understand`
+- **语音合成 / TTS / 配音 / 朗读**：Agent Plan 个人版/企业版走 [`arkcli-gen`](../arkcli-gen/GUIDE.md) 的 `+gen --modality audio`，执行前读其 `references/arkcli-gen-audio.md`。该命令使用已绑定 profile 的个人版专属 Key 或企业版席位 Key，不创建 Endpoint。原生 ASR 和打轴使用 `+understand asr/asr-align --audio-protocol ws-bidirectional|ws-unidirectional`，执行前读取 Understand 的语音 reference。其他广场语音模型只做发现。
+
+**命令选择顺序**（始终按此）：
+
+1. 先用产品命令 `arkcli <domain> <verb>` 或 `arkcli +<workflow>`
+2. 有对应 reference 文档先读 reference 再执行
+3. 产品命令确实不覆盖，最后才走 `arkcli api`（**不要**把 Raw API Explorer 当默认入口）
+4. 读操作优先直接执行；写 / 删除 / 切换默认配置前必须确认用户意图
+
+## 认证闸门
+
+除 `arkcli auth ...`、`arkcli profile list/show`、`arkcli +connect list`、`arkcli update ...` 外，默认认为业务命令**需要先过认证检查**。不要跳过认证检查就连续重试一串业务命令。
+
+**待授权优先于重新登录。** 本轮或用户提供的上一轮状态为 `stage=authorize_pending`、用户尚未完成授权且没有 code 时，等待用户；不要重新执行任何 `auth login`、`config init` 或原业务命令。可只读检查一次 `auth status`：若已有所需的有效凭据则恢复原任务；`logged_in=false` 只说明尚未登录，不表示 pending 过期或丢失，仍须等待。仅收到 CLI 明确的会话过期/不存在错误或用户明确要求重启登录，才重开 Phase 1。
+
+1. 先运行 `arkcli auth status`；已登录就继续目标命令
+2. 未登录 / 凭证失效：保持当前编译产品，按其认证 Skill 选择登录命令，不靠 Profile 推断或切换产品
+   - **火山**：直接 Bash 执行 `arkcli auth login volc-sso`
+   - 执行前一句话告知用户"检测到未登录，正在启动 SSO 登录，请在浏览器完成授权"；Bash 调用设 `timeout=600000`（10 分钟）；成功后立即回到原始任务，不要停在 auth 结果
+   - SSO 同时覆盖控制面 BFF 和数据面，所以默认走 SSO；**AK/SK 登录通道 0.1.16 暂关**。CI / agent / 沙箱（非 TTY）走 `arkcli auth login --no-browser` **两段式**：Phase 1 跑它拿 `authorize_pending` JSON 里的 `authorize_url` 转发给用户，待其浏览器授权后回粘 base64 授权码，再跑 `arkcli auth login --no-browser --code <授权码>` 完成（细节见 [`../arkcli-auth/GUIDE.md`](../arkcli-auth/GUIDE.md)）。**不要**在非 TTY 直接指望它阻塞等粘贴（旧版会 `EOF` 崩）
+   - 启动 SSO 失败（无浏览器 / `open` 失败 / 端口占用 / 超时）→ 不原地重试，把 stderr 原样贴回用户、请其手动在终端登录后回来
+   - 登录流程细节、whoami、apikey 选择见 [`../arkcli-auth/GUIDE.md`](../arkcli-auth/GUIDE.md)
+
+**追加闸门 / 错误恢复**（命中才读，避免常驻）：
+
+- 命中**开通 / 部署 / 精调 / 激活模型**（`+deploy` / `infer endpoint create` / `train finetune create` / `models activate`）→ **第一步**先做实名检查，见 [`../arkcli-auth/references/realname-gate.md`](../arkcli-auth/references/realname-gate.md)
+- 当前是 **AK/SK 态**、要判断能调什么，或**数据面 API Key** 报 401/403/AccessDenied 要恢复 → [`../arkcli-auth/references/auth-modes.md`](../arkcli-auth/references/auth-modes.md)
+- 用户说"**我的 / my** xxx"要按身份过滤资源 → [`../arkcli-auth/references/identity-resolution.md`](../arkcli-auth/references/identity-resolution.md)
+
+## 输出规则
+
+- 全局 `--format` 支持 `json`、`yaml`、`table`、`wide`、`csv`、`jsonl`、`pretty`；脚本场景优先用 `json`/`yaml`，需要抽字段时配合 `--transform`
+- `stdout` 只放结构化结果；解释 / 调试 / 错误都走 `stderr`
+- 消费结构化输出时，禁止先用 `head` / `tail` / `sed -n` / `head -c` 按行或字节截断再解析。这样既可能破坏 JSON，也会漏掉数组后部的目标项、default 标记或 warning 对应的数据。输出较大时，优先使用命令自己的 `--output <file>`；没有该 flag 时只把完整 stdout 重定向到文件，再用 `jq` / `yq` 提取所需字段。
+- 首次调用和决定结论的调用不得用 `2>/dev/null` 吞掉 stderr；scope 提示、软截断告警和可恢复错误可能只出现在 stderr。
+
+## TTY 表达力
+
+- 交互终端下，长任务会自动使用 Spinner、Heartbeat、下载/上传字节进度条和阶段标签；这些都是 `stderr` 装饰，不改变 stdout 契约，agent / pipe / CI 下静默降级。
+- 需要人读列表/详情时显式使用 `--format table`（策展列）或 `--format wide`（全列；嵌套结构转 Panel）；机器消费继续用 `json` / `yaml` / `csv` / `jsonl`。
+- 不要给脚本硬加 UI flag。需要一键关闭所有 TUI 装饰时设置 `ARKCLI_NO_TUI=1`；需要单独关闭某类效果时再使用细粒度逃生门：`ARKCLI_NO_SPINNER`、`ARKCLI_NO_PROGRESS`、`ARKCLI_NO_NOTES`、`ARKCLI_NO_CELEBRATE`、`ARKCLI_NO_INLINE_IMAGE`、`ARKCLI_NO_STEPPER`、`ARKCLI_NO_BADGE`、`ARKCLI_NO_CALLOUT`、`ARKCLI_NO_CODE_BLOCK`、`NO_COLOR`。
+- Stepper、Badge、Callout、CodeBlock 等结构化表达组件仅在交互终端生效；脚本 / Agent / 管道环境下通过 `NO_COLOR` 或对应 `ARKCLI_NO_*` 自动降级为纯文本，不改变 stdout JSON 契约。
+- 长下载、TOS 上传、`+gen` 自动下载、`gen get` 下载会显示字节进度；命令仍在等待但暂时没有字节时，先看 Spinner/Heartbeat 的 elapsed，不要因短暂无输出重复提交计费任务。
+- 裸 `arkcli` 的 TTY dashboard 会展示 workspace、profile defaults、gallery 占用和带解释的 next actions；Tab 补全覆盖模型、Profile、训练任务和生成任务。
+
+## 安全规则
+
+- 禁止输出完整 AK/SK、token、secret
+- 写入、删除、切换配置前需要确认用户意图
+- 只有已注册 Action 才能通过 `arkcli api` 调用
+- 涉及创建 Endpoint、修改 profile、清理凭证等操作时，先看叶子命令 `--help`：支持 Client Preview 才能用 `--dry-run`；不支持时改用只读命令核对并取得明确确认，绝不生成不存在的 flag
+
+## 意图澄清与结构化选择
+
+意图澄清只解决“用户要操作哪个真实目标”，不代替写操作授权。用户目标已经唯一，或可从
+本轮输入与当前权威结果安全确定时，不要额外提问。确有歧义时遵守以下硬规则：
+
+1. 先做一次最小、有界的只读查询；候选只能来自本轮完整结构化结果，不能从模型记忆、示例或截断输出补全。
+2. 只允许用用户明确给出的硬约束和产品权威 eligibility 字段过滤候选；相关度排序、展示顺序、推荐语和 Agent 自己的优劣判断都不是硬约束，不得用主观“最合适”把 N 个候选自行收敛成 1 个。
+3. 按 0 / 1 / N 收敛：0 个时补充一个最关键条件；1 个时复述精确 ID 后继续；N 个且选择会改变远端结果时必须询问用户，并在用户选定前停止，不得进入下游 preview、create、update 或 delete。
+4. N 个候选优先使用当前宿主提供的结构化选择能力，选项直接携带区分目标所需的真实 ID 与关键字段；可以标注推荐及依据，但推荐不能代替用户选择。通用 Skill 不写死任何宿主工具名，也不重复添加宿主自动提供的自由输入项。
+5. 宿主没有结构化选择能力时，退化为精简编号列表并要求用户回复精确 ID。用户选定后只沿原 workflow 继续，不重新查询同一批候选。
+6. 因 N 个候选停机询问时，除让用户选「这次用哪个」，一并给出把它固定下来的方式，让用户还能选
+   「以后都用它」——该候选集有持久化开关时就说明怎么开：生成类模态默认值走
+   `arkcli profile set-default --modality <image|video> <ep-id>` 写当前 profile 的该模态默认值，
+   下次同类请求不再询问。否则同类请求每次都要重新问一遍，无人值守场景会持续卡住。
+   这是**写操作**，只在用户明确同意后执行；询问本身仍按上述规则停机，不要替用户预选。
+
+**任务型选型例外**：用户要求创建 Managed Agent、未指定主模型时，按 owning
+`arkcli-agent` 的模型选择流程，允许根据本轮实时资格、详情与用户意图择优并说明依据，
+不必仅因候选多于一个就提问。择优不等于把多个候选谎称为唯一候选；明确硬约束必须有
+对应版本证据，费用/能力差异实质影响任务且无法安全判断时仍先询问。此例外不允许替换
+用户明确模型、切换身份/计费路径或为更新、删除等操作擅选已有资源，也不替代执行授权。
+
+## 二次确认错误处理（human-in-the-loop）
+
+高危操作（删除资源、变更凭证、产生费用等）需要二次确认。CLI 自动检测环境：交互式终端显示 Y/N 提示；非交互式（Agent 调用）返回 `ExitValidation` 错误、`type="requires_confirmation"`。
+
+当 arkcli 返回 `ExitValidation` 且 `type="requires_confirmation"` 时：
+
+1. **不要直接报错给用户** —— 这是正常的二次确认流程
+2. **调用宿主提供的用户确认能力** —— 提示内容可从 CLI 错误的 `hint` 字段提取，或通用提示"即将执行高危操作，确认继续吗？"
+3. 用户确认 → 给原命令加 `--yes` flag 重试
+4. 用户取消 → 返回"操作已取消"
+
+当前会触发二次确认的命令：`plans personal rotate-apikey`、`plans team rotate-apikey`、`models activate <model-name>`、`profile delete <profile-name>`、`profile project [<project-name>]`、`config delete <profile-name>`。后续新增高危命令遵循同一约定。
+
+## Agent 禁止行为
+
+- 不要把 `arkcli api` 当默认入口
+- 不要在未检查认证状态前连续重试业务命令
+- 不要把中间步骤当最终结果；登录、查模型、切 profile 完成后应回到用户原始任务
+- 不要在业务 skill 里重复共享规则；共享规则统一以本 skill（及其 references）为准
+- 不要一概声称“试用不需要 Endpoint”：Plan lane 使用模型名，Platform lane 必须使用 Endpoint。按 [`references/execution-context.md`](references/execution-context.md) 判断；正式接入仍走 `+deploy`
+- 广场可搜不证明某语音模型可调用。已实现的 TTS 入口为火山 Agent Plan 个人版/企业版 `+gen --modality audio`；不要把它扩展为 Platform、Coding Plan、Endpoint 或语音模型 usage 能力；原生 ASR 另走 `+understand` 的 WS 契约。
+- 语音生成按 `arkcli-gen` 的 `+gen --modality audio` 契约；其他未封装语音能力只说明支持边界，不擅自创建资源或改 Key。
+- 不要给业务命令增加临时 Project/Region override；根命令已删除 `--project-name` 与 `--region`。持久上下文通过 `arkcli profile create/use` 管理，单次切换使用 `--profile`。
+
+## 参考
+
+- [arkcli-auth](../arkcli-auth/GUIDE.md) — 认证状态检查、登录与退出登录；其 `references/` 放身份解析 / AK-SK 边界 / API Key 恢复 / 实名闸门
+- [arkcli-config](../arkcli-config/GUIDE.md) — profile、base-url、region 配置排障
+- [arkcli-api-explorer](../arkcli-api-explorer/GUIDE.md) — 产品命令未覆盖时的 raw API 兜底入口
+- [references/profile-defaults.md](references/profile-defaults.md) — profile 默认资源、漂移检测、跨模态
+- [references/execution-context.md](references/execution-context.md) — 五类 Profile × 三种模态、临时 Key/Base URL/Endpoint 组合与 Client Preview 边界
+- [references/global-flags.md](references/global-flags.md) — 常用全局 flags 速查
+- [references/troubleshooting.md](references/troubleshooting.md) — 故障分流与能力边界

@@ -17,6 +17,18 @@
       "category": "Coding"
     },
     {
+      "name": "volcengine-ark",
+      "source": {
+        "source": "local",
+        "path": "./plugins/volcengine-ark"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Cloud"
+    },
+    {
       "name": "volcengine-storage",
       "source": {
         "source": "local",

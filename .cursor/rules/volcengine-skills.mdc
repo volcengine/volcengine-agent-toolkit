@@ -12,14 +12,15 @@ This repository installs only the core plugin by default. Load core skills from
 Core skills:
 
 - `volcengine-billing-and-cost-management` — Query and analyze bills, cost changes and account balances; reconcile charges and verify payment ownership, packages and coupons.
-- `volcengine-cli` — Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli.
+- `volcengine-cli` — Manage Volcengine resources with ve; route TOS, Ark and TLS tasks to their product skills and run them through ve tosutil, ve arkcli and ve volclog.
 - `volcengine-troubleshooting` — Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures.
-- `volcengine-knowledge-search` — Search and fetch official Volcengine documentation with ve docs search/fetch, without login.
+- `volcengine-knowledge-search` — Search and fetch official Volcengine documentation with ve docs search/fetch, without login; also covers Volcengine Ark concept, usage and billing-rule questions.
 - `volcengine-find-skills` — List all Volcengine skills so an agent can select and install missing capabilities.
 - `volcengine-feedback` — Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task.
 
 Optional catalogued skills:
 
+- `volcengine-ark` — `volcengine-ark`; Use Volcengine Ark through ve arkcli: look up and choose models, check model prices, activate models, manage API Keys and endpoints, run test calls and generation, and query usage and Ark bills.
 - `volcengine-tosutil` — `volcengine-storage`; Manage TOS buckets and objects with the tosutil command-line tool.
 - `volcengine-tls` — `volcengine-storage`; Operate Volcengine TLS log service with volclog: contract-first discover/describe/exec, log search, analysis, ingest, export, and error recovery.
 - `volcengine-tls-logcollector` — `volcengine-storage`; Design, validate, deploy, and troubleshoot TLS LogCollector collection on Linux hosts or Kubernetes through volclog.

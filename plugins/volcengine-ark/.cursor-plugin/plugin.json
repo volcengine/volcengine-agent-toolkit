@@ -1,0 +1,39 @@
+{
+  "name": "volcengine-ark",
+  "displayName": "Volcengine Ark",
+  "description": "Work with Volcengine Ark models through the official Ark CLI: choose models and check prices, manage API Keys and endpoints, run inference and generation, and track usage.",
+  "version": "1.4.0",
+  "author": {
+    "name": "Volcengine Team",
+    "email": "volcengine@bytedance.com"
+  },
+  "homepage": "https://github.com/volcengine/volcengine-agent-toolkit",
+  "repository": "https://github.com/volcengine/volcengine-agent-toolkit",
+  "license": "MIT",
+  "keywords": [
+    "volcengine",
+    "cloud",
+    "人工智能",
+    "ai",
+    "大模型",
+    "llm",
+    "方舟",
+    "火山方舟",
+    "ark",
+    "arkcli",
+    "豆包",
+    "doubao",
+    "seed",
+    "seedream",
+    "seedance",
+    "模型",
+    "model",
+    "推理",
+    "inference",
+    "接入点",
+    "endpoint",
+    "api key",
+    "volcengine-ark"
+  ],
+  "skills": "./skills/"
+}
