@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import re
 import shutil
 import subprocess
 import sys
+from types import ModuleType
 from typing import Sequence
 
 from cost_query.common.errors import BillingQueryError, ErrorCode, ExitCode
@@ -39,6 +39,23 @@ DELEGATED_COMMANDS = {
         "组合代金券库存、核销记录和账单明细生成代金券抵扣证据；describe 查看边界。",
     ),
 }
+
+
+def _load_command_module(module_name: str) -> ModuleType:
+    """Load a known command with static imports, only when it is needed."""
+    if module_name == "describe_billing_api":
+        import describe_billing_api as module
+    elif module_name == "query_billing":
+        import query_billing as module
+    elif module_name == "reconcile_cost":
+        import reconcile_cost as module
+    elif module_name == "attribute_resource_packages":
+        import attribute_resource_packages as module
+    elif module_name == "attribute_coupons":
+        import attribute_coupons as module
+    else:
+        raise ValueError(f"未知子命令模块：{module_name}")
+    return module
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -173,7 +190,7 @@ def _check_command_modules() -> dict[str, object]:
     failures = []
     for module in modules:
         try:
-            importlib.import_module(module)
+            _load_command_module(module)
         except ImportError as exc:
             failures.append({"module": module, "missing": getattr(exc, "name", None) or str(exc)})
     if failures:
@@ -295,7 +312,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if command in DELEGATED_COMMANDS:
             module_name, _ = DELEGATED_COMMANDS[command]
             try:
-                module = importlib.import_module(module_name)
+                module = _load_command_module(module_name)
             except ImportError as exc:
                 raise _dependency_error(exc) from exc
             return module.main(arguments[1:], prog=f"cost.py {command}")

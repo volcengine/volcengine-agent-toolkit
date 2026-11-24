@@ -939,8 +939,11 @@ ACTION_FIELD_GUIDANCE: Mapping[tuple[str, str], Mapping[str, Any]] = {
         "QueryBalanceAcct",
         "CashBalance",
     ): {
-        "summary": "账户当前现金余额；不能单独用于判断账户欠费。",
-        "notes": ["金额计算使用 Decimal；不要经过 float。"],
+        "summary": "账户当前现金余额，暂未核销；不能单独用于判断账户欠费。",
+        "notes": [
+            "不同于目标账单中的现金支付金额 PaidAmount；不能据现金余额声称已还款或账单已核销。",
+            "金额计算使用 Decimal；不要经过 float。",
+        ],
     },
     (
         "QueryBalanceAcct",
@@ -1282,6 +1285,8 @@ def response_interpretation(action: ApiActionSpec) -> Dict[str, Any]:
                 "cost.py query 使用统一 envelope；原始账户字段位于 result，message 说明欠费判定和余额公式核验结果。",
                 "AvailableBalance < 0 表示账户欠费；AvailableBalance >= 0 表示账户当前不欠费。",
                 "ArrearsBalance 大于零只表示存在欠费金额，不覆盖 AvailableBalance 给出的账户状态。",
+                "CashBalance 是当前现金余额，暂未核销，不是账单现金支付金额 PaidAmount。",
+                "余额公式扣除 ArrearsBalance 只是计算资金可用额，不代表现金已用于还款或账单已核销；支付与结清情况须依据目标账单的支付、未还款字段。",
                 "工具以 Decimal 核验 AvailableBalance = CashBalance + CreditLimit - FreezeAmount - ArrearsBalance；公式不一致时 message 说明无法确认状态及差额，不要求 Agent 再次核验。",
                 "公开响应表未声明字段必返；AvailableBalance 缺失、为空或无法解析时不能确认账户状态。",
                 "Currency 按响应原值解释，未声明枚举；缺失时不补造币种。",

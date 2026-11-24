@@ -51,6 +51,10 @@ python3 scripts/cost.py query --action QueryBalanceAcct --body '{}'
 
 先给结论，再给支持结论的必要金额。
 
+`CashBalance` 是当前现金余额，暂未核销，不是账单中的现金支付金额 `PaidAmount`。
+余额公式扣除欠费金额只是计算资金可用额，不表示现金余额已经用于还款或账单已核销。
+需要说明支付或结清情况时，依据目标账单的支付与未还款字段，不从账户余额反推核销事实。
+
 - 当前欠费：展示 `AvailableBalance` 和 `Currency`；`ArrearsBalance` 有值时再展示。
   当前快照不能证明哪笔消费使余额转负。
 - 当前不欠费：展示 `AvailableBalance` 和 `Currency`；`ArrearsBalance > 0` 时把它作为
