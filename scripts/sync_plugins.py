@@ -16,6 +16,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLUGINS_ROOT = REPO_ROOT / "plugins"
+MCP_CONFIG = ".mcp.json"
 CATALOG_PATH = (
     REPO_ROOT
     / "skills"
@@ -412,6 +413,13 @@ def generated_json(catalog: dict[str, Any], version: str) -> dict[Path, dict[str
         outputs[plugin_root / ".cursor-plugin" / "plugin.json"] = cursor_manifest(
             plugin, version
         )
+        if (plugin_root / MCP_CONFIG).is_file():
+            # Claude Code discovers .mcp.json itself; Codex and Cursor default to
+            # other locations, so pin the shared file explicitly.
+            for host in (".codex-plugin", ".cursor-plugin"):
+                outputs[plugin_root / host / "plugin.json"]["mcpServers"] = (
+                    f"./{MCP_CONFIG}"
+                )
     return outputs
 
 

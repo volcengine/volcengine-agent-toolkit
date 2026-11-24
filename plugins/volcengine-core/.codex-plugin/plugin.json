@@ -1,6 +1,6 @@
 {
   "name": "volcengine-core",
-  "version": "1.3.6",
+  "version": "1.4.0",
   "description": "Core Volcengine discovery, documentation search, CLI operations, troubleshooting, and voluntary community feedback skills.",
   "author": {
     "name": "Volcengine Team",
@@ -53,5 +53,6 @@
     "brandColor": "#1664FF",
     "composerIcon": "./assets/logo.svg",
     "logo": "./assets/logo.svg"
-  }
+  },
+  "mcpServers": "./.mcp.json"
 }

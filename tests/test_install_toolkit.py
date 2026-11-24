@@ -169,12 +169,13 @@ class SourceSelectionTest(InstallToolkitHarness):
         forced_cdn = self.run_installer("--source=cdn", "--dry-run", github_url=probe.as_uri())
         self.assertEqual(parse_kv(forced_cdn.stdout)["SOURCE"], "cdn")
 
-    def test_doubao_work_always_uses_the_cdn_package(self) -> None:
+    def test_copy_installed_hosts_also_prefer_github(self) -> None:
         self.publish("1.3.4")
         probe = self.root / "probe.html"
         probe.write_text("ok", encoding="utf-8")
-        result = self.run_installer("--agent", "doubao-work", "--dry-run", github_url=probe.as_uri())
-        self.assertEqual(parse_kv(result.stdout)["SOURCE"], "cdn")
+        for agent in ("doubao-work", "workbuddy"):
+            result = self.run_installer("--agent", agent, "--dry-run", github_url=probe.as_uri())
+            self.assertEqual(parse_kv(result.stdout)["SOURCE"], "github", agent)
 
     def test_rejects_unknown_source_and_malformed_agent(self) -> None:
         self.assertNotEqual(self.run_installer("--source", "mirror").returncode, 0)
@@ -313,6 +314,9 @@ class HostRegistrationTest(InstallToolkitHarness):
         self.assertEqual(
             self.recorded_calls(),
             [
+                # The plugin goes first: Trae CLI keeps a marketplace that
+                # still has a plugin installed from it.
+                "coco plugin uninstall volcengine-core",
                 "coco plugin marketplace remove volcengine-skills",
                 f"coco plugin marketplace add {self.toolkit_dir} --name volcengine-skills --type local",
                 f"coco plugin install {CORE_PLUGIN} --type marketplace --yes",
@@ -342,15 +346,14 @@ class HostRegistrationTest(InstallToolkitHarness):
         self.assertIn("--skill volcengine-cli ", calls[0])
 
     def test_doubao_work_copies_core_skills_into_every_profile(self) -> None:
-        suffix = Path(".doubaowork") / "agent_mode" / "workspace" / ".user_skills"
-        roots = [
-            self.home / "Library" / "Application Support" / "DoubaoWork",
-            self.home / ".config" / "DoubaoWork",
-        ]
+        # The standalone DoubaoWork app and the work mode inside the Doubao app
+        # keep user skills under different directories; both must be found.
+        layouts = (("DoubaoWork", ".doubaowork"), ("Doubao", ".doubao"))
+        bases = [self.home / "Library" / "Application Support", self.home / ".config"]
         profiles = []
-        for root in roots:
-            for profile in ("Default", "Profile 2"):
-                target = root / profile / suffix
+        for base in bases:
+            for app, dot_dir in layouts:
+                target = base / app / "Default" / dot_dir / "agent_mode" / "workspace" / ".user_skills"
                 target.mkdir(parents=True)
                 profiles.append(target)
         stale = profiles[0] / "volcengine-cli"
@@ -371,9 +374,12 @@ class HostRegistrationTest(InstallToolkitHarness):
             self.assertFalse((target / "volcengine-cli" / "old.txt").exists())
 
     def test_doubao_work_upgrade_backs_up_legacy_skill_and_keeps_custom_skills(self) -> None:
-        suffix = Path(".doubaowork/agent_mode/workspace/.user_skills")
-        doubao_root = self.home / ("Library/Application Support/DoubaoWork" if sys.platform == "darwin" else ".config/DoubaoWork")
-        profiles = [doubao_root / name / suffix for name in ("Default", "Profile 2")]
+        base = self.home / ("Library/Application Support" if sys.platform == "darwin" else ".config")
+        profiles = [
+            base / app / name / dot_dir / "agent_mode/workspace/.user_skills"
+            for app, dot_dir in (("DoubaoWork", ".doubaowork"), ("Doubao", ".doubao"))
+            for name in ("Default", "Profile 2")
+        ]
         for profile in profiles:
             legacy = profile / "volcengine-billing-and-cost-management"
             legacy.mkdir(parents=True)
@@ -415,7 +421,7 @@ class HostRegistrationTest(InstallToolkitHarness):
     def test_doubao_work_without_a_workspace_says_what_to_do(self) -> None:
         result = self.run_installer("--agent", "doubao-work")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("No DoubaoWork user skill directory found", result.stderr)
+        self.assertIn("No Doubao user skill directory found", result.stderr)
 
     def test_host_that_does_not_list_the_install_fails_the_run(self) -> None:
         # Every command succeeds, but the host does not show the plugin.
@@ -431,10 +437,311 @@ class HostRegistrationTest(InstallToolkitHarness):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(parse_kv(result.stdout)["VERIFIED"], "cursor:skills-not-listed")
 
-    def test_missing_host_cli_is_reported(self) -> None:
+    def test_host_without_its_cli_is_installed_through_the_skills_cli(self) -> None:
+        # Desktop builds often ship without the command; the host still reads
+        # its user skill directory, which the skills CLI writes.
+        listing = "\n".join(sorted(p.name for p in CORE_ROOT.iterdir()))
+        self.fake_host("npx", listing)
+        result = self.run_installer("--agent", "claude,codex,gemini,trae-cli")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.recorded_calls()
+        self.assertEqual(
+            [call.rsplit("--agent ", 1)[1] for call in calls],
+            ["claude-code", "codex", "gemini-cli", "trae"],
+        )
+        self.assertTrue(all(call.startswith("npx --yes skills add ") for call in calls))
+        self.assertEqual(
+            parse_kv(result.stdout)["VERIFIED"],
+            "claude:ok,codex:ok,gemini:ok,trae-cli:ok",
+        )
+        self.assertIn("'claude' is not on PATH; installing", result.stderr)
+
+    def test_missing_host_cli_and_missing_npx_is_reported(self) -> None:
         result = self.run_installer("--agent", "claude")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("'claude' is not on PATH", result.stderr)
+        self.assertIn("'npx' is not on PATH", result.stderr)
+
+    def test_agent_unknown_to_the_skills_cli_falls_back_to_every_detected_host(self) -> None:
+        # The skills CLI prints "Invalid agents" and exits 1 for a name it does not know.
+        listing = "\n".join(sorted(p.name for p in CORE_ROOT.iterdir()))
+        self.fake_cli(
+            "npx",
+            'case "$*" in\n'
+            '  *"skills add"*"--agent newhost"*) echo "Invalid agents: newhost"; exit 1 ;;\n'
+            f'  *"skills list"*) cat <<LISTING\n{listing}\nLISTING\n;;\n'
+            "esac",
+        )
+        result = self.run_installer("--agent", "newhost")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        adds = [call for call in self.recorded_calls() if " skills add " in call]
+        self.assertEqual(len(adds), 2)
+        self.assertTrue(adds[0].endswith("--agent newhost"))
+        self.assertNotIn("--agent", adds[1])
+        self.assertEqual(parse_kv(result.stdout)["VERIFIED"], "newhost:ok")
+        self.assertIn("does not know the agent 'newhost'", result.stderr)
+
+    def test_other_installs_for_every_detected_host(self) -> None:
+        self.fake_host("npx", "\n".join(sorted(p.name for p in CORE_ROOT.iterdir())))
+        result = self.run_installer("--agent", "other")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        adds = [call for call in self.recorded_calls() if " skills add " in call]
+        self.assertEqual(len(adds), 1)
+        self.assertNotIn("--agent", adds[0])
+        self.assertEqual(parse_kv(result.stdout)["VERIFIED"], "other:ok")
+
+    def test_workbuddy_copies_core_skills_into_its_skill_directory(self) -> None:
+        missing = self.run_installer("--agent", "workbuddy")
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("No WorkBuddy directory found", missing.stderr)
+
+        target = self.home / ".workbuddy" / "skills"
+        (target / "volcengine-cli").mkdir(parents=True)
+        (target / "volcengine-cli" / "old.txt").write_text("old", encoding="utf-8")
+        (target / "someone-elses-skill").mkdir()
+        result = self.run_installer("--agent", "workbuddy")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        core_skills = {path.name for path in CORE_ROOT.iterdir() if path.is_dir()}
+        self.assertEqual(
+            {path.name for path in target.iterdir()}, core_skills | {"someone-elses-skill"}
+        )
+        self.assertFalse((target / "volcengine-cli" / "old.txt").exists())
+        self.assertEqual(parse_kv(result.stdout)["VERIFIED"], "workbuddy:ok")
+
+    def test_results_are_reported_in_the_order_the_hosts_were_given(self) -> None:
+        (self.home / ".workbuddy").mkdir()
+        self.fake_host("codex", f"{CORE_PLUGIN}  installed, enabled")
+        self.fake_host("claude", CORE_PLUGIN)
+        result = self.run_installer("--agent", "workbuddy,codex,claude")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            parse_kv(result.stdout)["VERIFIED"], "workbuddy:ok,codex:ok,claude:ok"
+        )
+
+
+class GithubFirstTest(InstallToolkitHarness):
+    """GitHub is preferred; the CDN is the retry when an install from GitHub fails."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.publish("1.3.4")
+        self.probe = self.root / "probe.html"
+        self.probe.write_text("ok", encoding="utf-8")
+
+    def github_archive(self) -> str:
+        """A stand-in for <repo>/archive/HEAD.tar.gz; returns the repository URL."""
+        import tarfile
+
+        source = self.root / "src" / "volcengine-agent-toolkit-main"
+        for skill in sorted(path.name for path in CORE_ROOT.iterdir() if path.is_dir()):
+            (source / "skills" / "core" / skill).mkdir(parents=True)
+            (source / "skills" / "core" / skill / "SKILL.md").write_text(
+                f"# {skill} from github\n", encoding="utf-8"
+            )
+        repo = self.root / "gh" / "repo"
+        (repo / "archive").mkdir(parents=True)
+        with tarfile.open(repo / "archive" / "HEAD.tar.gz", "w:gz") as archive:
+            archive.add(source, arcname=source.name)
+        return repo.as_uri()
+
+    def test_failed_github_install_is_retried_from_the_cdn(self) -> None:
+        # The probe passes, but the host cannot clone the repository.
+        self.fake_host(
+            "claude",
+            CORE_PLUGIN,
+            'case "$*" in *"marketplace add volcengine/"*) echo "clone failed" >&2; exit 1 ;; esac',
+        )
+        result = self.run_installer("--agent", "claude", github_url=self.probe.as_uri())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            self.recorded_calls(),
+            [
+                "claude plugin marketplace add volcengine/volcengine-agent-toolkit",
+                f"claude plugin marketplace add {self.toolkit_dir}",
+                f"claude plugin install {CORE_PLUGIN}",
+            ],
+        )
+        values = parse_kv(result.stdout)
+        self.assertEqual(values["SOURCE"], "cdn")
+        self.assertEqual(values["VERSION"], "1.3.4")
+        self.assertEqual(values["VERIFIED"], "claude:ok")
+        self.assertIn("retrying from the Volcengine CDN", result.stderr)
+
+    def test_host_blind_to_a_github_install_is_retried_from_the_cdn(self) -> None:
+        # Commands succeed from GitHub, but the plugin only shows up after the CDN install.
+        flag = self.root / "installed-from-cdn"
+        self.fake_cli(
+            "claude",
+            f'case "$*" in *"marketplace add {self.toolkit_dir}"*) touch "{flag}" ;; esac\n'
+            f'case "$*" in *list*) [ -e "{flag}" ] && echo "{CORE_PLUGIN}" ;; esac\nexit 0',
+        )
+        result = self.run_installer("--agent", "claude", github_url=self.probe.as_uri())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(parse_kv(result.stdout)["VERIFIED"], "claude:ok")
+        self.assertEqual(parse_kv(result.stdout)["SOURCE"], "cdn")
+
+    def test_forced_github_source_is_not_retried(self) -> None:
+        self.fake_host("claude", CORE_PLUGIN, 'case "$*" in *"marketplace add"*) exit 1 ;; esac')
+        result = self.run_installer("--source", "github", "--agent", "claude")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("retrying", result.stderr)
+        self.assertFalse(self.toolkit_dir.exists())
+
+    def test_later_hosts_use_the_cdn_after_a_retry(self) -> None:
+        self.fake_host("claude", CORE_PLUGIN, 'case "$*" in *"marketplace add volcengine/"*) exit 1 ;; esac')
+        self.fake_host("codex", f"{CORE_PLUGIN}  installed, enabled")
+        result = self.run_installer("--agent", "claude,codex", github_url=self.probe.as_uri())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"codex plugin marketplace add {self.toolkit_dir}", self.recorded_calls())
+        self.assertEqual(parse_kv(result.stdout)["VERIFIED"], "claude:ok,codex:ok")
+
+    def test_copy_installed_host_takes_the_skills_from_the_github_archive(self) -> None:
+        target = self.home / ".workbuddy" / "skills"
+        target.mkdir(parents=True)
+        result = self.run_installer(
+            "--source", "github", "--agent", "workbuddy", github_url=self.github_archive()
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            (target / "volcengine-cli" / "SKILL.md").read_text(encoding="utf-8"),
+            "# volcengine-cli from github\n",
+        )
+        self.assertEqual(parse_kv(result.stdout)["SOURCE"], "github")
+        self.assertFalse(self.toolkit_dir.exists(), "the CDN package must not be downloaded")
+
+    def test_copy_installed_host_falls_back_to_the_cdn_without_the_archive(self) -> None:
+        target = self.home / ".workbuddy" / "skills"
+        target.mkdir(parents=True)
+        # The probe answers, but there is no archive behind it.
+        result = self.run_installer("--agent", "workbuddy", github_url=self.probe.as_uri())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            (target / "volcengine-cli" / "SKILL.md").read_text(encoding="utf-8"),
+            "# volcengine-cli 1.3.4\n",
+        )
+        self.assertEqual(parse_kv(result.stdout)["SOURCE"], "cdn")
+
+
+class RobustnessTest(InstallToolkitHarness):
+    """Regressions for failure modes found in review."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.publish("1.3.4")
+        self.probe = self.root / "probe.html"
+        self.probe.write_text("ok", encoding="utf-8")
+
+    def run_piped(self, *args: str, github_url: str = UNREACHABLE_URL) -> subprocess.CompletedProcess[str]:
+        """Run the script the documented way: `curl ... | sh -s -- <args>`."""
+        return subprocess.run(
+            ["sh", "-s", "--", *args],
+            input=SCRIPT.read_text(encoding="utf-8"),
+            capture_output=True,
+            text=True,
+            check=False,
+            env={
+                "PATH": f"{self.fake_bin}{os.pathsep}/usr/bin{os.pathsep}/bin",
+                "HOME": str(self.home),
+                "VOLCENGINE_TOOLKIT_BASE_URL": str(self.cdn),
+                "VOLCENGINE_TOOLKIT_GITHUB_URL": github_url,
+            },
+        )
+
+    def test_piped_script_survives_host_commands_that_read_stdin(self) -> None:
+        # A host CLI that reads stdin must not swallow the rest of the script.
+        self.fake_host("claude", CORE_PLUGIN, "cat >/dev/null")
+        self.fake_host("coco", "volcengine-core", "cat >/dev/null")
+        result = self.run_piped("--agent", "claude,trae-cli")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        values = parse_kv(result.stdout)
+        self.assertEqual(values["VERIFIED"], "claude:ok,trae-cli:ok")
+        self.assertEqual(values["SOURCE"], "cdn")
+
+    def test_piped_script_still_fails_when_the_host_does_not_list_the_install(self) -> None:
+        self.fake_host("claude", "nothing installed", "cat >/dev/null")
+        result = self.run_piped("--agent", "claude")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not list the core skills", result.stderr)
+
+    def test_local_failure_is_reported_as_is_without_a_cdn_retry(self) -> None:
+        # GitHub is reachable; the host directory is simply missing. Another
+        # download source cannot fix that, and retrying would bury the real error.
+        result = self.run_installer("--agent", "workbuddy", github_url=self.probe.as_uri())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("No WorkBuddy directory found", result.stderr.strip().splitlines()[-1])
+        self.assertNotIn("retrying", result.stderr)
+        self.assertFalse(self.toolkit_dir.exists(), "nothing may be downloaded for a local failure")
+
+    def test_relative_directory_is_made_absolute(self) -> None:
+        result = subprocess.run(
+            ["sh", str(SCRIPT), "--source", "cdn", "--dir", "rel/toolkit", "--dry-run"],
+            capture_output=True, text=True, check=False, cwd=self.root,
+            env={"PATH": "/usr/bin:/bin", "HOME": str(self.home),
+                 "VOLCENGINE_TOOLKIT_BASE_URL": str(self.cdn)},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        install_source = parse_kv(result.stdout)["INSTALL_SOURCE"]
+        self.assertTrue(install_source.startswith("/"), install_source)
+        self.assertTrue(install_source.endswith("/rel/toolkit"), install_source)
+
+    def test_git_checkout_with_the_toolkit_layout_is_never_replaced(self) -> None:
+        checkout = self.root / "checkout"
+        (checkout / ".git").mkdir(parents=True)
+        (checkout / ".claude-plugin").mkdir()
+        (checkout / ".claude-plugin" / "marketplace.json").write_text("{}", encoding="utf-8")
+        (checkout / "plugins" / "volcengine-core" / "skills").mkdir(parents=True)
+        (checkout / "package.json").write_text('{\n  "version": "0.0.1"\n}\n', encoding="utf-8")
+        (checkout / "uncommitted.txt").write_text("work", encoding="utf-8")
+        result = self.run_installer("--dir", str(checkout))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("is a Git checkout", result.stderr)
+        self.assertEqual((checkout / "uncommitted.txt").read_text(encoding="utf-8"), "work")
+        self.assertTrue((checkout / ".git").is_dir())
+
+    def test_version_selects_the_cdn_even_when_github_is_reachable(self) -> None:
+        result = self.run_installer("--version", "1.3.4", "--dry-run", github_url=self.probe.as_uri())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        values = parse_kv(result.stdout)
+        self.assertEqual((values["SOURCE"], values["VERSION"]), ("cdn", "1.3.4"))
+
+    def test_version_with_forced_github_source_is_rejected(self) -> None:
+        result = self.run_installer("--source", "github", "--version", "1.3.4", "--dry-run")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--version selects a released package", result.stderr)
+
+    def test_version_with_path_characters_is_rejected(self) -> None:
+        result = self.run_installer("--version", "1.3.4/../../latest", "--dry-run")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Invalid version", result.stderr)
+
+    def test_codex_plugin_listed_as_not_installed_fails_verification(self) -> None:
+        self.fake_host("codex", f"{CORE_PLUGIN}  not installed")
+        result = self.run_installer("--agent", "codex")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(parse_kv(result.stdout)["VERIFIED"], "codex:plugin-not-listed")
+
+    def test_incomplete_source_keeps_the_existing_host_skills(self) -> None:
+        import tarfile
+
+        # A GitHub archive that lacks one core skill.
+        source = self.root / "src" / "repo-main"
+        for skill in sorted(path.name for path in CORE_ROOT.iterdir() if path.is_dir())[1:]:
+            (source / "skills" / "core" / skill).mkdir(parents=True)
+            (source / "skills" / "core" / skill / "SKILL.md").write_text("new\n", encoding="utf-8")
+        repo = self.root / "gh" / "repo"
+        (repo / "archive").mkdir(parents=True)
+        with tarfile.open(repo / "archive" / "HEAD.tar.gz", "w:gz") as archive:
+            archive.add(source, arcname=source.name)
+        target = self.home / ".workbuddy" / "skills"
+        for skill in (path.name for path in CORE_ROOT.iterdir() if path.is_dir()):
+            (target / skill).mkdir(parents=True)
+            (target / skill / "SKILL.md").write_text("old\n", encoding="utf-8")
+
+        result = self.run_installer("--source", "github", "--agent", "workbuddy", github_url=repo.as_uri())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("is missing from the downloaded source", result.stderr)
+        for skill in (path.name for path in CORE_ROOT.iterdir() if path.is_dir()):
+            self.assertEqual((target / skill / "SKILL.md").read_text(encoding="utf-8"), "old\n", skill)
+        self.assertFalse(list(target.glob(".*.install.*")), "no staging directory may be left behind")
 
 
 class InstallerContractTest(unittest.TestCase):

@@ -121,7 +121,13 @@ Windows PowerShell:
 | `trae-cli` | Trae CLI | Core plugin |
 | `gemini` | Gemini CLI | Each core skill |
 | `doubao-work` | Doubao (Work mode) | Core skills copied to the Doubao user skill directory |
-| `trae`, `trae-cn`, `cursor`, `opencode`, ... | Trae IDE, Cursor, OpenCode, and other hosts the skills CLI supports | `npx skills add` |
+| `workbuddy` | WorkBuddy | Core skills copied to the WorkBuddy user skill directory |
+| `trae`, `trae-cn`, `cursor`, `qoder`, `qoder-cn`, `opencode`, ... | Trae IDE, Cursor, Qoder, OpenCode, and other hosts the skills CLI supports | `npx skills add` |
+| `other` | Any agent not listed above | `npx skills add` into the shared directory and every host it detects |
+
+When `claude`, `codex`, `gemini`, or `trae-cli` cannot find its own command line (a desktop-only
+install, for example), the script installs through `npx skills add` instead. GitHub is the preferred
+source; the CDN is used when GitHub is unreachable or an install from GitHub fails.
 
 Without `--agent` the script only prepares the source and prints the install commands for each host.
 `--source cdn` skips the GitHub probe, `--dir` changes the local directory, and `--dry-run` prints
@@ -129,6 +135,30 @@ the source and version it would use. Rerun the same command to upgrade. Keep the
 hosts continue to read the marketplace from it.
 
 The sections below are the per-host commands for direct GitHub access.
+
+### Remote MCP
+
+The `volcengine-core` plugin bundles a remote Streamable HTTP MCP server named `volcengine`, which
+connects to `https://ve.mcp.volcbiz.com/mcp?mode=confirm` by default. It provides API lookup and calls
+(`search_api`, `get_api_parameters`, `call_api`), script orchestration in a hosted sandbox (`run_script`),
+and public documentation search and retrieval (`search_docs`, `fetch_docs`).
+
+- Installing the plugin in Claude Code, Codex, or Cursor registers the server automatically. On first use, follow the host's prompts to authorize your Volcengine account through OAuth. In Claude Code, start from `/mcp`. Calls are signed as the authorized account.
+- In confirm mode, the server holds requests that match a confirmation rule (for example, `CreateVpc`) before sending them. The agent explains the target and impact, then retries the unchanged call once after you approve. Approval cannot override a deny rule.
+- The generic skills CLI, Gemini CLI, and OpenCode install skills only. To add the MCP server manually, use the same URL in a client that supports Streamable HTTP and OAuth. See the [`.mcp.json` example](./plugins/volcengine-core/.mcp.json).
+
+Set the `mode` query parameter in the server URL to choose a mode. For example, change `?mode=confirm`
+to `?mode=read` for read-only access.
+
+| Mode | Available capabilities | API call policy |
+|---|---|---|
+| `tiny` | API discovery, parameter lookup, and public documentation search and retrieval | Omits `call_api` and `run_script`. |
+| `read` | All enabled tools | Allows only APIs on the read-only allowlist. Protected operations are denied and cannot be approved. |
+| `confirm` (plugin default) | All enabled tools | Executes allowed calls immediately, holds calls that require approval, and blocks denied calls. |
+| `full` (server default when `mode` is omitted) | All enabled tools | Skips the MCP safety policy. IAM permissions still apply. |
+
+See the [MCP tool reference](./docs/mcp/README_en.md#tool-reference) for all eight tools, their inputs,
+and the typical workflow.
 
 ### Discover and install on demand
 

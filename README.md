@@ -110,13 +110,39 @@ Windows PowerShell：
 | `trae-cli` | Trae CLI | 核心 plugin |
 | `gemini` | Gemini CLI | 逐个安装核心 skill |
 | `doubao-work` | 豆包（工作模式） | 复制核心 skill 到豆包的用户 skill 目录 |
-| `trae`、`trae-cn`、`cursor`、`opencode` 等 | Trae IDE、Cursor、OpenCode 及 skills CLI 支持的其他宿主 | `npx skills add` |
+| `workbuddy` | WorkBuddy | 复制核心 skill 到 WorkBuddy 的用户 skill 目录 |
+| `trae`、`trae-cn`、`cursor`、`qoder`、`qoder-cn`、`opencode` 等 | Trae IDE、Cursor、Qoder、OpenCode 及 skills CLI 支持的其他宿主 | `npx skills add` |
+| `other` | 不在上面的 Agent | `npx skills add` 装到通用目录和检测到的各宿主目录 |
+
+`claude`、`codex`、`gemini`、`trae-cli` 找不到自身命令行时（例如只装了桌面端），脚本自动改用
+`npx skills add` 安装。下载源优先 GitHub；GitHub 不通或从 GitHub 安装失败时改走 CDN。
 
 不带 `--agent` 时脚本只准备下载源并打印各宿主的安装命令。`--source cdn` 跳过 GitHub 探测，
 `--dir` 更换本地目录，`--dry-run` 只打印将使用的来源和版本。升级时重新运行同一条命令。
 本地目录需要长期保留，宿主会持续从它读取 marketplace。
 
 下面各小节是直接访问 GitHub 时的分宿主命令。
+
+### 远程 MCP
+
+`volcengine-core` 插件内置名为 `volcengine` 的远程 MCP 服务，使用 Streamable HTTP，
+默认连接 `https://ve.mcp.volcbiz.com/mcp?mode=confirm`。
+提供 API 检索与调用（`search_api`、`get_api_parameters`、`call_api`）、托管沙箱脚本编排（`run_script`）和公开文档检索（`search_docs`、`fetch_docs`）。
+
+- 通过 Claude Code、Codex 或 Cursor 的插件方式安装后会自动注册。首次使用按宿主提示，通过火山引擎账号进行 OAuth 授权（Claude Code 中可在 `/mcp` 里发起）。调用以授权账号的身份签名。
+- 确认模式下，服务端安全策略会在发送前拦截命中确认规则的请求（例如 `CreateVpc`）。Agent 向你说明目标和影响，得到确认后才原样重试一次。命中拒绝规则的操作无法通过确认放行。
+- 通用 skills CLI、Gemini CLI 和 OpenCode 只安装 skill，不包含该 MCP。可在支持 Streamable HTTP 和 OAuth 的客户端中手动添加上述地址。配置示例见 [`.mcp.json`](./plugins/volcengine-core/.mcp.json)。
+
+通过 URL 查询参数 `mode` 选择模式，例如将 `?mode=confirm` 改为 `?mode=read` 即可切换到只读模式。
+
+| 模式 | 可用能力 | API 调用策略 |
+|---|---|---|
+| `tiny` | 检索 API、查询参数、搜索和读取公开文档 | 不提供 `call_api` 和 `run_script`。 |
+| `read` | 所有已启用的工具 | 只放行只读允许列表中的 API。策略保护的操作直接拒绝，无法通过确认放行。 |
+| `confirm`（插件默认） | 所有已启用的工具 | 策略允许的调用直接执行，命中确认规则时先暂停，命中拒绝规则时直接拒绝。 |
+| `full`（省略 `mode` 时的服务端默认值） | 所有已启用的工具 | 跳过 MCP 安全策略，IAM 权限继续生效。 |
+
+八个工具的用途、参数和调用流程见 [MCP 工具清单](./docs/mcp/README.md#工具清单)。
 
 ### 按需发现与安装
 
