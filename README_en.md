@@ -138,12 +138,27 @@ The sections below are the per-host commands for direct GitHub access.
 
 ### Remote MCP
 
-The `volcengine-core` plugin bundles a remote MCP server named `volcengine` (`https://ve.mcp.volcbiz.com/mcp?mode=confirm`).
-It provides API lookup and calls (`search_api`, `get_api_parameters`, `call_api`), script orchestration in a hosted sandbox (`run_script`), and public documentation search (`search_docs`, `fetch_docs`).
+The `volcengine-core` plugin bundles a remote Streamable HTTP MCP server named `volcengine`, which
+connects to `https://ve.mcp.volcbiz.com/mcp?mode=confirm` by default. It provides API lookup and calls
+(`search_api`, `get_api_parameters`, `call_api`), script orchestration in a hosted sandbox (`run_script`),
+and public documentation search and retrieval (`search_docs`, `fetch_docs`).
 
-- Installing the plugin in Claude Code, Codex, or Cursor registers the server automatically. On first use, complete the Volcengine account OAuth sign-in when the host prompts you (in Claude Code, start it from `/mcp`). Calls are signed as the authorized account, not with a `ve` profile.
-- Confirm mode: the server-side safety policy holds protected operations (for example `CreateVpc`) without sending them. The agent explains the target and impact, and retries the unchanged call once only after you approve. Operations rejected by a deny rule cannot be approved.
-- The generic skills CLI, Gemini CLI, and OpenCode install skills only and do not include this MCP server.
+- Installing the plugin in Claude Code, Codex, or Cursor registers the server automatically. On first use, follow the host's prompts to authorize your Volcengine account through OAuth. In Claude Code, start from `/mcp`. Calls are signed as the authorized account.
+- In confirm mode, the server holds requests that match a confirmation rule (for example, `CreateVpc`) before sending them. The agent explains the target and impact, then retries the unchanged call once after you approve. Approval cannot override a deny rule.
+- The generic skills CLI, Gemini CLI, and OpenCode install skills only. To add the MCP server manually, use the same URL in a client that supports Streamable HTTP and OAuth. See the [`.mcp.json` example](./plugins/volcengine-core/.mcp.json).
+
+Set the `mode` query parameter in the server URL to choose a mode. For example, change `?mode=confirm`
+to `?mode=read` for read-only access.
+
+| Mode | Available capabilities | API call policy |
+|---|---|---|
+| `tiny` | API discovery, parameter lookup, and public documentation search and retrieval | Omits `call_api` and `run_script`. |
+| `read` | All enabled tools | Allows only APIs on the read-only allowlist. Protected operations are denied and cannot be approved. |
+| `confirm` (plugin default) | All enabled tools | Executes allowed calls immediately, holds calls that require approval, and blocks denied calls. |
+| `full` (server default when `mode` is omitted) | All enabled tools | Skips the MCP safety policy. IAM permissions still apply. |
+
+See the [MCP tool reference](./docs/mcp/README_en.md#tool-reference) for all eight tools, their inputs,
+and the typical workflow.
 
 ### Discover and install on demand
 
