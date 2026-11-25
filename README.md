@@ -30,7 +30,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 <!-- BEGIN GENERATED: plugin-catalog -->
 | Plugin | 产品分类 | Skills | 默认安装 |
 | --- | --- | --- | --- |
-| `volcengine-core` | 核心 | `volcengine-cost`、`volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`、`volcengine-feedback` | 是 |
+| `volcengine-core` | 核心 | `volcengine-billing-and-cost-management`、`volcengine-cli`、`volcengine-troubleshooting`、`volcengine-knowledge-search`、`volcengine-find-skills`、`volcengine-feedback` | 是 |
 | `volcengine-storage` | 存储 | `volcengine-tosutil`、`volcengine-tls`、`volcengine-tls-logcollector` | 否 |
 | `volcengine-database` | 数据库 | `volcengine-db-supabase` | 否 |
 | `volcengine-containers-middleware` | 容器与中间件 | `volcengine-vefaas` | 否 |
@@ -49,7 +49,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 <!-- BEGIN GENERATED: skill-catalog -->
 | Skill | Plugin | 场景 |
 | --- | --- | --- |
-| [`volcengine-cost`](./skills/core/volcengine-cost/SKILL.md) | `volcengine-core` | 查询与分析账单、费用变化和账户资金状态，完成账务对账、财务托管与付费归属、资源包及代金券抵扣核查。 |
+| [`volcengine-billing-and-cost-management`](./skills/core/volcengine-billing-and-cost-management/SKILL.md) | `volcengine-core` | 查询与分析账单、费用变化和账户资金状态，完成账务对账、财务托管与付费归属、资源包及代金券抵扣核查。 |
 | [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | 使用 ve 管理火山引擎资源；引导获取 TOS、Ark 技能，并通过 ve tosutil、ve arkcli 执行。 |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 诊断火山引擎错误、资源状态、配额、指标与 OpenAPI 故障。 |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。 |
@@ -185,7 +185,7 @@ python3 plugins/volcengine-core/skills/volcengine-find-skills/scripts/find_skill
 ```bash
 npx skills add volcengine/volcengine-agent-toolkit \
   --global --yes --copy --full-depth \
-  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback volcengine-cost
+  --skill volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback volcengine-billing-and-cost-management
 ```
 
 后续可由 finder 调用 `npx skills add --skill` 精确安装单个或多个 skill。如需交互选择仓库内的 skill：
@@ -211,7 +211,7 @@ gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --p
 gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-knowledge-search
 gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-find-skills
 gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-feedback
-gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-cost
+gemini skills install https://github.com/volcengine/volcengine-agent-toolkit --path skills/core/volcengine-billing-and-cost-management
 gemini skills list
 ```
 

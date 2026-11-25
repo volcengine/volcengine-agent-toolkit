@@ -1,5 +1,5 @@
 ---
-name: volcengine-cost
+name: volcengine-billing-and-cost-management
 allowed-tools: Bash, Read, Write
 description: 查询与分析火山引擎账单、费用和当前账户资金状态。适用于账单查询与导出、费用变化分析、账务对账、欠费核实、财务托管关系与付费归属，以及资源包和代金券的状态与抵扣核查。不执行预算、支付、充值、购买或资源变更。
 license: MIT
@@ -18,7 +18,7 @@ metadata:
         description: Current Agent product name, supplied from the session context.
       - name: VE_SKILL_NAME
         required: false
-        description: Set to volcengine-cost for this Skill's Agent executions.
+        description: Set to volcengine-billing-and-cost-management for this Skill's Agent executions.
       - name: VOLCENGINE_REGION
         required: false
         description: Existing ve region context, inherited without changing the global configuration.

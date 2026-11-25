@@ -21,8 +21,8 @@
       ],
       "skills": [
         {
-          "name": "volcengine-cost",
-          "path": "skills/core/volcengine-cost",
+          "name": "volcengine-billing-and-cost-management",
+          "path": "skills/core/volcengine-billing-and-cost-management",
           "summary": "Query and analyze bills, cost changes and account balances; reconcile charges and verify payment ownership, packages and coupons.",
           "summary_zh": "查询与分析账单、费用变化和账户资金状态，完成账务对账、财务托管与付费归属、资源包及代金券抵扣核查。",
           "keywords": [

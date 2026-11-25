@@ -55,7 +55,7 @@ $CoreSkills = @(
     'volcengine-knowledge-search',
     'volcengine-find-skills',
     'volcengine-feedback',
-    'volcengine-cost'
+    'volcengine-billing-and-cost-management'
 )
 $ManifestName = 'toolkit-manifest.json'
 $ArchiveName = 'volcengine-agent-toolkit.zip'
@@ -567,13 +567,13 @@ try {
                     $userSkills = Join-Path $profileDir.FullName "$dotDir/agent_mode/workspace/.user_skills"
                     if (-not (Test-Path -LiteralPath $userSkills -PathType Container)) { continue }
                     Copy-CoreSkills $userSkills
-                    $legacySkill = Join-Path $userSkills 'volcengine-billing-and-cost-management'
+                    $legacySkill = Join-Path $userSkills 'volcengine-cost'
                     if (Test-Path -LiteralPath $legacySkill) {
                         try {
                             $backupRoot = Join-Path (Split-Path -Parent $userSkills) '.skill-migration-backups'
-                            $backup = Join-Path $backupRoot ('volcengine-billing-and-cost-management.' + [Guid]::NewGuid().ToString('N'))
+                            $backup = Join-Path $backupRoot ('volcengine-cost.' + [Guid]::NewGuid().ToString('N'))
                             New-Item -ItemType Directory -Path $backup -Force -ErrorAction Stop | Out-Null
-                            Move-Item -LiteralPath $legacySkill -Destination (Join-Path $backup 'volcengine-billing-and-cost-management') -ErrorAction Stop
+                            Move-Item -LiteralPath $legacySkill -Destination (Join-Path $backup 'volcengine-cost') -ErrorAction Stop
                             Write-Log "DoubaoWork: previous billing Skill backed up to $backup"
                         } catch {
                             Stop-Install "Cannot migrate the legacy billing Skill: $_"

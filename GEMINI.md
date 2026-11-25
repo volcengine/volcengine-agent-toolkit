@@ -6,7 +6,7 @@ skill from `plugins/volcengine-core/skills/<skill-name>/SKILL.md`.
 <!-- BEGIN GENERATED: skill-catalog -->
 Core skills:
 
-- `volcengine-cost` — Query and analyze bills, cost changes and account balances; reconcile charges and verify payment ownership, packages and coupons.
+- `volcengine-billing-and-cost-management` — Query and analyze bills, cost changes and account balances; reconcile charges and verify payment ownership, packages and coupons.
 - `volcengine-cli` — Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli.
 - `volcengine-troubleshooting` — Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures.
 - `volcengine-knowledge-search` — Search and fetch official Volcengine documentation with ve docs search/fetch, without login.

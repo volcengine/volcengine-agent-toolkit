@@ -381,35 +381,45 @@ class HostRegistrationTest(InstallToolkitHarness):
             for name in ("Default", "Profile 2")
         ]
         for profile in profiles:
-            legacy = profile / "volcengine-billing-and-cost-management"
+            legacy = profile / "volcengine-cost"
             legacy.mkdir(parents=True)
             (legacy / "SKILL.md").write_text("old billing skill", encoding="utf-8")
             (legacy / "custom.md").write_text("user notes", encoding="utf-8")
+            current = profile / "volcengine-billing-and-cost-management"
+            current.mkdir()
+            (current / "SKILL.md").write_text("previous billing and cost management skill", encoding="utf-8")
             custom = profile / "user-custom-skill"
             custom.mkdir()
             (custom / "SKILL.md").write_text("keep", encoding="utf-8")
         result = self.run_installer("--agent", "doubao-work")
         self.assertEqual(0, result.returncode, result.stderr)
         for profile in profiles:
-            self.assertTrue((profile / "volcengine-cost/SKILL.md").is_file())
-            self.assertFalse((profile / "volcengine-billing-and-cost-management").exists())
+            self.assertEqual(
+                (self.toolkit_dir / "skills/core/volcengine-billing-and-cost-management/SKILL.md").read_text(),
+                (profile / "volcengine-billing-and-cost-management/SKILL.md").read_text(),
+            )
+            self.assertFalse((profile / "volcengine-cost").exists())
             self.assertEqual("keep", (profile / "user-custom-skill/SKILL.md").read_text())
-            backups = list((profile.parent / ".skill-migration-backups").glob("*/volcengine-billing-and-cost-management"))
+            backups = list((profile.parent / ".skill-migration-backups").glob("*/volcengine-cost"))
             self.assertEqual(1, len(backups))
             self.assertEqual("user notes", (backups[0] / "custom.md").read_text())
         repeated = self.run_installer("--agent", "doubao-work")
         self.assertEqual(0, repeated.returncode, repeated.stderr)
         for profile in profiles:
+            self.assertEqual(
+                (self.toolkit_dir / "skills/core/volcengine-billing-and-cost-management/SKILL.md").read_text(),
+                (profile / "volcengine-billing-and-cost-management/SKILL.md").read_text(),
+            )
             self.assertEqual(1, len(list((profile.parent / ".skill-migration-backups").iterdir())))
 
-    def test_doubao_work_copy_failure_preserves_existing_cost_skills(self) -> None:
+    def test_doubao_work_copy_failure_preserves_existing_billing_and_cost_skills(self) -> None:
         doubao_root = self.home / ("Library/Application Support/DoubaoWork" if sys.platform == "darwin" else ".config/DoubaoWork")
         profile = doubao_root / "Default/.doubaowork/agent_mode/workspace/.user_skills"
         for name in ("volcengine-cost", "volcengine-billing-and-cost-management"):
             target = profile / name
             target.mkdir(parents=True)
             (target / "SKILL.md").write_text("keep old version", encoding="utf-8")
-        self.fake_cli("cp", 'case "$*" in *skills/core/volcengine-cost*) exit 1;; esac\n/bin/cp "$@"')
+        self.fake_cli("cp", 'case "$*" in *skills/core/volcengine-billing-and-cost-management*) exit 1;; esac\n/bin/cp "$@"')
         result = self.run_installer("--agent", "doubao-work")
         self.assertNotEqual(0, result.returncode)
         self.assertNotIn("VERIFIED=doubao-work:ok", result.stdout)

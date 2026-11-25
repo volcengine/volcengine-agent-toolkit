@@ -65,7 +65,7 @@ DEFAULT_GITHUB_URL="https://github.com/volcengine/volcengine-agent-toolkit"
 GITHUB_REPOSITORY="volcengine/volcengine-agent-toolkit"
 MARKETPLACE="volcengine-skills"
 CORE_PLUGIN="volcengine-core@volcengine-skills"
-CORE_SKILLS="volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback volcengine-cost"
+CORE_SKILLS="volcengine-cli volcengine-troubleshooting volcengine-knowledge-search volcengine-find-skills volcengine-feedback volcengine-billing-and-cost-management"
 MANIFEST_NAME="toolkit-manifest.json"
 ARCHIVE_NAME="volcengine-agent-toolkit.zip"
 
@@ -677,13 +677,13 @@ install_for_doubao_work() {
       [ -d "$user_skills" ] || continue
       IFS="$old_ifs"
       copy_core_skills "$user_skills"
-      legacy_skill="$user_skills/volcengine-billing-and-cost-management"
+      legacy_skill="$user_skills/volcengine-cost"
       if [ -e "$legacy_skill" ] || [ -L "$legacy_skill" ]; then
         backup_root="$user_skills/../.skill-migration-backups"
         mkdir -p "$backup_root" || die "Cannot prepare the legacy Skill backup"
-        backup="$(mktemp -d "$backup_root/volcengine-billing-and-cost-management.XXXXXX")" \
+        backup="$(mktemp -d "$backup_root/volcengine-cost.XXXXXX")" \
           || die "Cannot create the legacy Skill backup"
-        mv "$legacy_skill" "$backup/volcengine-billing-and-cost-management" \
+        mv "$legacy_skill" "$backup/volcengine-cost" \
           || die "Cannot migrate the legacy billing Skill"
         log "DoubaoWork: previous billing Skill backed up to $backup"
       fi

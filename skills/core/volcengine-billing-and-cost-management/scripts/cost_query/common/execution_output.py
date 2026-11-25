@@ -74,7 +74,7 @@ def compact_size(value: Mapping[str, Any]) -> int:
 def automatic_result_path(prefix: str, suffix: str) -> Path:
     """Create a task result directory whose files survive subprocess exit."""
 
-    directory = Path(tempfile.mkdtemp(prefix=f"volcengine-cost-{prefix}-"))
+    directory = Path(tempfile.mkdtemp(prefix=f"volcengine-billing-and-cost-management-{prefix}-"))
     return (directory / f"result{suffix}").resolve()
 
 

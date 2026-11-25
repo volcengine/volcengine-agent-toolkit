@@ -1,4 +1,4 @@
-"""Offline smoke tests for the cost Skill and its critical evidence boundaries."""
+"""Offline smoke tests for the billing and cost management Skill and its critical evidence boundaries."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from datetime import date
 from pathlib import Path
 from unittest import mock
 
-ROOT = Path(__file__).resolve().parents[1] / "skills/core/volcengine-cost"
+ROOT = Path(__file__).resolve().parents[1] / "skills/core/volcengine-billing-and-cost-management"
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from cost import main  # noqa: E402
@@ -25,7 +25,7 @@ from cost_query.billing.client import FixtureBillingClient  # noqa: E402
 from cost_query.billing.json_schema import schema_contract  # noqa: E402
 
 
-class VolcengineCostTest(unittest.TestCase):
+class VolcengineBillingAndCostManagementTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified CLI facade for the volcengine-cost skill."""
+"""Unified CLI facade for the volcengine-billing-and-cost-management skill."""
 
 from __future__ import annotations
 

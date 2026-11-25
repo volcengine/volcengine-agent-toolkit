@@ -282,7 +282,7 @@ def _pagination_config(args: argparse.Namespace, body: Mapping[str, Any]) -> Fet
 
 def _create_automatic_output_path(action: str) -> Path:
     try:
-        root = Path(tempfile.gettempdir()) / "volcengine-cost"
+        root = Path(tempfile.gettempdir()) / "volcengine-billing-and-cost-management"
         root.mkdir(parents=True, exist_ok=True)
         run_directory = Path(
             tempfile.mkdtemp(prefix=f"{action.lower()}-", dir=str(root))
