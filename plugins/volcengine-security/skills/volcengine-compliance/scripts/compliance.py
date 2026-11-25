@@ -6,6 +6,7 @@
 - recommend : 合规推荐（只读）。根据用户诉求（合规标准 / 关键词 / 关注风险等级），
               从火山引擎官方内置的合规包模板里推荐该开启哪些，并标出哪些已经开过，
               避免重复部署。
+- delivery  : 查看投递渠道。创建、编辑、启停和删除需要 --confirm。
 - overview  : 合规总览（只读）。汇总账号当前的合规态势——把全部已生效规则/合规包
               （官方内置 + 用户自定义都算）的评估结果，按类别（法规 / 最佳实践 /
               自定义）与严重度聚合成一份总览报告（md / csv / json）。
@@ -27,6 +28,7 @@ import csv
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -51,7 +53,7 @@ def _eprint(*args):
     print(*args, file=sys.stderr, flush=True)
 
 
-def ve_config(action, body):
+def ve_config(action, body, retries=RETRY):
     """调用 `ve config <action> --body <json>` 并解析 JSON 响应。
 
     步骤：
@@ -61,7 +63,7 @@ def ve_config(action, body):
     """
     payload = json.dumps(body, ensure_ascii=False)
     last_err = None
-    for attempt in range(RETRY + 1):
+    for attempt in range(retries + 1):
         proc = subprocess.run(
             ["ve", "config", action, "--body", payload],
             capture_output=True,
@@ -83,9 +85,9 @@ def ve_config(action, body):
                 return data.get("Result", {}) or {}
         else:
             last_err = f"[{action}] 退出码={proc.returncode} stderr={proc.stderr.strip()[:500]}"
-        if attempt < RETRY:
+        if attempt < retries:
             time.sleep(1.5 * (attempt + 1))
-    raise RuntimeError(f"{last_err}（已重试 {RETRY} 次）")
+    raise RuntimeError(f"{last_err}（已重试 {retries} 次）")
 
 
 # ------------------------- 分页通用 -------------------------
@@ -612,6 +614,190 @@ def cmd_apply(args):
         _eprint("已部署。资源评估异步进行，稍后用 overview 读结果。")
 
 
+EVENTS = {"ConfigurationItemChangeNotification", "NonCompliantNotification"}
+SNAPSHOTS = {"ConfigurationSnapshot", "CompliantSnapshot"}
+TOS_FIELDS = {"TosKeyPrefix", "TosSSEAlgorithm", "TosSSEKMSKeyId"}
+DELIVERY_FIELDS = TOS_FIELDS | {
+    "DeliveryChannelTargetTrn", "DeliveryRoleTrn", "DeliveryContents",
+    "Condition", "SnapshotDeliveryTime",
+}
+
+
+def delivery_settings(old, changes, new_tos_bucket=False):
+    """Keep the original settings when the user edits one field."""
+    creating = not old
+    allowed = DELIVERY_FIELDS | ({"DeliveryChannelType", "DeliveryChannelName"} if creating else set())
+    if not isinstance(changes, dict) or not changes or changes.keys() - allowed:
+        raise ValueError("请检查投递字段。编辑时只能修改目标、角色、内容、筛选条件和投递时间。")
+    fields = {key: value for key, value in old.items() if key in DELIVERY_FIELDS and value is not None}
+    fields.pop("TosKeyPrefix", None)
+    for key, value in changes.items():
+        if key != "DeliveryContents" and not isinstance(value, str):
+            raise ValueError(f"{key} 需要文本值。")
+    fields.update(changes)
+    channel = fields.get("DeliveryChannelType", old.get("DeliveryChannelType"))
+    if new_tos_bucket and (channel != "TOS" or (old and fields.get("DeliveryChannelTargetTrn") == old.get("DeliveryChannelTargetTrn"))):
+        raise ValueError("使用 --new-tos-bucket 时，请指定本次新建的 TOS 桶。")
+    if "TosKeyPrefix" in changes and not new_tos_bucket:
+        raise ValueError("只有本次新建存储桶时才能设置文件前缀。选择已有桶时请省略 TosKeyPrefix。")
+    if creating and not re.fullmatch(r"[一-龥a-zA-Z0-9-]{1,20}", fields.get("DeliveryChannelName", "")):
+        raise ValueError("投递名称限 1 至 20 个字，可用中文、英文字母、数字和连字符。")
+    targets = {"SNS": r"topic/[^/]+", "TOS": r"[^/]+", "TLS": r"project/[^/]+/topic/[^/]+"}
+    if channel not in targets or not re.fullmatch(
+        rf"trn:{channel.lower()}:[^:]+:[^:]+:{targets[channel]}", fields.get("DeliveryChannelTargetTrn", "")
+    ):
+        raise ValueError("请核对目标的类型、地域和资源标识。")
+    if not re.fullmatch(r"trn:iam:[^:]*:[^:]+:role/[^/]+", fields.get("DeliveryRoleTrn", "")):
+        raise ValueError("请指定配置审计可以使用的服务角色。")
+    contents = fields.get("DeliveryContents")
+    supported = EVENTS if channel == "SNS" else EVENTS | SNAPSHOTS
+    if not isinstance(contents, list) or not contents or not all(c in supported for c in contents):
+        raise ValueError("请选择该渠道支持的投递内容。SNS 只支持事件。")
+    if SNAPSHOTS.intersection(contents):
+        if not re.fullmatch(r"([01][0-9]|2[0-3]):[0-5][0-9]Z", fields.get("SnapshotDeliveryTime") or ""):
+            raise ValueError("快照需要每日投递时间。请换算为 UTC，例如 16:30Z。")
+    else:
+        if changes.get("SnapshotDeliveryTime"):
+            raise ValueError("只有快照可以设置每日投递时间。")
+        if old.get("SnapshotDeliveryTime"):
+            fields["SnapshotDeliveryTime"] = ""
+        else:
+            fields.pop("SnapshotDeliveryTime", None)
+    if channel != "TOS":
+        if changes.keys() & TOS_FIELDS:
+            raise ValueError("文件前缀和加密方式只适用于 TOS。")
+        for key in TOS_FIELDS:
+            fields.pop(key, None)
+    elif fields.get("TosSSEAlgorithm") not in (None, "", "AES256", "kms"):
+        raise ValueError("TOS 加密方式可选 AES256 或 kms，空值表示不加密。")
+    elif fields.get("TosSSEAlgorithm") == "kms" and not fields.get("TosSSEKMSKeyId"):
+        raise ValueError("请选择 KMS 密钥。")
+    elif fields.get("TosSSEAlgorithm") != "kms":
+        if changes.get("TosSSEKMSKeyId"):
+            raise ValueError("只有 kms 加密可以指定密钥。")
+        if old.get("TosSSEKMSKeyId"):
+            fields["TosSSEKMSKeyId"] = ""
+        else:
+            fields.pop("TosSSEKMSKeyId", None)
+    if not creating and any((fields.get(k) or "") != (old.get(k) or "")
+                            for k in ("DeliveryChannelTargetTrn", "TosSSEKMSKeyId")):
+        if fields["DeliveryRoleTrn"] == old.get("DeliveryRoleTrn"):
+            raise ValueError("目标或 KMS 密钥已变更，请指定为新目标授权的角色。")
+    prefix = fields.get("TosKeyPrefix", "")
+    if len(prefix) > 128 or prefix.startswith(chr(92)) or any(ord(c) in range(8, 14) for c in prefix):
+        raise ValueError("文件前缀最多 128 个字符。请去掉开头的反斜线或文本中的控制字符。")
+    conditions = json.loads(fields.get("Condition") or "[]")
+    if not isinstance(conditions, list):
+        raise ValueError("筛选条件必须是列表。")
+    if ("DeliveryContents" in changes and "Condition" not in changes
+            and "NonCompliantNotification" not in contents):
+        conditions = [item for item in conditions
+                      if not isinstance(item, dict) or item.get("FilterType") != "RuleRiskLevel"]
+    for item in conditions:
+        values = item.get("Values") if isinstance(item, dict) else None
+        if not isinstance(values, list) or not values or not all(isinstance(v, str) and v for v in values):
+            raise ValueError("请检查筛选条件的取值。")
+        if item.get("FilterType") == "RuleRiskLevel":
+            if "NonCompliantNotification" not in contents or set(values) - {"High", "Medium", "Low"}:
+                raise ValueError("只有资源不合规事件可以选择风险等级。")
+        elif item.get("FilterType") != "ResourceType":
+            raise ValueError("无法识别筛选条件，请先核对投递详情。")
+    if len({item["FilterType"] for item in conditions}) != len(conditions):
+        raise ValueError("同一种筛选条件只能出现一次。")
+    fields["Condition"] = json.dumps(conditions, separators=(",", ":"))
+    return fields
+
+
+def check_delivery_recorder(is_group, conditions):
+    kind = "Organization" if is_group else "SingleAccount"
+    recorders = _paginate("DescribeConfigurationRecorders", {}, "ConfigurationRecorders")
+    active = next((r for r in recorders if r.get("RecorderType") == kind
+                   and r.get("ConfigurationRecorderStatus") == "Enabled"), None)
+    if not active:
+        raise ValueError(f"请先启用 {kind} 配置记录器。")
+    selected = next((item["Values"] for item in conditions if item["FilterType"] == "ResourceType"), [])
+    if not selected:
+        return
+    if active.get("IncludeAllResourceTypes"):
+        supported = _paginate("ListSupportedResourceType", {}, "ResourceTypeList")
+        covered = {row["ResourceType"] for row in supported}
+    else:
+        covered = set(active.get("IncludeResourceTypes") or [])
+    missing = sorted(set(selected) - covered)
+    if missing:
+        raise ValueError("记录器未覆盖这些类型：" + "、".join(missing))
+
+
+def run_delivery(args):
+    group = {"AccountGroupId": args.group} if args.group else {}
+    suffix = "AccountGroupDeliveryChannel" if group else "DeliveryChannel"
+    target = dict(group, DeliveryChannelId=args.id) if args.id else group
+    operation = args.operation
+    if bool(args.id) != (operation in {"show", "update", "delete", "enable", "disable"}):
+        raise ValueError("查看、编辑或删除时，请指定渠道 ID。")
+    if (args.settings is not None) != (operation in {"create", "update"}):
+        raise ValueError("仅创建和编辑需要 --settings。")
+    if args.new_tos_bucket and operation not in {"create", "update"}:
+        raise ValueError("--new-tos-bucket 只用于创建或编辑渠道。")
+
+    def channels():
+        return _paginate("List" + suffix + "s", group, "DeliveryChannels")
+
+    if operation == "list":
+        return channels()
+    old = ve_config("Describe" + suffix, target) if args.id else {}
+    if args.id and old.get("DeliveryChannelId") != args.id:
+        raise ValueError("详情中的渠道 ID 与请求不一致。")
+    if operation == "show":
+        return old
+    body = dict(target)
+    if operation in {"enable", "disable"}:
+        body.update(Status="Enabled" if operation == "enable" else "Disabled", DeliveryRoleTrn=old["DeliveryRoleTrn"])
+    if operation in {"create", "update"}:
+        body.update(delivery_settings(old, json.loads(args.settings), args.new_tos_bucket))
+    if operation == "create":
+        existing = channels()
+        if any(row.get("DeliveryChannelName") == body["DeliveryChannelName"] for row in existing):
+            raise ValueError("已有同名投递。请先查看该渠道。")
+        if len(existing) >= (3 if group else 5):
+            raise ValueError("投递渠道已达上限。")
+    if operation == "create" or (operation == "update" and "Condition" in json.loads(args.settings)):
+        check_delivery_recorder(bool(group), json.loads(body["Condition"]))
+    if not args.confirm:
+        return {"Action": operation, "Before": old, "Request": body}
+    action = "Update" if operation in {"enable", "disable"} else operation.capitalize()
+    result = ve_config(action + suffix, body, retries=0)
+    if operation == "delete":
+        if any(row.get("DeliveryChannelId") == args.id for row in channels()):
+            raise RuntimeError("已提交删除请求，列表中仍有该渠道。请稍后再查。")
+        return {"Deleted": args.id}
+    channel_id = args.id or result.get("DeliveryChannelId")
+    if not channel_id:
+        raise RuntimeError("已提交创建请求，但没有收到渠道 ID。请先查列表。")
+    actual = ve_config("Describe" + suffix, dict(group, DeliveryChannelId=channel_id))
+    if actual.get("DeliveryChannelId") != channel_id:
+        raise RuntimeError("已提交请求，但详情中的渠道 ID 与预期不符。")
+    for key, expected in body.items():
+        if key == "AccountGroupId":
+            continue
+        value = actual.get(key)
+        if key == "Condition":
+            value, expected = json.loads(value or "[]"), json.loads(expected)
+        if key == "DeliveryContents" and isinstance(value, list):
+            value, expected = sorted(value), sorted(expected)
+        if value != expected and not (expected == "" and value is None):
+            raise RuntimeError(f"已提交请求，但详情中的 {key} 与预期不符。请查看渠道 {channel_id}。")
+    return actual
+
+
+def cmd_delivery(args):
+    try:
+        result = run_delivery(args)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(str(exc)) from exc
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
 def main():
     parser = argparse.ArgumentParser(description="火山引擎合规最佳实践助手")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -636,6 +822,15 @@ def main():
     p_ap.add_argument("--enable-recorder", action="store_true", help="recorder 未启用时一并启用")
     p_ap.add_argument("--confirm", action="store_true", help="真正执行写操作；不加则 dry-run")
     p_ap.set_defaults(func=cmd_apply)
+
+    delivery = sub.add_parser("delivery", help="查看、创建、编辑或删除投递渠道")
+    delivery.add_argument("operation", choices=["list", "show", "create", "update", "delete", "enable", "disable"])
+    delivery.add_argument("--group", help="账号组 ID。省略时使用当前账号")
+    delivery.add_argument("--id", help="投递渠道 ID")
+    delivery.add_argument("--settings", help="创建字段或需要修改的字段，使用 JSON 对象")
+    delivery.add_argument("--new-tos-bucket", action="store_true", help="目标桶已在本次操作中新建，可指定文件前缀")
+    delivery.add_argument("--confirm", action="store_true", help="执行已确认的操作。省略时只预览")
+    delivery.set_defaults(func=cmd_delivery)
 
     args = parser.parse_args()
     args.func(args)

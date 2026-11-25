@@ -206,9 +206,9 @@
         {
           "name": "volcengine-compliance",
           "path": "plugins/volcengine-security/skills/volcengine-compliance",
-          "summary": "Recommend compliance baselines, report posture, and author custom Rego compliance rules.",
-          "summary_zh": "推荐合规基线、汇总合规态势并编写自定义 Rego 合规规则。",
-          "keywords": ["compliance", "合规", "配置审计", "conformance pack", "rego", "等保", "security"]
+          "summary": "Recommend compliance baselines, report posture, author custom Rego rules, and deliver Config events and snapshots to TOS, TLS, or SNS.",
+          "summary_zh": "推荐合规基线、汇总合规结果、编写 Rego 规则，把配置审计事件和快照投递到 TOS、TLS 或 SNS。",
+          "keywords": ["compliance", "合规", "配置审计", "配置审计投递", "资源快照", "不合规事件", "Config delivery", "conformance pack", "rego", "等保", "security"]
         },
         {
           "name": "volcengine-cloud-trail",
