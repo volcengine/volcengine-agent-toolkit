@@ -5,9 +5,9 @@ description: >-
   从火山引擎官方内置的合规包模板里推荐该开启哪些、并标出哪些已开启；二是汇总账号当前的合规
   态势，把已生效规则/合规包（官方内置 + 用户自定义）的评估结果按类别（法规 / 最佳实践 /
   自定义）与严重度聚合成一份合规总览报告；三是当官方基线没覆盖时，指导用户写一条 Rego 策略
-  作为自定义合规规则并注册评估。可在用户确认后把推荐的模板部署为合规包。Use when
+  作为自定义合规规则并注册评估。也可管理配置审计投递，把配置变更、不合规事件或每日快照发到指定目标。可在用户确认后把推荐的模板部署为合规包。Use when
   用户想做「合规检查 / 合规巡检 / 安全合规 / 合规最佳实践 / 该开哪些合规规则 / 等保合规 /
-  我火山账号合规吗 / 有哪些不合规 / 帮我写条自定义合规规则」，或提到火山引擎「配置审计 /
+  把资源快照存到 TOS / 把不合规事件发到 SNS / 查配置审计投递 / 我火山账号合规吗 / 有哪些不合规 / 帮我写条自定义合规规则」，或提到火山引擎「配置审计 /
   Config / 合规包 / conformance pack / Rego 策略」。Trigger on 火山 / 火山引擎 /
   volcengine 关键词叠加合规场景。部署合规包 / 注册自定义规则属写操作，需用户确认；合规报告
   与资源修复严格分离。
@@ -39,7 +39,7 @@ metadata:
 
 # 火山引擎合规最佳实践助手
 
-本技能围绕火山引擎配置审计（Config）的合规能力，为用户提供三件事：
+本技能围绕火山引擎配置审计（Config）的合规能力，为用户提供四项功能：
 
 1. **合规推荐**：根据用户诉求，从火山引擎**官方内置的合规包模板**里推荐该开启哪些合规基线
    （法规 / 最佳实践），并标出哪些已经开过，避免重复部署。
@@ -47,6 +47,7 @@ metadata:
    的评估结果，按合规类别与严重度聚合成一份总览报告。
 3. **落地合规检查诉求**：用户带着一个具体检查诉求来时，先在系统模板里找现成的推荐给他，没有
    现成的再参考类似模板、或从零写一条 Rego 策略自定义并注册评估（详见 [references/writing-config-rules.md](references/writing-config-rules.md)）。
+4. **投递事件和快照**：查看、创建或修改投递渠道。也可以暂停、恢复或删除投递。见 [配置审计投递](references/delivery.md)。
 
 合规知识既来自火山官方内置基线，也覆盖用户自建规则；总览一视同仁，推荐只针对官方基线。
 
@@ -54,9 +55,9 @@ metadata:
 
 | 项目 | 说明 |
 | --- | --- |
-| 适用场景 | 合规检查 / 合规巡检 / 合规最佳实践推荐 / 账号合规态势总览 / 写自定义合规规则 |
+| 适用场景 | 合规检查 / 合规巡检 / 合规最佳实践推荐 / 账号合规态势总览 / 写自定义合规规则 / 配置审计投递 |
 | 核心能力 | 合规推荐（只读）、合规总览（只读） |
-| 可选写操作 | 把推荐模板部署为合规包、注册自定义规则（需确认） |
+| 可选写操作 | 把推荐模板部署为合规包、注册自定义规则、修改投递配置（需确认） |
 | 底层调用 | `scripts/compliance.py` 封装 `ve config <Action>`；写自定义规则直调 `ve config` |
 
 ## 能力
@@ -67,9 +68,11 @@ metadata:
 | 合规总览 | 汇总账号已生效规则/合规包的评估结果，按类别+严重度出总览报告 | `overview` | [references/overview.md](references/overview.md) |
 | 部署合规包 | 把推荐的官方模板部署为合规包（写操作，确认门控） | `apply` | [references/apply.md](references/apply.md) |
 | 写自定义规则 | 落地一个具体合规检查诉求：先在系统模板里找现成的，没有再写 Rego 策略自定义并注册评估 | 无（`ve config` 直调） | [references/writing-config-rules.md](references/writing-config-rules.md) |
+| 配置审计投递 | 把事件或快照发到 TOS、TLS 或 SNS | `delivery` | [投递说明](references/delivery.md) |
 
 ## 什么时候用
 
+- 用户问「把资源快照存到 TOS」「把不合规事件发到 SNS」「暂停投递」时，按[投递说明](references/delivery.md)操作。
 - 用户问「我该开哪些合规规则 / 想满足等保 / 有没有推荐的合规最佳实践」——用合规推荐。
 - 用户问「我火山账号现在合规吗 / 有哪些不合规资源 / 给我一份合规报告」——用合规总览。
 - 用户带着一个具体检查诉求来（「帮我检查 TOS 桶有没有对匿名用户开放写权限」这类）——按 [references/writing-config-rules.md](references/writing-config-rules.md) 先找现成模板，没有再自定义。
@@ -132,7 +135,8 @@ python3 scripts/compliance.py apply --template-id <模板ID> --name my-baseline 
 4. **部署（可选）**：用户想开时先 `apply` dry-run 给他看，**明确同意后**才 `--confirm`。
 5. **总览场景**：`overview` 后读 markdown 产物，按类别与严重度汇报，先讲 Critical/High。
 6. **合规检查诉求场景**：用户带具体检查诉求来时，按 [references/writing-config-rules.md](references/writing-config-rules.md) 先用 `ListRuleTemplates` / `recommend` 找现成模板；没有再摸清资源字段结构（`ListSupportedResourceType` → `DescribeSupportedResourceTypes` / `GetResourceConfigHistory`）、写 Rego 策略、本地自测，经用户确认后注册规则（创建后自动异步评估）。
-7. **给整改建议、不代执行修复**：讲清每条不合规要求什么、怎么改；具体资源修复交用户确认后另行执行。
+7. **投递**：用户要发事件或存快照时，按[投递说明](references/delivery.md)查已有渠道。
+8. **给整改建议、不代执行修复**：讲清每条不合规要求什么、怎么改；具体资源修复交用户确认后另行执行。
 
 ## 优先级分级
 
@@ -146,6 +150,8 @@ python3 scripts/compliance.py apply --template-id <模板ID> --name my-baseline 
 （严重度由规则风险等级映射：High→Critical、Medium→High、Low→Medium。）
 
 ## 写操作边界（重要）
+
+- **配置审计投递**：先显示将要修改的内容。用户确认后，再创建目标资源、授权或修改渠道。
 
 - **只读**：`recommend` / `overview` 永远不改任何东西。
 - **写操作**：`apply`（部署合规包）、`--enable-recorder`（启用记录器）会改变账号状态，
