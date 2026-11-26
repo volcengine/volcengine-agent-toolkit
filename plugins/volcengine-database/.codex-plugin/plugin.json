@@ -1,6 +1,6 @@
 {
   "name": "volcengine-database",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Build and operate database-backed applications on Volcengine managed database platforms.",
   "author": {
     "name": "Volcengine Team",

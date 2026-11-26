@@ -1,6 +1,6 @@
 {
   "name": "volcengine-skills",
   "description": "Core Volcengine skills plus discovery and installation of optional product-domain skills.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "contextFileName": "GEMINI.md"
 }

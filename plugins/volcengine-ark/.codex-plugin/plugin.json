@@ -1,6 +1,6 @@
 {
   "name": "volcengine-ark",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Work with Volcengine Ark models through the official Ark CLI: choose models and check prices, manage API Keys and endpoints, run inference and generation, and track usage.",
   "author": {
     "name": "Volcengine Team",
