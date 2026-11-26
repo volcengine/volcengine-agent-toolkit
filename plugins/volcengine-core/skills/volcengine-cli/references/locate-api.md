@@ -10,6 +10,8 @@ Step 3: Service name also unknown?
   -> ve 2>&1 | grep -i <service keyword>
 Step 4: None of the above work?
   -> python3 scripts/find_api.py <keyword>   (returns Service, Action, Version)
+Step 5: Still missing (or unknown service/action)?
+  -> Check references/extend-apis.md (covers APIs absent from both ve metadata and find_api.py, such as account_verify GetVerifyInfo for real-name verification)
 ```
 
 ## Retrieve parameters (once the Action is known)
@@ -58,7 +60,7 @@ ve newservice DescribeNewResource \
 - [safety.md](safety.md) applies exactly as for a listed action; a local safety policy checks `--force` calls too.
 - Do not use `--force` for TLS (日志服务); `ve` has no `tls` OpenAPI command, so route TLS tasks to `ve volclog` through the Product CLI routing table instead.
 
-[references/extend-apis.md](extend-apis.md) carries the service-code / version / endpoint / signing-region recipes for the extension services that were previously wrapped by a helper script (CDN, DCDN, domain, Flink, GA, IoT, Live, MCDN, Metrics, sec_agent, trademark, VEEN, VKE).
+[references/extend-apis.md](extend-apis.md) carries the service-code / version / endpoint / signing-region recipes for the extension services (`account_verify` real-name verification, CDN, CodePipeline, DCDN, `domain_openapi`, Flink, GA, IoT, Live, MCDN, Metrics, `sec_agent`, `trademark`, VEEN, VKE, VMP).
 
 ## Extension helper (query + body in one request only)
 

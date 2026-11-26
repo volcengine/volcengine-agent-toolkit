@@ -99,7 +99,9 @@
             "mysql",
             "postgresql",
             "cloud monitor",
-            "prometheus"
+            "prometheus",
+            "实名认证",
+            "real-name verification"
           ]
         },
         {
