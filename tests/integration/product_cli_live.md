@@ -26,10 +26,10 @@
 - 通过 `volcengine-find-skills` 获取 `volcengine-tosutil`，按照其配置说明准备有效的 tosutil
   配置文件。使用临时 STS 时必须同时提供 AK、SK、session token，文件权限限制为 `0600`。
 - 准备同一地域的现有测试桶，并具有列桶与读取桶元信息的权限。桶名与地域由运行参数传入。
-- 按官方 `arkcli-shared`、`arkcli-auth` 完成 Ark 认证。自动化环境已有合法 STS 时可按
-  官方 `init-volc` 指引初始化；角色 ID 不能当作 IAM 用户 ID。模型查询使用控制面凭证，
-  不要求通过额外推理调用验证 API Key。
-- 阅读官方 `arkcli-models` 及 search/get reference。需要单次指定 Ark profile 时传
+- 通过 `volcengine-find-skills` 获取 `volcengine-ark`，按其中的 `arkcli-shared`、`arkcli-auth`
+  指南完成 Ark 认证。自动化环境已有合法 STS 时可按 `init-volc` 指引初始化；角色 ID 不能当作
+  IAM 用户 ID。模型查询使用控制面凭证，不要求通过额外推理调用验证 API Key。
+- 阅读 `volcengine-ark` 中的 `arkcli-models` 指南及 search/get reference。需要单次指定 Ark profile 时传
   `--ark-profile`；测试不会切换默认 profile。
 - 账号一致性使用 `auth whoami` 的当前身份，不用 `auth status` 中可能来自旧缓存的
   `volc_sso.identity` 代替。模型关键词应指向有详情接口的基础模型；滚动别名没有详情时，

@@ -66,5 +66,5 @@ metadata:
 1. **请求用户授权**：向用户说明"需要安装 `<skill-name>` 才能继续处理 `<商品>`，是否允许自动安装？"，等待明确许可。
 2. **授权后自动安装**：
    - 目标 skill 在 volcengine-skills marketplace 内：调用 `volcengine-find-skills` 拉起安装。
-   - 目标 skill 在外部 GitHub 仓库（如 ark-cli / ve-tls-cli）：按流程文件里给出的源码 URL 自动 clone / 按 README 完成安装。
+   - 目标 skill 在外部 GitHub 仓库（如 ve-tls-cli）：按流程文件里给出的源码 URL 自动 clone / 按 README 完成安装。
 3. **失败如实告知**：任何一步失败都要向用户说明卡点（授权、网络、权限、依赖缺失等），不得跳过授权直接执行，也不得谎称已安装。

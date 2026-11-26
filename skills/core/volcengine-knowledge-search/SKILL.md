@@ -1,6 +1,6 @@
 ---
 name: volcengine-knowledge-search
-description: "使用 ve docs search/fetch 检索火山引擎官方文档并获取全文。Use when 用户咨询火山引擎产品的概念、用法、计费规则、部署步骤、最佳实践或服务条款，或提供 www.volcengine.com/docs/、docs.volcengine.com/docs/ 链接需要阅读正文时。"
+description: "使用 ve docs search/fetch 检索火山引擎官方文档并获取全文。Use when 用户咨询火山引擎产品的概念、用法、计费规则、部署步骤、最佳实践或服务条款，或提供 www.volcengine.com/docs/、docs.volcengine.com/docs/ 链接需要阅读正文时；火山方舟（Ark）的概念、用法、计费规则类问题也在此列。方舟有哪些模型、模型规格和模型价格的查询不在此列，由 volcengine-ark 处理。"
 license: MIT
 metadata:
   openclaw:
@@ -53,6 +53,13 @@ VE_CALLER_TYPE=ai_agent VE_CALLER_NAME="<agent-id>" VE_SKILL_NAME="<current-volc
 ```
 
 若 `ve` 未安装或缺少子命令，加载 `volcengine-cli` skill，按其 `references/install.md` 安装最新版，再检查能力。文档命令访问公开服务，**无需登录、AK/SK、profile 或地域配置**；安装后直接使用，无需执行资源管理的身份初始化流程。
+
+## 与火山方舟实时查询的分工
+
+- **属于本 skill**：方舟的概念、功能用法、计费规则、使用限制、最佳实践，以及方舟文档链接的正文阅读。
+- **属于 `volcengine-ark`**：方舟有哪些模型、某个模型的能力和规格、某个模型的价格。这些数据随账号和时间变化，由 `ve arkcli` 实时查询，文档检索的结果不能代替。当前没有 `volcengine-ark` 时，用 `volcengine-find-skills` 安装后再查。
+
+一个问题同时包含两类内容时分别处理，例如“上下文缓存是什么、Seed 2.1 Lite 开启后多少钱”：前半句检索文档，后半句交给 `volcengine-ark`。
 
 ## 选择流程
 

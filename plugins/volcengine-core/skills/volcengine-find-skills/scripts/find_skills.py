@@ -139,9 +139,10 @@ def run_json(
     return completed, None
 
 
-def installed_skill_names(
+def installed_skill_paths(
     catalog: dict[str, Any], agent: str | None, scope: str
-) -> set[str]:
+) -> dict[str, str | None]:
+    """Map each installed skill to its directory; None when the CLI did not report one."""
     command = ["npx", "--yes", "skills", "list"]
     if scope == "global":
         command.append("--global")
@@ -154,7 +155,7 @@ def installed_skill_names(
         fail(f"unable to list installed skills: {detail}", completed.returncode)
     if isinstance(payload, list):
         return {
-            item.get("name")
+            item["name"]: item["path"] if isinstance(item.get("path"), str) else None
             for item in payload
             if isinstance(item, dict) and isinstance(item.get("name"), str)
         }
@@ -164,12 +165,18 @@ def installed_skill_names(
         detail = completed.stderr.strip() or completed.stdout.strip()
         fail(f"unable to list installed skills: {detail}", completed.returncode)
     catalog_names = {record["name"] for record in iter_records(catalog)}
-    installed: set[str] = set()
+    installed: dict[str, str | None] = {}
     for raw_line in completed.stdout.splitlines():
         fields = ANSI_ESCAPE_RE.sub("", raw_line).split()
         if fields and fields[0] in catalog_names:
-            installed.add(fields[0])
+            installed[fields[0]] = None
     return installed
+
+
+def installed_skill_names(
+    catalog: dict[str, Any], agent: str | None, scope: str
+) -> set[str]:
+    return set(installed_skill_paths(catalog, agent, scope))
 
 
 def toolkit_base_url() -> str:
@@ -378,12 +385,19 @@ def install_skills_cli(
         detail = completed.stderr.strip() or completed.stdout.strip()
         fail(f"skills CLI install failed: {detail}", completed.returncode)
 
-    installed_names = installed_skill_names(catalog, agent, scope)
-    missing = sorted(set(skill_names) - installed_names)
+    installed = installed_skill_paths(catalog, agent, scope)
+    missing = sorted(set(skill_names) - set(installed))
     if missing:
         fail(
             f"skills CLI reported success but did not list installed skills: {', '.join(missing)}"
         )
+    # The entry file of each skill, so the Agent can read it in this conversation
+    # even when the host only loads skills at startup.
+    entry_files = {
+        name: str(Path(installed[name]) / "SKILL.md")
+        for name in skill_names
+        if installed.get(name)
+    }
     result = {
         "status": "installed",
         "method": "skills",
@@ -392,12 +406,20 @@ def install_skills_cli(
         "scope": scope,
         "source": package_source,
         "verified": True,
+        "entry_files": entry_files,
+        "next": (
+            "Read each entry file now and continue the task in this conversation."
+            if entry_files
+            else "Locate each installed skill directory and read its SKILL.md."
+        ),
     }
-    print(
-        json.dumps(result, ensure_ascii=False, indent=2)
-        if as_json
-        else f"Installed: {', '.join(skill_names)}"
-    )
+    if as_json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+    print(f"Installed: {', '.join(skill_names)}")
+    for name, entry_file in entry_files.items():
+        print(f"  {name}: {entry_file}")
+    print(f"Next: {result['next']}")
 
 
 def show_status(

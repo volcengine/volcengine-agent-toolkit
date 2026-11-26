@@ -37,6 +37,10 @@ ve <service> <Action> \
 Examples:
 
 ```bash
+# Account real-name verification status (unknown-to-ve service, POST, no parameters)
+ve account_verify GetVerifyInfo --version 2018-01-01 --endpoint open.volcengineapi.com \
+  --method POST --force --query 'Result.{IsVerified:IsVerified,IdentityType:IdentityType}'
+
 # Unknown-to-ve service, GET
 ve domain_openapi CheckFee --version 2022-12-12 --endpoint open.volcengineapi.com \
   --region cn-north-1 --domain example.com --force

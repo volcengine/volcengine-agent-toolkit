@@ -6,7 +6,7 @@ Facts gathered while validating these APIs. Pass them as `--Param` values (or `-
 
 ### Account verification
 
-- `GetVerifyInfo`: no parameters. Personal real-name = `IsVerified=true` + `IdentityType="individual"`; enterprise = `IsVerified=true` + `IdentityType="enterprise"`.
+- `GetVerifyInfo`: no parameters. Personal real-name = `IsVerified=true` + `IdentityType="individual"`; enterprise = `IsVerified=true` + `IdentityType="enterprise"` (personal verification does not satisfy enterprise-only products). Submitting KYC materials or face recognition has no OpenAPI: when `IsVerified=false` or enterprise upgrade is needed, direct the user to `https://console.volcengine.com/user/authentication/detail/` and re-check with `GetVerifyInfo` after they finish.
 
 ### CDN
 

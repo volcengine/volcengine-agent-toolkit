@@ -76,6 +76,12 @@ class CliSkillCredentialGuardTest(unittest.TestCase):
             self.assertIn(heading, self.tail)
         self.assertIn(CUT_RECOVERY_COMMAND, self.tail)
 
+    def test_extended_api_and_realname_guidance_present(self) -> None:
+        self.assertIn("### Extended APIs", self.text)
+        self.assertIn("ve account_verify GetVerifyInfo", self.text)
+        self.assertIn("scripts/call_extend_api.py", self.text)
+        self.assertIn("https://console.volcengine.com/user/authentication/detail/", self.text)
+
     def test_no_wording_that_points_at_the_environment(self) -> None:
         files = [SKILL, *sorted((SKILL_DIR / "references").glob("*.md"))]
         files.append(REPO_ROOT / "skills/core/volcengine-knowledge-search/SKILL.md")

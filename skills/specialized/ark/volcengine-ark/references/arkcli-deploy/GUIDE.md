@@ -1,0 +1,128 @@
+---
+name: arkcli-deploy
+version: 1.4.9
+description: "arkcli +deploy：明确指定型号创建接入点也由本 Skill 接管，包括 Retiring 型号；推荐过滤不替代指定目标的实际创建结果。普通创建推理接入点（Endpoint）的统一首选入口。用户说『创建/新建/create 一个 endpoint/接入点』或『部署/上线/deploy 某模型』时优先走这里；**但脚本化 / CI / 无护栏 / 原始 raw CRUD 创建是唯一例外，必须改走 `arkcli-infer-endpoint`，不能由本 skill 截获**。只有不命中该例外的普通创建，才在模型尚未选择、只给品牌/家族名，或当前轮只查询候选时进入本 skill 完成模型澄清；候选要用实时 search 返回的 `name` 与 `primary_version` 组合成可直接传给 `--model` 的完整 ID。对**已有** Endpoint 做获取/列表/启停/更新等全生命周期管理也走 arkcli-infer-endpoint；本 skill 只负责带产品护栏的一键创建。创建成功后会自动把多语言调用示例渲染到 ./ark-examples/<ep-id>/。反触发：TTS/ASR/语音模型不能 +deploy，只能转 models search 说明广场可搜但 arkcli 不支持 Endpoint 创建。"
+metadata:
+  requires:
+    bins: ["arkcli"]
+  cliHelp: "arkcli +deploy --help"
+---
+
+# arkcli +deploy
+
+**CRITICAL — 路由例外必须先于任何命令：用户明确要求脚本化 / CI / 无护栏 / 原始 raw CRUD 创建 Endpoint 时，立即读取 [`../arkcli-infer-endpoint/GUIDE.md`](../arkcli-infer-endpoint/GUIDE.md) 并由它接管；在完成交接前禁止认证检查、模型查询或其他命令。**
+
+**前置：** 先用 Read 读 [`../arkcli-shared/GUIDE.md`](../arkcli-shared/GUIDE.md) 获取共享认证/配置/写操作守卫规则。
+
+## 创建意图中的模型澄清
+
+只要用户的最终目标仍是“创建 / 新建 / 部署 Endpoint”，即使尚未给出完整模型 ID，也必须留在 `arkcli-deploy` 工作流；`arkcli-models` 此时只是临时调用的只读候选查询能力，不能把创建任务改路由成纯模型发现。
+
+候选必须来自**本轮** ArkCLI 的实时结构化输出，禁止从模型记忆、示例或旧版本号补全。
+
+### 用户明确指定模型时保留创建目标
+
+本 Skill 同样接管“为某个明确型号创建接入点”，包括目录显示 Retiring 的型号。先用已有完整结果确认本次型号与版本；唯一对应用户指定目标时，进入该目标的创建流程，不把它当成未定模型推荐再按 Published 过滤。Retiring 提示生命周期风险，不能单独证明服务端必定拒绝创建；也不能保证创建成功。名称不完整或仍有多个版本时，按真实候选消歧，禁止猜版本。
+
+新接入推荐候选仍优先 Published。具体创建继续经过既有授权、开通/计费与实名门禁，由真实服务端响应决定结果；收到明确不可用、资格或权限拒绝就保留原错误，不能静默替换为另一个模型。不要给不支持 Preview 的 `+deploy` 拼 `--dry-run`，也不要为补“验证”绕过产品流程发 Raw API 写请求。
+
+### 模型尚未确定时查询候选
+
+先确定用户硬条件与关键词，初次用 `models search "<keyword>" --size 10 --format json`；无关键词就省略。关键词用真实名称/家族的子串，能力和模态用真实 flags，不把多个自然语言概念拼成模型名。已有完整本轮结果就复用。
+
+1. **完全没给模型**：按用途/输出模态查询；没有用途时展示实时代表供选择，不从记忆列型号。
+2. **只有品牌/家族**：用该家族关键词召回；空结果先按 [search 的规范化与恢复链](../arkcli-models/references/arkcli-models-search.md#空结果规范化与证据冲突) 校正一次，不把品牌当精确 ID。
+3. **候选字段**：读取真实 `display_name/name/primary_version/lifecycle_status/input_modalities/output_modalities/create_time/update_time`。新接入优先 Published，排除名称明确标 internal/test 以及 Shutdown/Retiring 的推荐项；未知状态不等于可部署。版本非空才拼 `name-version`，不猜日期；自定义模型保留 `cm-...` 身份。
+4. **排序与覆盖**：默认严格按真实 `create_time` 倒序，最新创建/发布的候选在前；只有用户明确要求“最近更新”才按 `update_time` 倒序。禁止因历史偏好或上文提过某旧型号就把它置顶；可在问题正文提醒，但不得改顺序或自造“推荐/主力/旗舰”标签。不能用名称、ID 内时间或 search 默认相关性冒充创建时间；时间缺失/不可解析时标明未知，不伪造排序。无偏好时展示 5–8 个代表，兼顾实际存在的文本、多模态、图像、视频；有硬任务条件就只列匹配者，不为凑数混入其他任务。label 使用原始展示名，description 附完整 ID、模态和状态。
+5. **0/1/N**：0 个如实说明并补问一个关键条件；1 个复述真实 ID；N 个使用宿主提供的结构化选择能力，用户选定前停止，不替选第一项。只要求查询/命令时不创建。
+6. **恢复不等于无限重试**：stderr 与 stdout 分离并检查退出码。先读取工具已保存的完整 JSON；确无完整捕获可把同一只读查询重取到文件，不能从截断预览生成选项。成功为空允许规范化关键词或放宽一个非硬性偏好并说明；鉴权/权限失败不当成空，不换身份。仍不完整/无匹配则报告边界与待补条件，不重复盲查。
+7. **回到创建流程**：选定精确目标后才读取所需详情/真实请求字段。明确版本或模态不支持时停止；不能用 activate 修复错误版本。用户选模型不等于批准创建，最终按共享授权流程执行；`+deploy` 不支持 `--dry-run`，不要发明预览 flag。
+
+精简字段模板见 [search reference](../arkcli-models/references/arkcli-models-search.md#未定模型时的实时候选模板)。以下仅用于未定模型的新接入推荐，对已保存完整候选作本地排序，不新增 API 请求，也不用于过滤用户已指定的精确目标：
+
+```bash
+jq '[.items[]
+  | select(.lifecycle_status == "Published")
+  | select((.name | test("internal|test"; "i")) | not)
+  | {display_name,name,primary_version,lifecycle_status,input_modalities,output_modalities,create_time}]
+  | sort_by(.create_time // "") | reverse' "$candidate_file"
+```
+
+先检查顶层 `items` 为数组及关键字段是否齐全，缺时间只能标“时间未知”。该投影不是账号可部署性验证，不逐候选循环 get/价格接口；只补齐完成当前任务所需的证据。
+
+Endpoint 名称不阻塞只读候选查询；模型选定后再补名称并确认最终创建参数。
+
+**新增 flag `--set-default <modality>`**: 部署成功后自动把新 endpoint 设为 active profile 该 modality (`text` / `image` / `video`) 的默认资源。仅在真实部署成功且用户明确传 modality 时生效；失败仅 stderr warn，不阻断部署主流程。详见 [`../arkcli-shared/references/profile-defaults.md`](../arkcli-shared/references/profile-defaults.md)。
+
+**写操作 + 计费**：`+deploy` 创建在线推理 Endpoint 是真实写操作，会产生计费资源。该工作流依赖在线探测，**不支持 `--dry-run`**；执行前必须与用户显式确认最终参数。
+
+**模型开通是独立计费写动作，非交互环境一律不自动开通**：若目标基础模型尚未开通，`+deploy` 会触发"开通模型"（账号级计费写）。**在 agent / CI / 管道这类非 TTY 环境，开通被硬拒——`--yes` 也不放行**（`--yes` 只在真人交互终端里用于跳过 `[y/N]`）。命中时 CLI 返回 `model_activation_required` + console 链接，你**必须结束本轮、把"开通（计费）"这件事连同链接交还给真人**，由真人在交互终端确认或在网页 console 开通。**严禁自己补 `--yes` / `echo Y` / 设 `ARKCLI_ALLOW_HEADLESS_ACTIVATION` 替用户开通**——你打印一句"请确认"然后同一轮自己加 `--yes` 跑掉，等于没问。`ARKCLI_ALLOW_HEADLESS_ACTIVATION=1` 只留给真·无人值守自动化（CI 流水线），不是 agent 该设的。
+
+**实名前置（开通类硬闸门）**：`+deploy` 会触发开通模型，**第一步**先 `arkcli auth status` 读 `volc_sso.identity.verified`——`false` 即停并把实名页 `https://console.volcengine.com/user/authentication/detail/` 贴给用户、暂停等待（详见 [`../arkcli-auth/references/realname-gate.md`](../arkcli-auth/references/realname-gate.md)）。**不要**先试 `+deploy`、撞到 model-id 无效 / 模型未开通报错再回头查实名——那些报错会把你带偏。
+
+**语音模型硬边界**：TTS / ASR / 配音 / 朗读 / 播客 / 音色设计 / 实时语音交互，或模型名命中 `doubao-seed-tts-*`、`doubao-seed-asr-*`、`seedasr-*` 时，**不要执行 `+deploy`**。这些模型在 arkcli 当前只支持 [`models search`](../arkcli-models/GUIDE.md) 做广场发现；不能创建 Endpoint，也不能通过开通模型绕过。
+
+## 示例代码：`+deploy` 创建后自动渲染 + 独立命令 `+code-example`
+
+两条路径都可用，都走 OpenTOP `OpenGetSampleCode`：
+
+- **`+deploy` 创建成功后自动渲染**：把该接入点的多语言调用示例写到 `./ark-examples/<ep-id>/`（用 ep-id 当作可直接调用的 model id，示例直接调你刚建的接入点），并在 stderr 打一行落盘摘要。best-effort —— 取不到示例只软提示，不影响 Endpoint 创建/启动。
+- **独立命令 `arkcli +code-example`**：按基础模型名/版本单独生成示例，转 [`../arkcli-code-example/GUIDE.md`](../arkcli-code-example/GUIDE.md)；注意它按 model-version 提供，部分版本后端无 group 会返回 not found，缺失时再降级到 `ark-examples/` 静态示例或方舟控制台示例代码页。
+
+## 子命令穷举（只有这一个）
+
+| 调用 | 说明 |
+|------|------|
+| `arkcli +deploy --name <ep-name> --model <model-id> [...]` | 创建 Endpoint。交互终端会复述参数并要求 `[y/N]` 确认；非交互环境必须显式 `--yes`，否则报 `requires_confirmation` |
+
+> ⚠️ **没有** `arkcli deploy ...` / `arkcli endpoint create` / `arkcli +deploy create` 等子命令。整个能力就是一个 `+deploy` 命令加 flag。
+
+## 反幻觉清单
+
+- 交付前读取 [返回值与验收边界](references/arkcli-deploy.md#返回值)：区分新建/复用、创建/推理验证、示例生成成功/软失败。以真实 stdout、stderr 和文件为证，不因示例或默认设置失败重复创建计费资源。
+- `--name`、`--model` 必填
+- 模型版本、价格与额度只能引用本轮只读命令返回的结构化结果；**不得编造模型版本或价格**。查询失败或未登录时，明确标为“尚未核实”，不要用“典型价格”或猜测值代替
+- **查询失败后不得补全依赖字段**：认证、模型、价格或资源查询任一失败时，保留对应字段为“尚未核实”，并明确指出失败来源；不得继续断言具体金额、空闲计费策略、精确模型版本或“没有现存 Endpoint”
+- 检查已有 Endpoint 时使用 `arkcli resources list --format json` 后按返回字段筛选；**不得添加未记录的 `--filter`** 或其他 `resources list --help` 中不存在的 flag
+- JSON 类 flag（`--rate-limit` / `--moderation` / `--intelligent-router` / `--tags` 等）字段名一律 **PascalCase**：`Rpm`、`Tpm`、`Strategy`、`Mode`，不是 `rpm`/`tpm`
+- 独立 `+code-example` 的 flag 是 **`--model`（基础模型名/带版本 id）+ `--language`**，不是 `--endpoint-id`：`arkcli +code-example --model <id> --language python`（细节见 [`../arkcli-code-example/GUIDE.md`](../arkcli-code-example/GUIDE.md)）
+- `+deploy` 创建成功后会**自动**把示例渲染到 `./ark-examples/<ep-id>/`（按 ep-id）；想按基础模型名另出一份则跑 `+code-example`
+- 模型未开通时 `+deploy` 的开通在**非 TTY 下被硬拒、`--yes` 也不放行**；**禁止自己补 `--yes` / `echo Y` / 设 `ARKCLI_ALLOW_HEADLESS_ACTIVATION`**，必须把开通（计费）交还真人在终端 / console 处理
+- 语音模型（TTS / ASR / 播客 / 音色 / 实时语音交互）广场可搜不等于可部署；命中这类模型时停在 `arkcli models search <keyword>`，不要给 `+deploy` 命令
+
+## 路由判断
+
+- 用户要创建 / 部署 Endpoint，但模型缺失或只有品牌 / 家族名 → **仍路由到本 `arkcli-deploy` skill**，按上节执行一次实时只读查询并让用户选择；不要直接创建
+- 用户已有模型 ID + 想正式部署 → 复述 `model/name/region`；确认后执行 `arkcli +deploy --name <ep> --model <id>`
+- 用户要部署 / 接入语音模型，或模型名看起来是 `*-tts-*` / `*-asr-*` / `seedasr-*` → 转 [`arkcli-models`](../arkcli-models/GUIDE.md) 说明"只支持广场检索，不支持 Endpoint 创建"
+- 用户传入自定义模型 ID（`cm-xxxxx`）时，真实创建前会先查是否已有引用该自定义模型且状态为 `Running` 的 Endpoint；若有则直接复用并输出已有 `endpoint-id`，不会再创建第二个计费资源。该在线复用决策也是 `+deploy` 无法提供可靠离线 Client Preview 的原因之一
+- 用户语气紧急要求"立刻创建" → **不要跳过确认**，复述 `model/name/region`
+- 已通过 `arkcli infer endpoint create` 拿到 `Id` → **不要**再 `+deploy` 创建第二个，转 `arkcli-infer-endpoint`；要调用示例转 `arkcli-code-example`（按模型名生成）
+
+## 反触发（路由到别处，附完整命令避免下游幻觉）
+
+| 用户意图 | 路由到 | 完整示范命令 |
+|---------|--------|------------|
+| 只想试模型效果 / 一次性生成 | `arkcli-chat` / `arkcli-gen` | `arkcli +chat --model <id> '...'` 或 `arkcli +gen --model <id> '...'` |
+| 要某模型的调用示例 | `arkcli-code-example` | `arkcli +code-example --model <model-id> --language python`（按模型名/版本生成；缺失版本降级到静态示例或控制台示例页） |
+| 只想发现 / 对比模型，尚无创建 Endpoint 意图 | `arkcli-models` | `arkcli models search <keyword>` 或 `arkcli models list` |
+| 语音模型部署 / TTS 接入点 / ASR Endpoint | `arkcli-models` | `arkcli models search <keyword>`（只做广场发现；当前不支持 Endpoint 创建） |
+| 401 / 鉴权失败 | `arkcli-auth` | `arkcli auth status`，必要时 `arkcli auth login` |
+| profile / region / project 不符预期 | `arkcli-config` | 身份摘要用 `arkcli auth whoami --format json`；默认资源用 `arkcli resources list --format json`。显式 Profile 管理才使用可能同步 Key 的 `profile show/list` |
+| 脚本化 / CI / 需要精细控制每个参数、跳过护栏 | `arkcli-infer-endpoint` | `arkcli infer endpoint create --model <id> --name <ep>` |
+
+## 典型链路
+
+1. **从模型选择到正式接入**：`arkcli auth status` → `arkcli models search/get` → 复述并确认最终模型、名称、计费影响 → `arkcli +deploy ...`（自定义模型若已有 Running Endpoint 会复用）
+2. **从试用切换到正式接入**：`arkcli +chat` / `arkcli +gen` 验证效果 → 复述最终参数并确认 → 真实创建
+3. **创建后做调用集成**：`+deploy` 已把示例自动写到 `./ark-examples/<ep-id>/`，直接用即可；想按基础模型名另出一份跑 `arkcli +code-example --model <model-id> --language <lang>`（部分版本无示例时降级到 `ark-examples/` 静态示例或控制台示例页）
+
+详细 flag、JSON 字段示例、错误码见 [`references/arkcli-deploy.md`](references/arkcli-deploy.md)。
+
+## 参考
+
+- [arkcli-chat](../arkcli-chat/GUIDE.md) -- 快速对话试用，不创建 Endpoint
+- [arkcli-gen](../arkcli-gen/GUIDE.md) -- 图片/视频一步生成
+- [arkcli-models](../arkcli-models/GUIDE.md) -- 部署前确认模型 ID
+- [arkcli-code-example](../arkcli-code-example/GUIDE.md) -- 已有 endpoint 时生成调用代码
+- [arkcli-shared](../arkcli-shared/GUIDE.md) -- 认证与全局参数

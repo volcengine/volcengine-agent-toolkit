@@ -11,6 +11,7 @@
 - `skills/specialized/<domain>/<skill>/`：可选 plugin 的生成副本；分类名为 plugin 名去掉 `volcengine-` 前缀。
 - `scripts/sync_plugins.py`：从 finder catalog 同步核心与专项 skill 副本、文档清单、plugin manifest 与 marketplace。
 - `scripts/validate_codex_plugin_layout.py`：校验目录、文档链接与清单、同步状态和默认安装约束。
+- `scripts/sync_ark_skills.py`：把上游 `volcengine/ark-cli` 的官方 skill 同步为 `plugins/volcengine-ark/skills/volcengine-ark/references/` 下的指南。
 - `hooks/`：跨 skill 复用的 telemetry hook。
 
 核心 skill 只修改 `skills/core/`，不要直接修改 `plugins/volcengine-core/skills/`。可选 skill 则直接修改所属 `plugins/volcengine-<domain>/skills/`。
@@ -45,6 +46,8 @@
 6. 运行 `python3 -m unittest discover -s tests -v`，验证同步器的路径与写入边界。
 
 不要手工维护 `plugins/volcengine-core/skills/`、`skills/specialized/`、文档生成区块、plugin manifest 或 marketplace 条目；它们由 catalog 和同步脚本生成。可选 plugin 的 `skills/` 是源码，必须直接维护。
+
+`volcengine-ark` 的 `references/` 例外：除 `SKILL.md` 外全部由 `scripts/sync_ark_skills.py` 从上游固定提交生成，不要手改。需要更新时克隆上游后运行 `python3 scripts/sync_ark_skills.py --upstream <ark-cli 克隆目录>`，再运行 `scripts/sync_plugins.py`；与 `ve` 相关的差异只写在该 skill 的 `SKILL.md` 里。
 
 ## 当前技能
 

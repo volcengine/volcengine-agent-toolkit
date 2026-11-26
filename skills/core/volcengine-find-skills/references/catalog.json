@@ -55,8 +55,8 @@
         {
           "name": "volcengine-cli",
           "path": "skills/core/volcengine-cli",
-          "summary": "Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli.",
-          "summary_zh": "使用 ve 管理火山引擎资源；引导获取 TOS、Ark 技能，并通过 ve tosutil、ve arkcli 执行。",
+          "summary": "Manage Volcengine resources with ve; route TOS, Ark and TLS tasks to their product skills and run them through ve tosutil, ve arkcli and ve volclog.",
+          "summary_zh": "使用 ve 管理火山引擎资源；TOS、方舟、TLS 任务引导到对应产品技能，并通过 ve tosutil、ve arkcli、ve volclog 执行。",
           "keywords": [
             "ve",
             "cli",
@@ -99,7 +99,9 @@
             "mysql",
             "postgresql",
             "cloud monitor",
-            "prometheus"
+            "prometheus",
+            "实名认证",
+            "real-name verification"
           ]
         },
         {
@@ -112,8 +114,8 @@
         {
           "name": "volcengine-knowledge-search",
           "path": "skills/core/volcengine-knowledge-search",
-          "summary": "Search and fetch official Volcengine documentation with ve docs search/fetch, without login.",
-          "summary_zh": "使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。",
+          "summary": "Search and fetch official Volcengine documentation with ve docs search/fetch, without login; also covers Volcengine Ark concept, usage and billing-rule questions.",
+          "summary_zh": "使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录；含火山方舟的概念、用法和计费规则类问题。",
           "keywords": ["docs", "documentation", "文档", "官方文档", "概念", "计费", "最佳实践"]
         },
         {
@@ -129,6 +131,31 @@
           "summary": "Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task.",
           "summary_zh": "整理并提交脱敏的 GitHub 使用反馈，涵盖问题、能力需求、实际场景和成功实践，始终不阻塞主任务。",
           "keywords": ["feedback", "反馈", "issue", "bug report", "问题反馈", "feature request", "能力愿望", "能力缺口", "scenario", "真实场景", "success story", "场景分享", "体验", "community", "社区"]
+        }
+      ]
+    },
+    {
+      "name": "volcengine-ark",
+      "display_name": "Volcengine Ark",
+      "domain": "人工智能",
+      "domain_en": "AI",
+      "default": false,
+      "description": "Work with Volcengine Ark models through the official Ark CLI: choose models and check prices, manage API Keys and endpoints, run inference and generation, and track usage.",
+      "short_description": "Choose, call, and track Volcengine Ark models",
+      "keywords": ["人工智能", "ai", "大模型", "llm", "方舟", "火山方舟", "ark", "arkcli", "豆包", "doubao", "seed", "seedream", "seedance", "模型", "model", "推理", "inference", "接入点", "endpoint", "api key"],
+      "default_prompts": [
+        "Choose a Volcengine Ark model for my Q&A assistant.",
+        "How much does this Ark model cost per million tokens?",
+        "Create an Ark API Key and an endpoint, then test the model.",
+        "Show how many tokens this Ark endpoint used and what it cost."
+      ],
+      "skills": [
+        {
+          "name": "volcengine-ark",
+          "path": "plugins/volcengine-ark/skills/volcengine-ark",
+          "summary": "Use Volcengine Ark through ve arkcli: look up and choose models, check model prices, activate models, manage API Keys and endpoints, run test calls and generation, and query usage and Ark bills.",
+          "summary_zh": "通过 ve arkcli 使用火山方舟：模型查询与选型、模型价格、开通模型、API Key 与推理接入点、调用调试与生图生视频、用量与方舟账单。",
+          "keywords": ["方舟", "火山方舟", "ark", "arkcli", "ark-cli", "豆包", "doubao", "seed", "seedream", "seedance", "大模型", "模型查询", "模型选型", "选模型", "模型列表", "模型价格", "模型费用", "开通模型", "api key", "apikey", "接入点", "endpoint", "推理", "调用模型", "调试", "生图", "生视频", "用量", "token", "精调", "finetune", "agent plan", "coding plan"]
         }
       ]
     },

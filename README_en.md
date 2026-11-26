@@ -16,9 +16,9 @@ skills are grouped into Volcengine product-domain plugins and discovered through
 
 **[Quick Install →](#default-installation)**
 
-`volcengine-cli` prefers `ve tosutil` and `ve arkcli` for product CLI tasks, requiring **`ve >= 1.1.9`**
-(stable `1.1.9` or newer). Check `ve version` and upgrade if necessary before delegation. Use the finder to
-locate and install `volcengine-tosutil`, or download the [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills).
+`volcengine-cli` prefers `ve tosutil` and `ve arkcli` for product CLI tasks, requiring **`ve >= 1.1.11`**.
+Check `ve version` and upgrade if necessary before delegation. Use the finder to
+locate and install `volcengine-tosutil`, or `volcengine-ark` for Ark, which bundles the [official Ark skills](https://github.com/volcengine/ark-cli/tree/main/skills).
 Follow the corresponding skill for product commands; invoke them through `ve` and apply the
 caller metadata rules below.
 
@@ -37,6 +37,7 @@ For `ve arkcli ...`, `ve` translates the caller metadata. The Agent does not dup
 | Plugin | Product domain | Skills | Default |
 | --- | --- | --- | --- |
 | `volcengine-core` | Core | `volcengine-billing-and-cost-management`, `volcengine-cli`, `volcengine-troubleshooting`, `volcengine-knowledge-search`, `volcengine-find-skills`, `volcengine-feedback` | Yes |
+| `volcengine-ark` | AI | `volcengine-ark` | No |
 | `volcengine-storage` | Storage | `volcengine-tosutil`, `volcengine-tls`, `volcengine-tls-logcollector` | No |
 | `volcengine-database` | Database | `volcengine-db-supabase` | No |
 | `volcengine-containers-middleware` | Containers and Middleware | `volcengine-vefaas` | No |
@@ -57,11 +58,12 @@ are maintained in their plugins; the sync script generates the copies.
 | Skill | Plugin | Use case |
 | --- | --- | --- |
 | [`volcengine-billing-and-cost-management`](./skills/core/volcengine-billing-and-cost-management/SKILL.md) | `volcengine-core` | Query and analyze bills, cost changes and account balances; reconcile charges and verify payment ownership, packages and coupons. |
-| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli. |
+| [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | Manage Volcengine resources with ve; route TOS, Ark and TLS tasks to their product skills and run them through ve tosutil, ve arkcli and ve volclog. |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures. |
-| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with ve docs search/fetch, without login. |
+| [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with ve docs search/fetch, without login; also covers Volcengine Ark concept, usage and billing-rule questions. |
 | [`volcengine-find-skills`](./skills/core/volcengine-find-skills/SKILL.md) | `volcengine-core` | List all Volcengine skills so an agent can select and install missing capabilities. |
 | [`volcengine-feedback`](./skills/core/volcengine-feedback/SKILL.md) | `volcengine-core` | Draft and submit voluntary, redacted GitHub feedback on usage issues, capability needs, practical scenarios, and successful workflows without blocking the main task. |
+| [`volcengine-ark`](./skills/specialized/ark/volcengine-ark/SKILL.md) | `volcengine-ark` | Use Volcengine Ark through ve arkcli: look up and choose models, check model prices, activate models, manage API Keys and endpoints, run test calls and generation, and query usage and Ark bills. |
 | [`volcengine-tosutil`](./skills/specialized/storage/volcengine-tosutil/SKILL.md) | `volcengine-storage` | Manage TOS buckets and objects with the tosutil command-line tool. |
 | [`volcengine-tls`](./skills/specialized/storage/volcengine-tls/SKILL.md) | `volcengine-storage` | Operate Volcengine TLS log service with volclog: contract-first discover/describe/exec, log search, analysis, ingest, export, and error recovery. |
 | [`volcengine-tls-logcollector`](./skills/specialized/storage/volcengine-tls-logcollector/SKILL.md) | `volcengine-storage` | Design, validate, deploy, and troubleshoot TLS LogCollector collection on Linux hosts or Kubernetes through volclog. |
@@ -174,8 +176,9 @@ plugin skill:
    whole plugin.
 5. After the installer exits successfully, the finder reads the host's installed list and returns
    `verified: true` only when every requested skill is visible.
-6. When a host cannot dynamically load a newly installed skill, start a new thread carrying the
-   original task and completed context.
+6. On success the finder returns the entry file of each skill. When a host cannot dynamically load
+   a newly installed skill, the Agent reads that `SKILL.md` by path and continues in the same
+   conversation; a new thread is needed only when the files cannot be read.
 
 ### Codex
 
@@ -191,8 +194,9 @@ These plugin commands only bootstrap the core finder. Subsequent finder installs
 
 In a new thread, ask for a skill by task, such as "find the object storage skill" or "install
 `volcengine-tosutil`". The finder reads the complete catalog, selects the appropriate skill, and
-installs that skill directly without installing its whole product-domain plugin. Start another
-thread when the current host cannot dynamically load new skills.
+installs that skill directly without installing its whole product-domain plugin. When the current
+host cannot dynamically load new skills, the Agent reads the skill from the path the finder returns
+and continues, so another thread is usually not needed.
 
 From a source checkout, discovery and status can be tested directly:
 

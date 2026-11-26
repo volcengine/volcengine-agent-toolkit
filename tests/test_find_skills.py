@@ -166,6 +166,11 @@ class FinderInstallVerificationTest(unittest.TestCase):
         payload = json.loads(output.getvalue())
         self.assertTrue(payload["verified"])
         self.assertEqual(payload["scope"], "project")
+        self.assertEqual(
+            payload["entry_files"],
+            {"volcengine-tosutil": str(Path("<installed-skill-path>") / "SKILL.md")},
+        )
+        self.assertIn("in this conversation", payload["next"])
         install_command = run.call_args_list[0].args[0]
         verify_command = run.call_args_list[1].args[0]
         self.assertEqual(install_command[:4], ["npx", "--yes", "skills", "add"])
