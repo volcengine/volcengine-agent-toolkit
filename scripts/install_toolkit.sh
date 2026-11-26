@@ -460,13 +460,27 @@ copy_core_skills() {
     [ -f "$core_dir/$skill/SKILL.md" ] || die "$skill is missing from the downloaded source"
   done
   for skill in $CORE_SKILLS; do
-    # Copy beside the target, then replace: a failed copy keeps the old skill.
-    staged_skill="${1:?}/.$skill.install.$$"
-    rm -rf "$staged_skill"
-    cp -R "$core_dir/$skill" "$staged_skill" || { rm -rf "$staged_skill"; die_local "Cannot copy $skill into $1"; }
-    rm -rf "${1:?}/$skill"
-    mv "$staged_skill" "$1/$skill" || die_local "Cannot move $skill into $1"
-    [ -f "$1/$skill/SKILL.md" ] || die "$skill is missing from $1 after the copy"
+    staging="$(mktemp -d "$1/../.skill-install.XXXXXX")" \
+      || die_local "Cannot prepare $skill installation in $1"
+    if ! cp -R "$core_dir/$skill" "$staging/$skill"; then
+      rm -rf "${staging:?}"
+      die_local "Cannot copy $skill into $1"
+    fi
+    if [ ! -f "$staging/$skill/SKILL.md" ]; then
+      rm -rf "${staging:?}"
+      die "$skill is missing from the staged copy"
+    fi
+    if [ -e "$1/$skill" ] || [ -L "$1/$skill" ]; then
+      mv "$1/$skill" "$staging/previous" || die_local "Cannot replace $skill in $1"
+    fi
+    if ! mv "$staging/$skill" "$1/$skill"; then
+      if [ -e "$staging/previous" ] || [ -L "$staging/previous" ]; then
+        mv "$staging/previous" "$1/$skill" || die_local "Cannot restore $skill from $staging/previous"
+      fi
+      rm -rf "${staging:?}"
+      die_local "Cannot install $skill into $1"
+    fi
+    rm -rf "${staging:?}"
   done
 }
 
@@ -663,6 +677,16 @@ install_for_doubao_work() {
       [ -d "$user_skills" ] || continue
       IFS="$old_ifs"
       copy_core_skills "$user_skills"
+      legacy_skill="$user_skills/volcengine-cost"
+      if [ -e "$legacy_skill" ] || [ -L "$legacy_skill" ]; then
+        backup_root="$user_skills/../.skill-migration-backups"
+        mkdir -p "$backup_root" || die "Cannot prepare the legacy Skill backup"
+        backup="$(mktemp -d "$backup_root/volcengine-cost.XXXXXX")" \
+          || die "Cannot create the legacy Skill backup"
+        mv "$legacy_skill" "$backup/volcengine-cost" \
+          || die "Cannot migrate the legacy billing Skill"
+        log "DoubaoWork: previous billing Skill backed up to $backup"
+      fi
       IFS='
 '
       installed_profiles=$((installed_profiles + 1))

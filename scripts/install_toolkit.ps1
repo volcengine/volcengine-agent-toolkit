@@ -390,19 +390,39 @@ try {
             }
         }
         foreach ($skill in $CoreSkills) {
-            # Copy beside the target, then replace: a failed copy keeps the old skill.
             $target = Join-Path $Destination $skill
-            $staged = Join-Path $Destination ".$skill.install.$PID"
-            if (Test-Path -LiteralPath $staged) { Remove-Item -LiteralPath $staged -Recurse -Force }
+            $staging = Join-Path (Split-Path -Parent $Destination) ('.skill-install.' + [Guid]::NewGuid().ToString('N'))
+            $previous = Join-Path $staging 'previous'
+            $installedSkill = $false
             try {
-                Copy-Item -LiteralPath (Join-Path $coreDir $skill) -Destination $staged -Recurse -Force
+                New-Item -ItemType Directory -Path $staging -ErrorAction Stop | Out-Null
+                $stagedSkill = Join-Path $staging $skill
+                Copy-Item -LiteralPath (Join-Path $coreDir $skill) -Destination $stagedSkill -Recurse -Force -ErrorAction Stop
+                if (-not (Test-Path -LiteralPath (Join-Path $stagedSkill 'SKILL.md') -PathType Leaf)) {
+                    throw "$skill is missing from the staged copy"
+                }
+                if (Test-Path -LiteralPath $target) { Move-Item -LiteralPath $target -Destination $previous -ErrorAction Stop }
+                try {
+                    Move-Item -LiteralPath $stagedSkill -Destination $target -ErrorAction Stop
+                    $installedSkill = $true
+                } catch {
+                    if (Test-Path -LiteralPath $previous) { Move-Item -LiteralPath $previous -Destination $target -ErrorAction Stop }
+                    throw
+                }
             } catch {
-                if (Test-Path -LiteralPath $staged) { Remove-Item -LiteralPath $staged -Recurse -Force -ErrorAction SilentlyContinue }
-                Stop-InstallLocal "Cannot copy $skill into $Destination"
+                $failureMessage = "Cannot install $skill into ${Destination}: $_"
+                if (-not $installedSkill -and (Test-Path -LiteralPath $previous)) {
+                    $failureMessage += ". Previous Skill preserved at $previous"
+                }
+                Stop-InstallLocal $failureMessage
+            } finally {
+                if ((Test-Path -LiteralPath $staging) -and ($installedSkill -or -not (Test-Path -LiteralPath $previous))) {
+                    Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
+                }
             }
-            if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
-            Move-Item -LiteralPath $staged -Destination $target
-            if (-not (Test-Path -LiteralPath (Join-Path $target 'SKILL.md') -PathType Leaf)) {
+        }
+        foreach ($skill in $CoreSkills) {
+            if (-not (Test-Path -LiteralPath (Join-Path (Join-Path $Destination $skill) 'SKILL.md') -PathType Leaf)) {
                 Stop-Install "$skill is missing from $Destination after the copy"
             }
         }
@@ -547,6 +567,18 @@ try {
                     $userSkills = Join-Path $profileDir.FullName "$dotDir/agent_mode/workspace/.user_skills"
                     if (-not (Test-Path -LiteralPath $userSkills -PathType Container)) { continue }
                     Copy-CoreSkills $userSkills
+                    $legacySkill = Join-Path $userSkills 'volcengine-cost'
+                    if (Test-Path -LiteralPath $legacySkill) {
+                        try {
+                            $backupRoot = Join-Path (Split-Path -Parent $userSkills) '.skill-migration-backups'
+                            $backup = Join-Path $backupRoot ('volcengine-cost.' + [Guid]::NewGuid().ToString('N'))
+                            New-Item -ItemType Directory -Path $backup -Force -ErrorAction Stop | Out-Null
+                            Move-Item -LiteralPath $legacySkill -Destination (Join-Path $backup 'volcengine-cost') -ErrorAction Stop
+                            Write-Log "DoubaoWork: previous billing Skill backed up to $backup"
+                        } catch {
+                            Stop-Install "Cannot migrate the legacy billing Skill: $_"
+                        }
+                    }
                     $installedProfiles++
                     Write-Log "Doubao: core skills copied to $userSkills"
                 }

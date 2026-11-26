@@ -49,7 +49,7 @@ Agent 执行 `ve` 时必须注入 `VE_CALLER_TYPE=ai_agent`、`VE_CALLER_NAME=<a
 <!-- BEGIN GENERATED: skill-catalog -->
 | Skill | Plugin | 场景 |
 | --- | --- | --- |
-| [`volcengine-billing-and-cost-management`](./skills/core/volcengine-billing-and-cost-management/SKILL.md) | `volcengine-core` | 分析云费用波动，定位产品、计费项及用量、单价和金额构成的归因。 |
+| [`volcengine-billing-and-cost-management`](./skills/core/volcengine-billing-and-cost-management/SKILL.md) | `volcengine-core` | 查询与分析账单、费用变化和账户资金状态，完成账务对账、财务托管与付费归属、资源包及代金券抵扣核查。 |
 | [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | 使用 ve 管理火山引擎资源；引导获取 TOS、Ark 技能，并通过 ve tosutil、ve arkcli 执行。 |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | 诊断火山引擎错误、资源状态、配额、指标与 OpenAPI 故障。 |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | 使用 ve docs search/fetch 检索并获取火山引擎官方文档全文，无需登录。 |

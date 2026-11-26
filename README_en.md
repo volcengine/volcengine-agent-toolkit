@@ -56,7 +56,7 @@ are maintained in their plugins; the sync script generates the copies.
 <!-- BEGIN GENERATED: skill-catalog -->
 | Skill | Plugin | Use case |
 | --- | --- | --- |
-| [`volcengine-billing-and-cost-management`](./skills/core/volcengine-billing-and-cost-management/SKILL.md) | `volcengine-core` | Analyze cloud cost changes and attribute anomalies to products, charge items, usage, price, and amount components. |
+| [`volcengine-billing-and-cost-management`](./skills/core/volcengine-billing-and-cost-management/SKILL.md) | `volcengine-core` | Query and analyze bills, cost changes and account balances; reconcile charges and verify payment ownership, packages and coupons. |
 | [`volcengine-cli`](./skills/core/volcengine-cli/SKILL.md) | `volcengine-core` | Manage Volcengine resources with ve; route TOS and Ark tasks to product skills using ve tosutil and ve arkcli. |
 | [`volcengine-troubleshooting`](./skills/core/volcengine-troubleshooting/SKILL.md) | `volcengine-core` | Diagnose Volcengine errors, resource health, quotas, metrics, and OpenAPI failures. |
 | [`volcengine-knowledge-search`](./skills/core/volcengine-knowledge-search/SKILL.md) | `volcengine-core` | Search and fetch official Volcengine documentation with ve docs search/fetch, without login. |
