@@ -134,7 +134,7 @@ def query_contract() -> dict[str, Any]:
             "retryable_errors": [ErrorCode.RATE_LIMITED.value, ErrorCode.TIMEOUT.value],
             "strategy": "有限指数退避；总尝试次数为 1 + retry_count。",
             "non_retryable": ["参数", "认证", "权限", "普通业务错误", "响应契约错误", "输出路径冲突"],
-            "parameter_error_observation": "参数错误通过 error.details.invalid_parameters 返回错误参数及其局部真实契约；Agent 根据目标和本次证据自主决定后续动作。",
+            "parameter_error_observation": "参数错误通过 _meta.error.details.invalid_parameters 返回错误参数及其局部真实契约；Agent 根据目标和本次证据自主决定后续动作。",
         },
         "output": {
             "output_protocol_version": "1.0",

@@ -219,6 +219,29 @@ def _row_selectors(values: Sequence[str]) -> tuple[tuple[str, str], ...]:
     return tuple(result)
 
 
+def _preflight_envelope(payload: Mapping[str, Any]) -> dict[str, Any]:
+    result = {key: value for key, value in payload.items() if key not in {"status", "operation"}}
+    verdict = result["verdict"]
+    if verdict == "pass":
+        message = "预检完成，输入满足正式对账条件，可继续计算。"
+    elif verdict == "warn":
+        if result["claim_scope"] == "provisional":
+            message = "预检完成，可对当前已覆盖账期数据进行受限比较，不能形成最终账期结论。"
+        else:
+            message = "预检完成，可按指定文件范围进行观察性比较，不能形成正式对账或多算结论。"
+    else:
+        message = "预检完成，当前模式的必要条件不满足，禁止本次计算。"
+    limitations = [check["message"] for check in result["checks"] if check["status"] in {"warn", "block"}]
+    if limitations:
+        message += "限制：" + "；".join(limitations)
+    return build_envelope(
+        status="success",
+        message=message,
+        result=result,
+        meta={"operation": payload["operation"]},
+    )
+
+
 def _task_envelope(command: str, payload: Mapping[str, Any]) -> dict[str, Any]:
     artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), Mapping) else {}
     csv_path = artifacts.get("csv")
@@ -286,7 +309,7 @@ def main(argv: Sequence[str] | None = None, *, prog: str = "reconcile_cost.py") 
             payload = describe_reconciliation(args.section)
         elif command == "preflight":
             args = build_preflight_parser(f"{prog} preflight").parse_args(arguments[1:])
-            payload = preflight(_request(args)).to_dict()
+            payload = _preflight_envelope(preflight(_request(args)).to_dict())
         elif command == "run":
             args = build_run_parser(f"{prog} run").parse_args(arguments[1:])
             payload = _task_envelope(

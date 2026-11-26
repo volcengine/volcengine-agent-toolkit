@@ -102,8 +102,9 @@ Limit/Offset 分页通过 `--page-offset` 定位页，full 从 Offset=0 开始�
 单页响应的续页游标见 `coverage.queries[].next_token`，`has_more` 表示是否还有下一页。
 inline 输出在 `_meta.coverage`，文件输出在对应 metadata 的 `coverage` 中读取。
 
-支持 BillPeriod 或 AmortizedMonth 的 Action 可重复传 `--period YYYY-MM`，成功账期进入
-同一结果并保留各账期证据。其他时间字段按 Action 请求契约直接传入 body，不套用账期替换。
+查询多个账期时，支持 BillPeriod 或 AmortizedMonth 的 Action 用 `--period YYYY-MM`
+为每个账期分别指定月份，成功账期进入同一结果并保留各账期证据。
+其他时间字段按 Action 请求契约直接传入 body，不套用账期替换。
 跨期比较先确定所需分析期与基期。
 
 需要固定文件名或持久保存原始数据时加 `--out <task-result>.csv`；否则由结果大小决定
@@ -120,7 +121,7 @@ inline 输出在 `_meta.coverage`，文件输出在对应 metadata 的 `coverage
 部分，并按 `message` 决定补查或降级；`status=error` 时不使用 `result` 形成业务结论。非零
 退出码仍可能携带 `partial` 结果，不能丢弃 stdout。
 
-参数错误读取 `error.details.invalid_parameters`：每项只描述错误参数、违反约束及其局部真实契约；
+参数错误读取 `_meta.error.details.invalid_parameters`：每项只描述错误参数、违反约束及其局部真实契约；
 参数存在于 Action schema 时还会附实际值，未知参数不回显实际值，避免泄露可能混入的凭证。
 这不代表其他参数必须复用，也不构成后续执行计划。Agent 根据任务上下文自主决定
 修正参数、重新发现、重新调用或终止。需要错误码和退出码时读取

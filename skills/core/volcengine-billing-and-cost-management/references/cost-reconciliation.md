@@ -105,14 +105,15 @@ preflight 在计算前检查：
   结算/非结算/Quota 等范围时显式加入。
 - 当前账期、时效及非标准 Project/Tag 比较保留相应限制。
 
-preflight 按所选 mode 判断：pass 可正式核对；warn 按返回的 claim_scope 受限计算；
+preflight 返回 `status/message/result`，`status=success` 表示预检完成。
+按 `result.verdict` 和所选 mode 判断：pass 可正式核对；warn 按 `result.claim_scope` 受限计算；
 block 表示当前模式的必要条件不足，停止本次计算，不修改原始 metadata 使检查通过。
 
 `ARTIFACT_INVALID` 表示当前模式的输入加载失败，来源关系、范围、维度和金额检查尚未执行。
 按 recovery_options 核对实际文件，不猜路径反复 run，也不把该错误解释成已验证的范围不一致。
 
 当前月结果即使采集成功，也因账期未结束而只支持受限比较。是否允许计算由 preflight 根据
-机器证据判断；Agent 只按 verdict、claim_scope 和 message 行动，不手写或修改机器证据使其
+机器证据判断；Agent 只按 `result.verdict`、`result.claim_scope` 和 `message` 行动，不手写或修改机器证据使其
 通过。缺证据、失败范围或其他停止原因仍会阻断或限制对账。
 
 ## 3. 聚合与解释差额

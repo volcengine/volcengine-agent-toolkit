@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from unittest import mock
 
@@ -61,6 +62,53 @@ class VolcengineBillingAndCostManagementTest(unittest.TestCase):
         self.assertEqual((2, 4), (self.client.calls[0]["body"]["Limit"], self.client.calls[0]["body"]["Offset"]))
         self.assertTrue(payload["_meta"]["coverage"]["requested_scope_fulfilled"])
         self.assertFalse(payload["_meta"]["coverage"]["is_complete"])
+
+    def test_duplicate_periods_query_once_and_preserve_order_and_amounts(self) -> None:
+        cases = (("ListBill", "BillPeriod", "PayableAmount"),
+                 ("ListAmortizedCostBillMonthly", "AmortizedMonth", "NowAmortizedPayableAmount"))
+        for action, field, amount_field in cases:
+            for file_output in (False, True):
+                with self.subTest(action=action, file_output=file_output):
+                    self.client.calls.clear()
+                    for period, amount in (("2026-09", "10.001"), ("2026-08", "20.002")):
+                        self.write_fixture(f"{action}__period-{period}__offset-0", {
+                            "List": [{field: period, amount_field: amount}],
+                            "Total": 1, "Limit": 2, "Offset": 0,
+                        })
+                    output = self.root / f"{action}.csv"
+                    options = ["--out", str(output)] if file_output else []
+                    code, payload = self.query(
+                        action, {}, "--period", "2026-09", "--period", "2026-08",
+                        "--period", "2026-09", "--period", "2026-08",
+                        "--pagination", "full", "--page-size", "2", *options,
+                    )
+                    self.assertEqual(0, code)
+                    self.assertEqual("success", payload["status"])
+                    self.assertEqual(["2026-09", "2026-08"],
+                                     [call["body"][field] for call in self.client.calls])
+                    if file_output:
+                        with output.open(newline="", encoding="utf-8") as file:
+                            rows = list(csv.DictReader(file))
+                        coverage = json.loads(output.with_suffix(".meta.json").read_text())["coverage"]
+                    else:
+                        rows = payload["result"]
+                        coverage = payload["_meta"]["coverage"]
+                    self.assertEqual(["2026-09", "2026-08"], [row[field] for row in rows])
+                    self.assertEqual(Decimal("30.003"),
+                                     sum((Decimal(row[amount_field]) for row in rows), Decimal(0)))
+                    self.assertEqual(2, len(coverage["queries"]))
+
+    def test_separate_invocations_query_the_same_period_again(self) -> None:
+        self.write_fixture("ListBill", {
+            "List": [{"BillPeriod": "2026-08", "PayableAmount": "10.001"}],
+            "Total": 1, "Limit": 2, "Offset": 0,
+        })
+        for _ in range(2):
+            code, payload = self.query("ListBill", {}, "--period", "2026-08",
+                                       "--pagination", "full", "--page-size", "2")
+            self.assertEqual(0, code)
+            self.assertEqual(1, len(payload["result"]))
+        self.assertEqual(2, len(self.client.calls))
 
     def test_expanded_page_over_limit_is_partial_in_stdout_and_metadata(self) -> None:
         self.write_fixture("ListCostAnalysisOpenApi", {
@@ -164,6 +212,56 @@ class VolcengineBillingAndCostManagementTest(unittest.TestCase):
         envelope = self.root / f"{name}.json"
         envelope.write_text(json.dumps(payload), encoding="utf-8")
         return output, envelope
+
+    def test_parameter_errors_use_the_documented_meta_path(self) -> None:
+        payload = self.run_cli(["query", "--action", "ListBill", "--body",
+                                '{"BillPeriod":"not-a-month"}', "--pagination", "full"], expected=2)
+        self.assertEqual("error", payload["status"])
+        self.assertIsNone(payload["result"])
+        self.assertNotIn("error", payload)
+        errors = payload["_meta"]["error"]["details"]["invalid_parameters"]
+        self.assertEqual("BillPeriod", errors[0]["path"])
+        self.assertEqual("not-a-month", errors[0]["actual"])
+        for path in (ROOT / "SKILL.md", ROOT / "references/cost-query.md",
+                     ROOT / "scripts/cost_query/billing/query_contract.py"):
+            self.assertIn("_meta.error.details.invalid_parameters", path.read_text())
+
+    def test_preflight_uses_the_task_envelope_for_pass_warn_and_block(self) -> None:
+        sources = []
+        for action, name in (("ListBillOverviewByProd", "overview"), ("ListBill", "bill")):
+            self.write_fixture(action, {
+                "List": [{"Product": "TOS", "Currency": "CNY", "PayableAmount": "10.001"}],
+                "Total": 1, "Limit": 300, "Offset": 0,
+            })
+            source, _ = self.query_file(action, {"BillPeriod": "2026-08"}, name)
+            sources.append(source)
+        input_bytes = {path: path.read_bytes() for path in self.root.iterdir() if path.is_file()}
+        cases = (([], "pass", "full_dataset"),
+                 (["--mode", "observational"], "warn", "observational"),
+                 (["--group-by", "InstanceNo"], "block", "blocked"))
+        for options, verdict, claim_scope in cases:
+            with self.subTest(verdict=verdict):
+                payload = self.run_cli(["reconcile", "preflight", "--left", str(sources[0]),
+                                        "--right", str(sources[1]), *options])
+                self.assertEqual("success", payload["status"])
+                self.assertTrue(payload["message"])
+                self.assertNotIn("verdict", payload)
+                result = payload["result"]
+                self.assertEqual(verdict, result["verdict"])
+                self.assertEqual(claim_scope, result["claim_scope"])
+                self.assertTrue(result["checks"])
+                self.assertNotIn("status", result)
+                self.assertEqual("reconciliation_preflight", payload["_meta"]["operation"])
+                if verdict != "pass":
+                    for check in result["checks"]:
+                        if check["status"] in ("warn", "block"):
+                            self.assertIn(check["message"], payload["message"])
+        invalid = self.run_cli(["reconcile", "preflight", "--left", str(sources[0]),
+                                "--right", str(sources[1]), "--left-result", "{}"], expected=2)
+        self.assertEqual("error", invalid["status"])
+        self.assertIsNone(invalid["result"])
+        self.assertIn("error", invalid["_meta"])
+        self.assertEqual(input_bytes, {path: path.read_bytes() for path in self.root.iterdir() if path.is_file()})
 
     def test_copied_skill_runs_without_site_packages_or_ve(self) -> None:
         self.write_fixture("QueryBalanceAcct", {

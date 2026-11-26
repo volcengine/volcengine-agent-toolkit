@@ -52,6 +52,14 @@ def reconciliation_contract() -> dict[str, Any]:
             "purpose": "可选的独立诊断入口，只检查不生成差额；不是 run 的前置调用步骤。",
             "command": "python3 scripts/cost.py reconcile preflight --left-result '<query-result-json>' --right-result '<query-result-json>' [--group-by FIELDS] [--metric FIELD]",
             "arguments": _common_arguments(),
+            "output": {
+                "public_fields": ["status", "message", "result"],
+                "status": "success",
+                "verdict_path": "result.verdict",
+                "claim_scope_path": "result.claim_scope",
+                "checks_path": "result.checks",
+                "completion_rule": "success 表示预检完成；是否允许计算由 result.verdict 决定，限制与阻断原因同时写入 message。参数错误使用 status=error、result=null 和 _meta.error。",
+            },
             "checks": [
                 "Action Pair 已登记",
                 "两侧 coverage 是完整 full 结果，或满足当前期受限 provisional 条件，且 failed_queries 为空",

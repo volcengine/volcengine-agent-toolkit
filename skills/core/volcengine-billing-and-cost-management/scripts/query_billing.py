@@ -62,7 +62,7 @@ def build_parser(prog: str = "query_billing.py") -> argparse.ArgumentParser:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--body", help="JSON object 请求体。")
     source.add_argument("--body-file", help="包含 JSON object 的 UTF-8 文件。")
-    parser.add_argument("--period", action="append", default=[], help="可重复；覆盖 BillPeriod 或 AmortizedMonth。")
+    parser.add_argument("--period", action="append", default=[], help="指定 BillPeriod 或 AmortizedMonth；多账期查询时为每个账期分别指定。")
     parser.add_argument("--period-field", choices=("BillPeriod", "AmortizedMonth"), help="多账期替换字段；默认按 Action 自动选择。")
     parser.add_argument(
         "--out",
@@ -162,7 +162,7 @@ def _query_bodies(action: str, body: Mapping[str, Any], periods: Sequence[str], 
     period_field = _period_field(action, field)
     return [
         (period, {**body, period_field: period})
-        for period in periods
+        for period in dict.fromkeys(periods)
     ]
 
 
