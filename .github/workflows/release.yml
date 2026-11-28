@@ -30,7 +30,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate tag and repository
+      # Repository checks (sync, layout, unit tests) run before tagging, not here.
+      - name: Validate tag version
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
@@ -39,9 +40,6 @@ jobs:
             echo "Tag ${RELEASE_TAG} does not match package.json version ${package_version}" >&2
             exit 1
           fi
-          python3 scripts/sync_plugins.py --check
-          python3 scripts/validate_codex_plugin_layout.py
-          python3 -m unittest discover -s tests -v
 
       - name: Build core Skill and toolkit release
         env:
